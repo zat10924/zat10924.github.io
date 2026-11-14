@@ -88,7 +88,7 @@ async function run(){
   const q=norm($("q").value),[f,t]=range(),box=$("res");
   box.innerHTML='<i class="sk" style="height:140px;border-radius:14px"></i>';
   const ok=d=>(!f||d>=f)&&(!t||d<=t);
-  const AS=chosen(),S=Reports.sources,res=await Promise.allSettled(AS.map(k=>Reports.getData(k,true)));
+  const AS=chosen(),S=Reports.sources,res=await Promise.allSettled(AS.map(k=>Reports.getData(k)));
   let html="",any=false;const head=[];
   // لو اللي اتكتب هو اسم صنف كامل بالظبط (مثلًا «شي إن») بنعرض الصنف ده بس، ومش كل صنف الكلمة جواه (زي «قهوة شي إن»)
   const names=new Set();res.forEach(r=>{if(r.status==='fulfilled'){r.value.prod.forEach(x=>names.add(norm(x.item)));(r.value.waste||[]).forEach(x=>names.add(norm(x.item)))}});
@@ -132,7 +132,7 @@ async function loadNames(){
 $("go").onclick=()=>{PART=false;msOpen(false);run()};$("q").onkeydown=e=>{if(e.key==="Enter"){if(typeof CBX!=="undefined"&&CBX.p&&!CBX.p.hidden&&CBX.act>=0)return;PART=false;run()}};
 document.querySelectorAll("#rg button").forEach(b=>b.onclick=()=>{$("f").value="";$("t").value="";document.querySelectorAll("#rg button").forEach(x=>x.classList.toggle("on",x===b))});
 ["f","t"].forEach(i=>$(i).onchange=()=>document.querySelectorAll("#rg button").forEach(x=>x.classList.remove("on")));
-(async()=>{if(await requireAuth("search.html")){renderNav("search.html");loadNames();settle()}})();
+(async()=>{if(await requireAuth("search.html")){renderNav("search.html");loadNames();settle();SECS.forEach(k=>Reports.getData(k).catch(()=>{}))}})();
 </script>
 <script src="install.js" defer></script>
 </body>

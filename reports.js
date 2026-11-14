@@ -97,12 +97,13 @@ const SRC={
 };
 const KEYS=Object.keys(SRC);
 const cache={};
+const inflight={};
 async function getData(key,force){
   const c=cache[key];
   if(!force&&c&&Date.now()-c.t<30000)return c.data;
-  const data=await SRC[key].fetch();
-  cache[key]={t:Date.now(),data};
-  return data;
+  if(!force&&inflight[key])return inflight[key]; // طلب شغال بالفعل (تحميل مسبق): ما نكررهوش
+  const p=SRC[key].fetch().then(data=>{cache[key]={t:Date.now(),data};return data}).finally(()=>{if(inflight[key]===p)delete inflight[key]});
+  inflight[key]=p;return p;
 }
 
 /* ---------- فترات وتجميع ---------- */

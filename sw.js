@@ -1,5 +1,5 @@
 /* sw.js — تسريع التحميل: المكتبات والخطوط من الكاش، وملفات البرنامج من النت أولًا (عشان التحديثات تظهر) */
-const V="mas-v3.0.16",LIB="mas-lib";
+const V="mas-v3.0.17",LIB="mas-lib";
 addEventListener("install",e=>{skipWaiting()});
 addEventListener("activate",e=>{e.waitUntil((async()=>{
   for(const k of await caches.keys())if(k!==V&&k!==LIB)await caches.delete(k);

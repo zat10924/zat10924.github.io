@@ -57,7 +57,7 @@ window.masCacheClear=()=>{try{localStorage.removeItem("masc_uid")}catch(e){}retu
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {global:{fetch:MASC.fetch}});
 
 /* ===== إصدار البرنامج (غيّر الرقم هنا عند كل تحديث) ===== */
-const APP_VERSION = "3.0.16";
+const APP_VERSION = "3.0.17";
 // مفتاح الإشعارات العام (آمن إنه يبقى ظاهر)
 const VAPID_PUBLIC = "BMI1dksSzpLuotH8TRjMLlwd53SaAltxeJkdfGYnb0GNTjQLbqXy-HDXbWZUlA5jtahNrND9TZRV7afcjnDfLhs";
 /* مستودع GitHub: منه بتتجاب «ما الجديد» تلقائيًا من رسائل الـ commit العربي */
@@ -65,6 +65,9 @@ const GH_REPO = "zat10924/zat10924.github.io";
 const APP_BUILD = "2026-11-14";
 // آخر التحديثات (الأحدث أولاً) — بتظهر في الإعدادات > البرنامج > «ما الجديد»
 const APP_CHANGES = [
+  ["3.0.17", "2026-11-14", [
+    "تسريع البحث الشامل: البيانات بتتحمّل في الخلفية أول ما الصفحة تفتح، وعمليات البحث المتتالية بتستخدم نفس البيانات بدل إعادة التحميل كل مرة"
+  ]],
   ["3.0.16", "2026-11-14", [
     "البحث الشامل: ترتيب الصفحة (الصنف ثم القسم ثم الفترة)، وقائمة منسدلة لاختيار قسم أو أكثر، وزر «مسح»، وقائمة الأصناف بقت شغالة بالسهم"
   ]],
