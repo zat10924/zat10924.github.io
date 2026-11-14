@@ -38,7 +38,8 @@
 const SEC={
  glaze:{name:"جليز",color:"#2E6F80",o:"glaze_orders",l:"glaze_lines_status",p:"glaze_production",lab:x=>x.color},
  deco:{name:"زخرفة",color:"#5E5A8C",o:"deco_orders",l:"deco_lines_status",p:"deco_production",lab:x=>"كود "+x.code},
- spray:{name:"رش",color:"#B8862B"}};
+ spray:{name:"رش",color:"#B8862B"},
+ casting:{name:"الصب اليدوي",color:"#8A5A3C"}};
 /* صور أكواد الرسمات (زخرفة) */
 let CIMG=new Map(),cimgAt=0;
 async function loadCodeImgs(){
@@ -55,14 +56,28 @@ function zoomCode(c){
   document.body.appendChild(d);d.onclick=e=>{if(e.target===d||e.target.id==="zx")d.remove()};
 }
 document.addEventListener("click",e=>{const z=e.target.closest("[data-zc]");if(z){e.stopPropagation();zoomCode(z.dataset.zc)}},true);
-let multi=false,sel=new Set(),selSec="",sec="",allowed=[],rows=[],tod=[],Q="",stale=0,D="";
+let multi=false,sel=new Set(),selSec="",sec="",allowed=[],rows=[],tod=[],Q="",stale=0,D="",CO=new Map();
 
 async function load(){
   if(!D)D=today();
   if(sec==="deco")await loadCodeImgs();
   const c=SEC[sec],t=D;
   try{
-    if(c.o){
+    if(sec==="casting"){
+      const[o,l,p,g]=await Promise.all([db.from("casting_orders").select("*"),
+        db.from("casting_log").select("order_id,qty").not("order_id","is",null),
+        db.from("casting_log").select("*").eq("casting_date",t).order("id",{ascending:false}),
+        db.from("order_groups").select("id,title,order_no")]);
+      if(p.error)throw new Error("load");
+      const GM=new Map(((g&&g.data)||[]).map(x=>[x.id,x])),dn=new Map();
+      (l.data||[]).forEach(r=>dn.set(r.order_id,(dn.get(r.order_id)||0)+(+r.qty||0)));
+      CO=new Map();
+      (o.error?[]:o.data||[]).forEach(x=>{const gg=GM.get(x.group_id);CO.set(x.id,{id:x.id,item:x.item,req:+x.qty_required||0,done:dn.get(x.id)||0,st:x.status,date:x.order_date,due:x.due_date,
+        sub:gg?((gg.order_no?"#"+gg.order_no+" · ":"")+((gg.title||"").trim()||"طلبية")):"طلبية #"+x.id})});
+      rows=[...CO.values()].filter(x=>x.st==="open"&&x.req-x.done>0).map(x=>({id:x.id,oid:x.id,title:x.item,sub:x.sub,req:x.req,done:x.done,date:x.date,due:x.due}));
+      tod=(p.data||[]).map(e=>({k:"cast",tb:"casting_log",id:e.id,qty:e.qty,date:e.casting_date,by:e.created_by||null,worker:e.worker||"",note:e.note||"",item:e.item||"",sh:e.shift||"",scrap:e.scrap||0,oid:e.order_id||null,
+        txt:(e.item||"—")+(e.shift?" · "+e.shift:"")+(e.scrap?" · هالك "+e.scrap:"")+(e.order_id?"":" · بدون طلبية")}));
+    }else if(c.o){
       const[o,l,p]=await Promise.all([db.from(c.o).select("*"),db.from(c.l).select("*").order("id"),
         db.from(c.p).select("*").eq("prod_date",t).order("id",{ascending:false})]);
       if(o.error||l.error)throw new Error("load");
@@ -78,7 +93,7 @@ async function load(){
       tod=(p.data||[]).map(e=>{const x=om.get(e.order_id),sc=e.spray_color||"";return{k:"line",tb:"spray_production",id:e.id,qty:e.qty,date:e.prod_date,by:e.created_by||null,worker:e.worker||"",note:e.note||"",design:"",sc,txt:x?x.item+" · "+x.color+(sc?" · لون الرش: "+sc:""):"—",max:x?x.qty_required-x.produced+e.qty:0,sync:x?{sv:"spray_status",o:"spray_orders",oid:x.id}:null}});
     }
     // الإنتاج بدون طلبية (لو الجدول موجود)
-    try{
+    if(sec!=="casting")try{
       const f=await db.from("free_production").select("*").eq("section",sec).eq("prod_date",t).order("id",{ascending:false});
       if(!f.error)tod.unshift(...(f.data||[]).map(e=>({k:"free",tb:"free_production",id:e.id,qty:e.qty,date:e.prod_date,by:e.created_by||null,item:e.item,sub:e.sub||"",sc:e.spray_color||"",worker:e.worker||"",note:e.note||"",design:e.design||"",txt:e.item+(e.sub?" · "+e.sub:"")+(e.spray_color?" · لون الرش: "+e.spray_color:"")+" · بدون طلبية"})));
     }catch(e){}
@@ -111,7 +126,7 @@ function draw(){
       <div class="bar"><i style="width:${p}%"></i></div><div class="nums">تم <b>${nf(r.done)}</b> من <b>${nf(r.req)}</b> · متبقي <b>${nf(rem)}</b></div>${r.tsc?`<div class="nums">لون الرش المطلوب: <b>${esc(r.tsc)}</b></div>`:""}</div>`}).join(""):`<div class="empty">${q?"مفيش نتائج":"مفيش بنود مفتوحة"}</div>`;
   document.querySelectorAll(".pr").forEach(e=>e.onclick=()=>pickRow(rows.find(r=>String(r.id)===e.dataset.id),e));
   updBar();
-  wasteBtn.hidden=sec!=="glaze";
+  wasteBtn.hidden=sec!=="glaze";mbtn.parentElement.hidden=sec==="casting";
   if(stale)document.getElementById("list").insertAdjacentHTML("afterbegin",`<div class="card" style="border-color:var(--warn)"><b class="ibt">${ui("wifioff")}لا يوجد اتصال</b><div class="nums">بيانات محفوظة من آخر اتصال (${new Date(stale).toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"})}). تسجيلاتك هتتحفظ وتتبعت لما النت يرجع.</div></div>`);
   const ce=!stale,cd=can("delete")&&!stale,lockedNote=!stale&&!can("edit")&&can("editown")&&dayClosed(D);
   document.getElementById("logh").textContent=D===today()?"تسجيلات النهارده":"تسجيلات يوم "+fmtD(D);
@@ -172,7 +187,7 @@ function multiModal(){
   },"تسجيل الكل");
 }
 mbtn.onclick=()=>{multi=!multi;sel.clear();draw()};
-freeBtn.onclick=()=>freeProduction(sec,load);
+freeBtn.onclick=()=>sec==="casting"?castForm(null,null):freeProduction(sec,load);
 wasteBtn.onclick=()=>quickWaste(load);
 // ===== تعديل / حذف تسجيل إنتاج اتسجّل بالغلط =====
 async function resync(e){
@@ -208,6 +223,7 @@ function editEnt(i){
   const e=tod[i];if(!e||!e.k||e.pend)return;
   if(!canEditEntry(e)){toast(dayClosed(e.date)?"التعديل مقفول — اليوم ده خلص":"تقدر تعدّل تسجيلاتك انت بس","warn");return}
   if(e.k==="waste")return editWaste(e);
+  if(e.k==="cast")return castForm(e);
   const deco=sec==="deco",free=e.k==="free",lab=deco?"كود الرسمة":sec==="spray"?"لون الصنف":"اللون",sid=deco?"m-code":"m-color",sprayLine=sec==="spray";
   openModal("تعديل تسجيل الإنتاج",
     XT(deco)+(free?`<label>الصنف</label><input id="m-item" autocomplete="off"><label>${lab} (اختياري)</label><input id="${sid}" autocomplete="off">`
@@ -244,6 +260,7 @@ mgo.onclick=multiModal;
 logd.onchange=()=>{D=logd.value||today();skel("today",1);load()};
 function quick(r){
   if(r&&typeof r!=="object")r=rows.find(x=>String(x.id)===String(r));
+  if(sec==="casting"&&r)return castForm(null,r.id);
   if(!r||!(r.req>=0)||typeof r.sub==="function"){toast("البند ده مش متحمّل صح — دوس «تحديث» وجرّب تاني","warn");return}
   const rem=r.req-r.done;
   if(rem<=0){toast("البند ده مكتمل بالفعل","warn");return}
@@ -272,14 +289,63 @@ function quick(r){
     await load();if(q>rem)overToast(1,q-rem);else toast(done?"اكتملت الطلبية":"تم التسجيل");
   });
 }
+/* ===== الصب اليدوي: تسجيل بطلبية أو بدون طلبية + وردية + هالك جودة ===== */
+const SHIFTS=["صباحي","مسائي","ليلي"],cLab=o=>o?(o.sub+" — "+o.item):"";
+function castForm(rec,presetOid){
+  if(rec&&!canEditEntry(rec)){toast(dayClosed(rec.date)?"التعديل مقفول — اليوم ده خلص":"تقدر تعدّل تسجيلاتك انت بس","warn");return}
+  wkLoad();
+  const ords=[...CO.values()].filter(o=>(o.st==="open"&&o.req-o.done>0)||(rec&&rec.oid===o.id)||o.id===presetOid);
+  const isO=rec?!!rec.oid:(presetOid?true:false);
+  let ls="";try{ls=localStorage.getItem("cast_shift")||""}catch(e){}
+  const shDef=rec?rec.sh:ls,lockDate=!can("edit");
+  const items=[...new Set([...CO.values()].map(o=>o.item))];
+  openModal(rec?"تعديل تسجيل الصب":"تسجيل صب يدوي",
+   `<label>نوع التسجيل</label><select id="m-mode"><option value="order" ${isO?"selected":""}>بطلبية</option><option value="free" ${isO?"":"selected"}>بدون طلبية</option></select>
+    <div id="m-ow" style="display:${isO?"block":"none"}"><label>الطلبية</label><select id="m-o"><option value="">— اختار الطلبية —</option>${ords.map(o=>`<option value="${o.id}" ${o.id===(rec?rec.oid:presetOid)?"selected":""}>${esc(cLab(o))}</option>`).join("")}</select><div class="nums" id="m-hint" style="margin:4px 0 0"></div></div>
+    <label>التاريخ</label><input type="date" id="m-d" value="${rec?rec.date:today()}" ${lockDate?"disabled":""}>
+    <label>الوردية</label><select id="m-sh">${SHIFTS.map(x=>`<option ${x===shDef?"selected":""}>${x}</option>`).join("")}</select>
+    ${XW(true)}
+    <label>الصنف</label><input id="m-item" list="m-items" maxlength="120" value="${rec?esc(rec.item):""}"><datalist id="m-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
+    <label>عدد القطع</label><input type="number" id="m-q" min="0" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">
+    <label>هالك الجودة (اختياري)</label><input type="number" id="m-sc" min="0" max="100000" inputmode="numeric" placeholder="0" value="${rec&&rec.scrap?rec.scrap:""}">
+    <label>ملاحظات (اختياري)</label><input id="m-n" maxlength="300" placeholder="أي تعليق على الشغل" value="${rec?esc(rec.note):""}">`,async()=>{
+    const free=document.getElementById("m-mode").value==="free";
+    const oid=free?null:(parseInt(document.getElementById("m-o").value)||null);
+    if(!free&&!oid){toast("اختار الطلبية");return false}
+    const q=parseInt(document.getElementById("m-q").value)||0,sc=parseInt(document.getElementById("m-sc").value)||0;
+    if(q<0||sc<0||q+sc<1){toast("اكتب عدد القطع أو الهالك");return false}
+    const item=document.getElementById("m-item").value.trim();
+    if(!item){toast("اكتب اسم الصنف");return false}
+    const sh=document.getElementById("m-sh").value,x=xfRead();
+    if(!x.worker){toast("اكتب اسم العامل");return false}
+    if(oid){const o=CO.get(oid);if(o){const rem=Math.max(o.req-o.done,0)+(rec&&rec.oid===oid?rec.qty:0);
+      if(q>rem&&!await ask("العدد ("+nf(q)+") أكبر من المتبقي في الطلبية ("+nf(rem)+"). تسجّله برضو؟","نعم، سجّل"))return false}}
+    const row={casting_date:lockDate?(rec?rec.date:today()):(document.getElementById("m-d").value||today()),item,qty:q,scrap:sc,shift:sh,worker:x.worker,note:x.note||null,order_id:oid};
+    let r=rec?await db.from("casting_log").update(row).eq("id",rec.id).select():await db.from("casting_log").insert(row).select();
+    if(r.error){toast(isNet(r.error)?"التسجيل محتاج اتصال بالإنترنت":(/shift|scrap|order_id/.test(r.error.message||"")?"شغّل ملف setup_casting_v2.sql من Supabase الأول":"خطأ: "+r.error.message),"bad");return false}
+    if(rec&&(!r.data||!r.data.length)){toast("لم يتم التعديل، راجع الصلاحيات","bad");return false}
+    try{localStorage.setItem("cast_shift",sh)}catch(e){}
+    await load();toast(rec?"تم التعديل":"تم التسجيل");
+  });
+  setTimeout(()=>{
+    const w=document.getElementById("m-w");if(w&&rec)w.value=rec.worker;
+    const mode=document.getElementById("m-mode"),sel=document.getElementById("m-o"),item=document.getElementById("m-item"),hint=document.getElementById("m-hint");
+    const sync=()=>{
+      const on=mode.value==="order";document.getElementById("m-ow").style.display=on?"block":"none";
+      const o=on?CO.get(parseInt(sel.value)):null;item.readOnly=!!o;
+      if(o){item.value=o.item;hint.textContent="مطلوب "+nf(o.req)+" · اتعمل "+nf(o.done)+" · متبقي "+nf(Math.max(o.req-o.done,0))}else hint.textContent="";
+    };
+    mode.onchange=sync;sel.onchange=sync;sync();
+  },0);
+}
 function secs(){
   document.getElementById("secs").innerHTML=allowed.map(k=>`<button class="btn ${k===sec?"on":"ghost"}" data-s="${k}">${SEC[k].name}</button>`).join("");
   document.querySelectorAll("#secs button").forEach(b=>b.onclick=()=>{sec=b.dataset.s;history.replaceState(null,"","#"+sec);secs();skel("list",3);load()});
 }
 (async()=>{if(await requireAuth("production.html")){
-  allowed=ME.role==="admin"?["glaze","deco","spray"]:mySecs().filter(k=>SEC[k]);
+  allowed=ME.role==="admin"?["glaze","deco","spray","casting"]:mySecs().filter(k=>SEC[k]);
   renderNav("production.html");
-  if(!allowed.length){document.querySelector(".prodact").hidden=true;document.getElementById("list").innerHTML='<div class="empty">تسجيل الإنتاج لقسمك من صفحة القسم نفسها (التصليح أو الصب اليدوي)</div>';settle();return}
+  if(!allowed.length){document.querySelector(".prodact").hidden=true;document.getElementById("list").innerHTML='<div class="empty">تسجيل الإنتاج لقسمك من صفحة القسم نفسها (التصليح)</div>';settle();return}
   const h=location.hash.slice(1);sec=allowed.includes(h)?h:allowed[0];
   secs();searchBox("list",q=>{Q=q;draw()});skel("list",3);load().finally(settle)}})();
 </script>

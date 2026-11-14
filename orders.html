@@ -35,7 +35,7 @@
 <script src="config.js"></script>
 <script src="common.js"></script>
 <script>
-const SECK={glaze:{n:"جليز",page:"glaze.html",c:"#2E6F80",lbl:"اللون"},deco:{n:"زخرفة",page:"decoration.html",c:"#5E5A8C",lbl:"الكود"},spray:{n:"رش",page:"spray.html",c:"#B8862B",lbl:"اللون"}};
+const SECK={glaze:{n:"جليز",page:"glaze.html",c:"#2E6F80",lbl:"اللون"},deco:{n:"زخرفة",page:"decoration.html",c:"#5E5A8C",lbl:"الكود"},spray:{n:"رش",page:"spray.html",c:"#B8862B",lbl:"اللون"},casting:{n:"الصب اليدوي",page:"casting.html",c:"#8A5A3C",lbl:"الكمية"}};
 // أيقونة القسم (جليز/زخرفة/رش) بلونه، بتتعرض جنب اسمه
 const secIco=k=>`<span class="ico" style="display:inline-flex;vertical-align:middle;margin-inline-end:5px;color:${SECK[k].c}">${ico(k).replace("<svg",'<svg style="width:16px;height:16px"')}</span>`;
 let G=[],tab="open",Q="",broken=false,ext=false,dlv=false,dtab=false,CUS=[],cusOk=false;
@@ -51,7 +51,7 @@ async function saveCus(n,p){
     else await db.from("customers").insert({name:n,phone:p||null})}catch(e){}
 }
 async function load(){
-  const[g,go,gl,dO,dl,sp,so,cu,dr]=await Promise.all([
+  const[g,go,gl,dO,dl,sp,so,cu,dr,co,cl]=await Promise.all([
 
     (async()=>{const q=c=>db.from("order_groups").select(c).order("created_at",{ascending:false});
       let r=await q("id,title,created_at,order_no,customer_phone,notes,delivered_at,delivery_note");
@@ -66,13 +66,15 @@ async function load(){
     db.from("spray_status").select("*"),
     (async()=>{let r=await db.from("spray_orders").select("id,group_id,order_date,due_date,spray_color").not("group_id","is",null);if(r.error)r=await db.from("spray_orders").select("id,group_id,order_date,due_date").not("group_id","is",null);return r})(),
     db.from("customers").select("id,name,phone").order("name"),
-    db.from("order_deliveries").select("id,group_id,delivered_on,qty_done,qty_short,is_final,note,created_at").order("delivered_on").order("created_at")
+    db.from("order_deliveries").select("id,group_id,delivered_on,qty_done,qty_short,is_final,note,created_at").order("delivered_on").order("created_at"),
+    db.from("casting_orders").select("id,item,status,order_date,due_date,group_id,qty_required").not("group_id","is",null),
+    db.from("casting_log").select("order_id,qty").not("order_id","is",null)
   ]);
   dtab=!dr.error;
   cusOk=!cu.error;CUS=cusOk?(cu.data||[]):[];
   if(g.error||go.error||dO.error||so.error){broken=true;draw();return}
   broken=false;
-  const M=new Map(g.data.map(x=>[x.id,{id:x.id,title:(x.title||"").trim(),no:x.order_no||null,phone:(x.customer_phone||"").trim(),dvs:[],notes:(x.notes||"").trim(),deliv:x.delivered_at||null,dnote:(x.delivery_note||"").trim(),created:String(x.created_at||"").slice(0,10),secs:{glaze:[],deco:[],spray:[]}}]));
+  const M=new Map(g.data.map(x=>[x.id,{id:x.id,title:(x.title||"").trim(),no:x.order_no||null,phone:(x.customer_phone||"").trim(),dvs:[],notes:(x.notes||"").trim(),deliv:x.delivered_at||null,dnote:(x.delivery_note||"").trim(),created:String(x.created_at||"").slice(0,10),secs:{glaze:[],deco:[],spray:[],casting:[]}}]));
   if(dtab)(dr.data||[]).forEach(d=>{const m=M.get(d.group_id);if(m)m.dvs.push({id:d.id,d:d.delivered_on,q:d.qty_done,s:d.qty_short,f:!!d.is_final,n:(d.note||"").trim()})});
   const by=(a,k)=>{const m=new Map();(a||[]).forEach(x=>{if(!m.has(x[k]))m.set(x[k],[]);m.get(x[k]).push(x)});return m};
   const glL=by(gl.data,"order_id"),dlL=by(dl.data,"order_id");
@@ -81,6 +83,10 @@ async function load(){
   const sm=new Map(so.data.map(x=>[x.id,x])),tmp=new Map();
   (sp.data||[]).forEach(r=>{const x=sm.get(r.id);if(!x||!M.has(x.group_id))return;const k=x.group_id+"|"+r.item;let t=tmp.get(k);if(!t){t={g:x.group_id,item:r.item,st:"done",date:x.order_date,due:x.due_date,lines:[],ids:[]};tmp.set(k,t)}if(r.status==="open")t.st="open";t.lines.push({l:r.color,sc:(x.spray_color||"").trim(),req:+r.qty_required||0,done:+r.produced||0});t.ids.push(r.id)});
   tmp.forEach(t=>M.get(t.g).secs.spray.push(mkItem(t.item,t.st,t.date,t.due,t.lines,t.ids)));
+  // الصب اليدوي: كل صنف سطر واحد، والمنتج = مجموع قطع تسجيلات الصب المربوطة بالطلبية
+  if(!co.error){const cd=new Map();(cl.data||[]).forEach(r=>cd.set(r.order_id,(cd.get(r.order_id)||0)+(+r.qty||0)));
+    (co.data||[]).forEach(o=>{const m=M.get(o.group_id);if(!m)return;const req=+o.qty_required||0,dn=cd.get(o.id)||0;
+      m.secs.casting.push(mkItem(o.item,(o.status==="done"||dn>=req)?"done":"open",o.order_date,o.due_date,[{id:o.id,l:"الكمية",req,done:dn}],[o.id]))})}
   G=[...M.values()].map(o=>{
     const all=Object.values(o.secs).flat(),open=!o.deliv&&all.some(i=>i.status==="open"),dues=all.map(i=>i.due).filter(Boolean).sort(),dts=all.map(i=>i.date).filter(Boolean).sort();
     const req=sum(all,i=>i.req),done=sum(all,i=>i.done);
@@ -129,10 +135,10 @@ function draw(){
 function setTab(t){t=t||tab;tab=t;document.getElementById("t-open").className="btn "+(t==="open"?"on":"ghost");document.getElementById("t-done").className="btn "+(t==="done"?"on":"ghost");draw()}
 function openForm(gid){
   const g=gid?G.find(x=>x.id===gid):null;
-  const crow=k=>k==="spray"?`<div class="nr"><div class="two"><input placeholder="لون الصنف" class="c" data-kind="color"><input placeholder="لون الرش المطلوب" class="msc" data-kind="color" maxlength="60"></div><input placeholder="الكمية" class="q" type="number" min="1" inputmode="numeric"></div>`:`<div class="two nr"><input placeholder="${SECK[k].lbl}" class="c" data-kind="${k==="deco"?"code":"color"}"><input placeholder="الكمية" class="q" type="number" min="1" inputmode="numeric"></div>`;
+  const crow=k=>k==="casting"?`<div class="nr"><input class="c" type="hidden" value="الكمية"><input placeholder="الكمية المطلوبة" class="q" type="number" min="1" inputmode="numeric"></div>`:k==="spray"?`<div class="nr"><div class="two"><input placeholder="لون الصنف" class="c" data-kind="color"><input placeholder="لون الرش المطلوب" class="msc" data-kind="color" maxlength="60"></div><input placeholder="الكمية" class="q" type="number" min="1" inputmode="numeric"></div>`:`<div class="two nr"><input placeholder="${SECK[k].lbl}" class="c" data-kind="${k==="deco"?"code":"color"}"><input placeholder="الكمية" class="q" type="number" min="1" inputmode="numeric"></div>`;
   const curK=()=>{const e=document.getElementById("m-sec");return e?e.value:"glaze"};
-  const llt=k=>(k==="deco"?"الأكواد":"الألوان")+" والكميات";
-  const blk=n=>{const k=curK();return `<div class="itemblk" data-k="${k}"><div class="ih"><b>الصنف ${n}</b><button type="button" class="rmi" style="display:${n>1?"block":"none"}">${ib("trash","حذف الصنف")}</button></div><input class="it" placeholder="اسم الصنف"><label class="ll">${llt(k)}</label><div class="rows">${crow(k)}</div><button class="btn ghost sm addc" type="button">+ سطر</button></div>`};
+  const llt=k=>k==="casting"?"الكمية":(k==="deco"?"الأكواد":"الألوان")+" والكميات";
+  const blk=n=>{const k=curK();return `<div class="itemblk" data-k="${k}"><div class="ih"><b>الصنف ${n}</b><button type="button" class="rmi" style="display:${n>1?"block":"none"}">${ib("trash","حذف الصنف")}</button></div><input class="it" placeholder="اسم الصنف"><label class="ll">${llt(k)}</label><div class="rows">${crow(k)}</div><button class="btn ghost sm addc" type="button" style="display:${k==="casting"?"none":""}">+ سطر</button></div>`};
   const XF=`<label>موبايل العميل (اختياري)</label><input id="m-ph" type="tel" inputmode="tel" maxlength="20" dir="ltr"><label>ملاحظات (اختياري)</label><input id="m-nt" maxlength="300">`;
   const SEC=`<label>يتوزع على قسم</label><select id="m-sec">${Object.keys(SECK).map(k=>`<option value="${k}">${SECK[k].n}</option>`).join("")}</select>`;
   const top=g?`<div class="hint" style="margin:0 0 8px">التوزيع على الطلبية: <b>${esc(g.title||"بدون اسم")}</b></div>${SEC}`:`<label>اسم الطلبية / العميل</label><input id="m-gt" placeholder="مثال: طلبية أحمد" maxlength="80" autocomplete="off">${ext?XF:""}<label>تاريخ الطلبية</label><input type="date" id="m-od" value="${today()}"><label>تاريخ التسليم (اختياري)</label><input type="date" id="m-due">${SEC}`;
@@ -156,7 +162,7 @@ function openForm(gid){
       if(r.error){toast("خطأ: "+r.error.message);return false}
       id=r.data.id;fresh=true;
     }
-    const T={glaze:"glaze_orders",deco:"deco_orders",spray:"spray_orders"},made={glaze:[],deco:[],spray:[]};
+    const T={glaze:"glaze_orders",deco:"deco_orders",spray:"spray_orders",casting:"casting_orders"},made={glaze:[],deco:[],spray:[],casting:[]};
     try{
       for(const b of blocks){
         if(b.k==="spray"){
@@ -164,6 +170,9 @@ function openForm(gid){
           let r=await db.from("spray_orders").insert(rows.map((x,n)=>({...x,spray_color:b.rs[n].sc}))).select("id");
           if(r.error&&/spray_color/.test(r.error.message||"")){sprMiss=true;r=await db.from("spray_orders").insert(rows).select("id")}
           if(r.error)throw r.error;r.data.forEach(x=>made.spray.push(x.id));
+        }else if(b.k==="casting"){
+          const r=await db.from("casting_orders").insert({item:b.item,qty_required:b.rs.reduce((a,x)=>a+x.q,0),order_date:od,due_date:due,group_id:id}).select("id").single();
+          if(r.error)throw r.error;made.casting.push(r.data.id);
         }else{
           const r=await db.from(T[b.k]).insert({item:b.item,order_date:od,due_date:due,group_id:id}).select().single();
           if(r.error)throw r.error;made[b.k].push(r.data.id);
@@ -186,9 +195,9 @@ function openForm(gid){
   const renum=()=>[...box.querySelectorAll(".itemblk")].forEach((b,i)=>{b.querySelector(".ih b").textContent="الصنف "+(i+1);b.querySelector(".rmi").style.display=i>0?"block":"none"});
   document.getElementById("m-addi").onclick=()=>{box.insertAdjacentHTML("beforeend",blk(box.children.length+1));const nb=box.lastElementChild;nb.scrollIntoView({behavior:"smooth",block:"nearest"});nb.querySelector(".it").focus({preventScroll:true})};
   box.addEventListener("click",e=>{const t=e.target;if(t.classList.contains("addc")){const b=t.closest(".itemblk");b.querySelector(".rows").insertAdjacentHTML("beforeend",crow(curK()))}else if(t.closest(".rmi")){t.closest(".itemblk").remove();renum()}});
-  document.getElementById("m-sec").addEventListener("change",e=>{const k=e.target.value;box.querySelectorAll(".itemblk").forEach(b=>{b.dataset.k=k;b.querySelector(".ll").textContent=llt(k);b.querySelector(".rows").innerHTML=crow(k)})});
+  document.getElementById("m-sec").addEventListener("change",e=>{const k=e.target.value;box.querySelectorAll(".itemblk").forEach(b=>{b.dataset.k=k;b.querySelector(".ll").textContent=llt(k);b.querySelector(".rows").innerHTML=crow(k);b.querySelector(".addc").style.display=k==="casting"?"none":""})});
 }
-const SECT={glaze:"glaze_orders",deco:"deco_orders",spray:"spray_orders"};
+const SECT={glaze:"glaze_orders",deco:"deco_orders",spray:"spray_orders",casting:"casting_orders"};
 async function syncSec(g,closeAll){
   try{for(const k of Object.keys(g.secs))for(const it of g.secs[k])for(let n=0;n<it.ids.length;n++){
     const done=closeAll||(k==="spray"?it.lines[n].done>=it.lines[n].req:it.done>=it.req);
@@ -240,7 +249,7 @@ async function undoDeliver(id){
 }
 
 /* ===== تعديل أصناف الطلبية + زيادة الطلبية ===== */
-const LT={glaze:{ord:"glaze_orders",line:"glaze_order_lines",inc:"glaze_order_increases",col:"color"},deco:{ord:"deco_orders",line:"deco_lines",inc:"deco_increases",col:"code"}};
+const LT={casting:{ord:"casting_orders"},glaze:{ord:"glaze_orders",line:"glaze_order_lines",inc:"glaze_order_increases",col:"color"},deco:{ord:"deco_orders",line:"deco_lines",inc:"deco_increases",col:"code"}};
 async function reSync(gid){
   const g=G.find(x=>x.id===gid);if(!g||g.deliv)return;
   let ch=false;
@@ -264,7 +273,7 @@ async function editItems(id){
     const l=it.lines[n],rid=k==="spray"?it.ids[n]:l.id;
     const b=k==="spray"?l.req:(base.has(k+l.id)?base.get(k+l.id):l.req),inc=k==="spray"?0:Math.max(l.req-b,0);
     const canDel=l.done===0&&it.lines.length>1;
-    return `<div class="nr" data-id="${rid}" data-prod="${l.done}" data-inc="${inc}" style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed var(--line,#ddd)"><div class="two"><input class="c" data-kind="${k==="deco"?"code":"color"}" value="${esc(l.l)}" placeholder="${k==="deco"?"الكود":"لون الصنف"}">${k==="spray"?`<input class="msc" data-kind="color" maxlength="60" value="${esc(l.sc||"")}" placeholder="لون الرش المطلوب">`:""}</div><div class="two"><input class="q" type="number" min="1" inputmode="numeric" value="${b}"><span class="nums">تم ${nf(l.done)}${inc?` · زيادات +${nf(inc)}`:""}</span></div>${canDel?'<button type="button" class="btn ghost sm rml">حذف السطر</button>':""}</div>`;
+    return `<div class="nr" data-id="${rid}" data-prod="${l.done}" data-inc="${inc}" style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed var(--line,#ddd)"><div class="two">${k==="casting"?`<input class="c" type="hidden" value="الكمية">`:`<input class="c" data-kind="${k==="deco"?"code":"color"}" value="${esc(l.l)}" placeholder="${k==="deco"?"الكود":"لون الصنف"}">`}${k==="spray"?`<input class="msc" data-kind="color" maxlength="60" value="${esc(l.sc||"")}" placeholder="لون الرش المطلوب">`:""}</div><div class="two"><input class="q" type="number" min="1" inputmode="numeric" value="${b}"><span class="nums">تم ${nf(l.done)}${inc?` · زيادات +${nf(inc)}`:""}</span></div>${canDel?'<button type="button" class="btn ghost sm rml">حذف السطر</button>':""}</div>`;
   };
   const blocks=Object.keys(SECK).flatMap(k=>g.secs[k].map((it,ix)=>`<div class="itemblk" data-k="${k}" data-ix="${ix}"><div class="ih"><b>${secIco(k)}${SECK[k].n}</b>${it.lines.every(l=>l.done===0)?'<button type="button" class="btn ghost sm rmi2">حذف الصنف</button>':""}</div><input class="it" maxlength="80" value="${esc(it.item)}"><div class="rows">${it.lines.map((l,n)=>rowH(k,it,n)).join("")}</div></div>`)).join("");
   openModal("تعديل أصناف الطلبية",`<div id="m-eb">${blocks}</div><div class="hint">عدّل الاسم أو اللون أو الكمية مباشرة. الكمية لازم تكون أكبر من أو تساوي اللي اتنتج. الحذف متاح للي لسه ما اتنتجش منه، وبيتنفذ عند الحفظ.</div>`,async()=>{
@@ -303,6 +312,9 @@ async function editItems(id){
             if(e)throw e;
           }
           for(const r of o.gone){const e=(await db.from("spray_orders").delete().eq("id",r.id)).error;if(e)throw e}
+        }else if(k==="casting"){
+          const r=o.live[0];
+          if(o.name!==it.item||r.q!==it.req){const e=(await db.from("casting_orders").update({item:o.name,qty_required:r.q}).eq("id",it.ids[0])).error;if(e)throw e}
         }else{
           if(o.name!==it.item){const e=(await db.from(LT[k].ord).update({item:o.name}).eq("id",it.ids[0])).error;if(e)throw e}
           for(const r of o.live){
@@ -333,7 +345,8 @@ function increaseG(id){
     const x=items[+document.getElementById("m-iz").value],q=parseInt(document.getElementById("m-zq").value),v=document.getElementById("m-lz").value;
     if(!(q>0)){toast("اكتب كمية صحيحة");return false}
     let r;
-    if(v==="new"){
+    if(x.k==="casting"){r=await db.from("casting_orders").update({qty_required:x.it.req+q}).eq("id",x.it.ids[0])}
+    else if(v==="new"){
       const c=document.getElementById("m-nwc").value.trim();if(!c){toast("اكتب "+(x.k==="deco"?"الكود":"اللون"));return false}
       if(x.k==="spray"){
         const sc=document.getElementById("m-nsc").value.trim();if(!sc){toast("اكتب لون الرش");return false}
@@ -350,7 +363,7 @@ function increaseG(id){
   },"تأكيد الزيادة");
   const iz=document.getElementById("m-iz"),lz=document.getElementById("m-lz"),nw=document.getElementById("m-nw");
   const fillLines=()=>{const x=items[+iz.value];
-    lz.innerHTML=x.it.lines.map((l,n)=>`<option value="${n}">${esc(l.l)}${l.sc?" ← رش "+esc(l.sc):""} (مطلوب ${nf(l.req)})</option>`).join("")+`<option value="new">+ ${x.k==="deco"?"كود":"لون"} جديد</option>`;
+    lz.innerHTML=x.it.lines.map((l,n)=>`<option value="${n}">${esc(l.l)}${l.sc?" ← رش "+esc(l.sc):""} (مطلوب ${nf(l.req)})</option>`).join("")+(x.k==="casting"?"":`<option value="new">+ ${x.k==="deco"?"كود":"لون"} جديد</option>`);
     showNew()};
   const showNew=()=>{const x=items[+iz.value],on=lz.value==="new";nw.style.display=on?"block":"none";
     document.getElementById("m-nwl").textContent=x.k==="deco"?"الكود الجديد":"اللون الجديد";
@@ -377,6 +390,7 @@ async function delG(id){
     const{error}=await db.from(t).delete().eq("group_id",id);
     if(error){toast("خطأ: "+error.message);return}
   }
+  try{await db.from("casting_orders").delete().eq("group_id",id)}catch(e){}
   const{error}=await db.from("order_groups").delete().eq("id",id);
   if(error){toast("خطأ: "+error.message);return}
   await load();toast("تم حذف الطلبية");
