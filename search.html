@@ -84,16 +84,35 @@ $("msp").addEventListener("change",e=>{
 document.addEventListener("pointerdown",e=>{if(!$("msp").hidden&&!e.target.closest("#ms"))msOpen(false)});
 $("clr").onclick=()=>{$("q").value="";$("f").value="";$("t").value="";msx().forEach(x=>x.checked=x.dataset.s==="all");msLabel();msOpen(false);document.querySelectorAll("#rg button").forEach(x=>x.classList.toggle("on",x.dataset.r==="all"));PART=false;$("res").innerHTML='<div class="empty">اكتب اسم الصنف واختر الفترة، وهيظهرلك اتجلّز منه كام، وطلع هالك كام، واتزخرف منه كام وبأنهي كود رسمة.</div>'};
 let PART=false; // true = عرض كل الأصناف اللي فيها الكلمة (مش المطابق تمامًا بس)
+let SRV=true; // لو دالة البحث مش متثبتة على السيرفر (setup_search.sql) بنرجع للطريقة القديمة
+const _miss=e=>!!e&&(e.code==="PGRST202"||e.code==="42883"||/search_item_report|schema cache/i.test(e.message||""));
+async function srvSearch(q,AS,f,t){
+  if(!SRV)return null;
+  try{
+    const{data,error}=await db.rpc("search_item_report",{p_q:q,p_mode:PART?"part":"auto",p_from:f||null,p_to:t||null,p_secs:AS});
+    if(error||!data||!Array.isArray(data.rows)){if(_miss(error))SRV=false;return null}
+    const by={};AS.forEach(k=>by[k]={prod:[],waste:[]});
+    data.rows.forEach(x=>{const b=by[x.s];if(!b)return;
+      if(x.k==="w")b.waste.push({d:x.d,item:x.item,good:+x.good||0,qty:+x.qty||0});
+      else b.prod.push({d:x.d,item:x.item,sub:x.sub||"",qty:+x.qty||0,w:x.w||"",n:x.n||""})});
+    return{res:AS.map(k=>({status:"fulfilled",value:by[k]})),names:(q&&data.exact_exists)?new Set([q]):new Set(),others:+data.others||0};
+  }catch(e){return null}
+}
+async function probe(){
+  try{const{error}=await db.rpc("search_item_report",{p_q:"~",p_mode:"exact",p_from:today(),p_to:today(),p_secs:["repair"]});if(error)throw error}
+  catch(e){if(_miss(e))SRV=false;SECS.forEach(k=>Reports.getData(k).catch(()=>{}))} // الدالة مش موجودة: حمّل البيانات مسبقًا
+}
 async function run(){
   const q=norm($("q").value),[f,t]=range(),box=$("res");
   box.innerHTML='<i class="sk" style="height:140px;border-radius:14px"></i>';
   const ok=d=>(!f||d>=f)&&(!t||d<=t);
-  const AS=chosen(),S=Reports.sources,res=await Promise.allSettled(AS.map(k=>Reports.getData(k)));
+  const AS=chosen(),S=Reports.sources,rp=await srvSearch(q,AS,f,t);
+  const res=rp?rp.res:await Promise.allSettled(AS.map(k=>Reports.getData(k)));
   let html="",any=false;const head=[];
-  // لو اللي اتكتب هو اسم صنف كامل بالظبط (مثلًا «شي إن») بنعرض الصنف ده بس، ومش كل صنف الكلمة جواه (زي «قهوة شي إن»)
-  const names=new Set();res.forEach(r=>{if(r.status==='fulfilled'){r.value.prod.forEach(x=>names.add(norm(x.item)));(r.value.waste||[]).forEach(x=>names.add(norm(x.item)))}});
+  const names=rp?rp.names:new Set();
+  if(!rp)res.forEach(r=>{if(r.status==='fulfilled'){r.value.prod.forEach(x=>names.add(norm(x.item)));(r.value.waste||[]).forEach(x=>names.add(norm(x.item)))}});
   const exact=!!q&&!PART&&names.has(q),m=x=>exact?norm(x)===q:hit(q,x);
-  const others=q?[...names].filter(n=>n!==q&&n.includes(q)).length:0;
+  const others=rp?rp.others:(q?[...names].filter(n=>n!==q&&n.includes(q)).length:0);
   res.forEach((r,i)=>{
     const k=AS[i];if(r.status!=="fulfilled")return;
     const d=r.value,prod=d.prod.filter(x=>ok(x.d)&&m(x.item)),waste=(d.waste||[]).filter(x=>ok(x.d)&&m(x.item));
@@ -132,7 +151,7 @@ async function loadNames(){
 $("go").onclick=()=>{PART=false;msOpen(false);run()};$("q").onkeydown=e=>{if(e.key==="Enter"){if(typeof CBX!=="undefined"&&CBX.p&&!CBX.p.hidden&&CBX.act>=0)return;PART=false;run()}};
 document.querySelectorAll("#rg button").forEach(b=>b.onclick=()=>{$("f").value="";$("t").value="";document.querySelectorAll("#rg button").forEach(x=>x.classList.toggle("on",x===b))});
 ["f","t"].forEach(i=>$(i).onchange=()=>document.querySelectorAll("#rg button").forEach(x=>x.classList.remove("on")));
-(async()=>{if(await requireAuth("search.html")){renderNav("search.html");loadNames();settle();SECS.forEach(k=>Reports.getData(k).catch(()=>{}))}})();
+(async()=>{if(await requireAuth("search.html")){renderNav("search.html");loadNames();settle();probe()}})();
 </script>
 <script src="install.js" defer></script>
 </body>
