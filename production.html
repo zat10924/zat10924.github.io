@@ -301,6 +301,7 @@ function castForm(rec,presetOid,waste){
   let ls="";try{ls=localStorage.getItem("cast_shift")||""}catch(e){}
   const shDef=rec?rec.sh:ls,lockDate=!can("edit");
   const items=[...new Set([...[...CO.values()].map(o=>o.item),...tod.map(e=>e.item).filter(Boolean)])];
+  let mx=null;
   openModal(waste?(rec?"تعديل هالك جودة · صب":"تسجيل هالك جودة · صب"):(rec?"تعديل تسجيل الصب":"تسجيل صب يدوي"),
    `${waste?"":`<label>نوع التسجيل</label><select id="m-mode"><option value="order" ${isO?"selected":""}>بطلبية</option><option value="free" ${isO?"":"selected"}>بدون طلبية</option></select>
     <div id="m-ow" style="display:${isO?"block":"none"}"><label>الطلبية</label><select id="m-o"><option value="">— اختار الطلبية —</option>${ords.map(o=>`<option value="${o.id}" ${o.id===(rec?rec.oid:presetOid)?"selected":""}>${esc(cLab(o))}</option>`).join("")}</select><div class="nums" id="m-hint" style="margin:4px 0 0"></div></div>`}
@@ -309,7 +310,7 @@ function castForm(rec,presetOid,waste){
     ${XW(true)}
     <label>الصنف</label><input id="m-item" list="m-items" maxlength="120" value="${rec?esc(rec.item):""}"><datalist id="m-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
     ${waste?`<label>عدد القطع الهالكة</label><input type="number" id="m-scrap" min="1" max="100000" inputmode="numeric" value="${rec&&rec.scrap?rec.scrap:""}"><div class="nums" id="m-wh" style="margin:4px 0 0"></div>`
-      :`<label>عدد القطع</label><input type="number" id="m-q" min="${legacySc?0:1}" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">${legacySc?`<label>هالك الجودة (تسجيل قديم)</label><input type="number" id="m-scrap" min="0" max="100000" inputmode="numeric" value="${rec.scrap}">`:""}`}
+      :`<label>عدد القطع</label><input type="number" id="m-q" min="${legacySc?0:1}" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">${legacySc?`<label>هالك الجودة (تسجيل قديم)</label><input type="number" id="m-scrap" min="0" max="100000" inputmode="numeric" value="${rec.scrap}">`:""}${rec?"":CM.html()}`}
     <label>${waste?"السبب / ملاحظات (اختياري)":"ملاحظات (اختياري)"}</label><input id="m-n" maxlength="300" placeholder="أي تعليق على الشغل" value="${rec?esc(rec.note):""}">`,async()=>{
     const free=waste||document.getElementById("m-mode").value==="free";
     const oid=free?null:(parseInt(document.getElementById("m-o").value)||null);
@@ -321,10 +322,33 @@ function castForm(rec,presetOid,waste){
     if(!item){toast("اكتب اسم الصنف");return false}
     const sh=document.getElementById("m-sh").value,x=xfRead();
     if(!x.worker){toast(waste?"اكتب اسم العامل اللي طلع منه الهالك":"اكتب اسم العامل");return false}
-    if(oid){const o=CO.get(oid);if(o){const rem=Math.max(o.req-o.done,0)+(rec&&rec.oid===oid?rec.qty:0);
-      if(q>rem&&!await ask("العدد ("+nf(q)+") أكبر من المتبقي في الطلبية ("+nf(rem)+"). تسجّله برضو؟","نعم، سجّل"))return false}}
+    let extra=[];
+    if(!waste&&!rec&&mx){
+      for(const e of mx.read()){
+        if(!e.qty&&!e.item&&!e.oid)continue;
+        const it2=free?e.item:((CO.get(e.oid)||{}).item||"");
+        if(e.qty<1||!it2||(!free&&!e.oid)){toast("كمّل بيانات الأصناف الإضافية (الصنف أو الطلبية وعدد القطع)");return false}
+        extra.push({oid:free?null:e.oid,item:it2,qty:e.qty});
+      }
+    }
+    const tot=new Map();if(oid)tot.set(oid,q);extra.forEach(e=>{if(e.oid)tot.set(e.oid,(tot.get(e.oid)||0)+e.qty)});
+    for(const[k,v] of tot){const o=CO.get(k);if(!o)continue;const rem=Math.max((CO.get(k)||{}).req-(CO.get(k)||{}).done,0)+(rec&&rec.oid===k?rec.qty:0);
+      if(v>rem&&!await ask("«"+o.item+"»: العدد ("+nf(v)+") أكبر من المتبقي في الطلبية ("+nf(rem)+"). تسجّله برضو؟","نعم، سجّل"))return false}
     const row={casting_date:lockDate?(rec?rec.date:today()):(document.getElementById("m-d").value||today()),item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
     if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
+    if(!rec){
+      const ents=[{item,qty:q,order_id:oid},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid}))];
+      let ok=0,qd=0,err=null;
+      for(const en of ents){const rr=await castInsert({...row,...en});if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
+      try{localStorage.setItem("cast_shift",sh)}catch(e){}
+      if(err){
+        const m=/shift|scrap|order_id/.test(err.message||"")?"شغّل ملف setup_casting_v2.sql من Supabase الأول":"خطأ: "+err.message;
+        if(!ok&&!qd){toast(m,"bad");return false}
+        await load();toast("اتسجّل "+(ok+qd)+" من "+ents.length+" أصناف — "+m,"bad");return;
+      }
+      await load();
+      toast(qd?"مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع":(ok>1?"تم تسجيل "+ok+" أصناف":"تم التسجيل"),qd?"warn":undefined);return;
+    }
     let r=rec?await db.from("casting_log").update(row).eq("id",rec.id).select():await castInsert(row);
     if(r.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}await load();toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
     if(r.error){toast(isNet(r.error)?"التعديل محتاج اتصال بالإنترنت":(/shift|scrap|order_id/.test(r.error.message||"")?"شغّل ملف setup_casting_v2.sql من Supabase الأول":"خطأ: "+r.error.message),"bad");return false}
@@ -342,11 +366,13 @@ function castForm(rec,presetOid,waste){
       ["input","change","blur"].forEach(ev=>[w,dEl,sEl].forEach(el=>el.addEventListener(ev,upd)));upd();
     }
     const mode=document.getElementById("m-mode");if(!mode)return;
+    mx=(!waste&&!rec)?CM.wire(ords.map(o=>`<option value="${o.id}">${esc(cLab(o))}</option>`).join(""),()=>mode.value):null;
     const sel=document.getElementById("m-o"),item=document.getElementById("m-item"),hint=document.getElementById("m-hint");
     const sync=()=>{
       const on=mode.value==="order";document.getElementById("m-ow").style.display=on?"block":"none";
       const o=on?CO.get(parseInt(sel.value)):null;item.readOnly=!!o;
       if(o){item.value=o.item;hint.textContent="مطلوب "+nf(o.req)+" · اتعمل "+nf(o.done)+" · متبقي "+nf(Math.max(o.req-o.done,0))}else hint.textContent="";
+      if(mx)mx.mode();
     };
     mode.onchange=sync;sel.onchange=sync;sync();
   },0);

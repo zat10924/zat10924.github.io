@@ -808,6 +808,9 @@ async function wkLoad(){
 // المدير يشوف كل العمال، وغيره يشوف عمال قسمه بس (والقسم الشغال حاليًا في صفحة الإنتاج)
 let WKA=[];
 function wkSel(){
+  // الصب اليدوي: العمال المقترحين هم اللي قسمهم «الصب اليدوي» في صفحة العمال (للمدير وغيره)
+  let cs="";try{if(typeof sec==="string")cs=sec}catch(e){}
+  if(/casting\.html/.test(location.pathname)||cs==="casting")return WKA.filter(x=>x.section==="casting").map(x=>x.name);
   if(!ME||ME.role==="admin")return WKA.map(x=>x.name);
   let ok=mySecs();
   try{if(typeof sec==="string"&&sec&&ok.includes(sec))ok=[sec]}catch(e){}
@@ -833,6 +836,23 @@ async function insertRow(t,row){
   if(r.error&&/client_id/.test(r.error.message||"")){CID=false;r=await db.from(t).insert(noCid(row))}
   return r;
 }
+// الصب اليدوي: أكتر من صنف لنفس العامل في تسجيل واحد
+const CM={
+  html:()=>'<div id="m-xr"></div><button type="button" class="btn ghost sm" id="m-xadd" style="margin:8px 0 2px">+ إضافة صنف آخر لنفس العامل</button>',
+  wire(optsHtml,getMode){
+    const box=document.getElementById("m-xr"),add=document.getElementById("m-xadd");
+    if(!box||!add)return{mode(){},read:()=>[]};
+    const setMode=()=>{const o=getMode()==="order";
+      box.querySelectorAll(".xo-w").forEach(e=>e.style.display=o?"":"none");
+      box.querySelectorAll(".xi-w").forEach(e=>e.style.display=o?"none":"")};
+    add.onclick=()=>{
+      const d=document.createElement("div");d.className="xr";d.style.cssText="border-top:1px dashed var(--line,#ddd);margin-top:10px;padding-top:4px";
+      d.innerHTML='<div class="xo-w"><label>الطلبية</label><select class="xo"><option value="">— اختار الطلبية —</option>'+optsHtml+'</select></div><div class="xi-w"><label>الصنف</label><input class="xi" list="m-items" maxlength="120" autocomplete="off"></div><label>عدد القطع</label><input class="xq" type="number" min="1" max="100000" inputmode="numeric"><button type="button" class="btn ghost sm xrm" style="margin-top:6px">حذف الصنف ده</button>';
+      box.appendChild(d);d.querySelector(".xrm").onclick=()=>d.remove();setMode();
+    };
+    return{mode:setMode,read:()=>[...box.querySelectorAll(".xr")].map(d=>({oid:parseInt(d.querySelector(".xo").value)||null,item:d.querySelector(".xi").value.trim(),qty:parseInt(d.querySelector(".xq").value)||0}))};
+  }
+};
 // تسجيل الصب اليدوي: لو مفيش نت بيتحفظ على الجهاز وبيتبعت لوحده (زي باقي الأقسام)
 async function castInsert(row){
   const id=uuid(),r2={...row,client_id:id};
