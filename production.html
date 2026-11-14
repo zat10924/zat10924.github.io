@@ -279,7 +279,7 @@ function secs(){
 (async()=>{if(await requireAuth("production.html")){
   allowed=ME.role==="admin"?["glaze","deco","spray"]:mySecs().filter(k=>SEC[k]);
   renderNav("production.html");
-  if(!allowed.length){document.querySelector(".prodact").hidden=true;document.getElementById("list").innerHTML='<div class="empty">تسجيل التصليح من صفحة التصليح</div>';settle();return}
+  if(!allowed.length){document.querySelector(".prodact").hidden=true;document.getElementById("list").innerHTML='<div class="empty">تسجيل الإنتاج لقسمك من صفحة القسم نفسها (التصليح أو الصب اليدوي)</div>';settle();return}
   const h=location.hash.slice(1);sec=allowed.includes(h)?h:allowed[0];
   secs();searchBox("list",q=>{Q=q;draw()});skel("list",3);load().finally(settle)}})();
 </script>

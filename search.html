@@ -46,6 +46,7 @@
           <label class="mso"><input type="checkbox" data-s="deco"><span>الزخرفة</span></label>
           <label class="mso"><input type="checkbox" data-s="spray"><span>الرش</span></label>
           <label class="mso"><input type="checkbox" data-s="repair"><span>التصليح</span></label>
+          <label class="mso"><input type="checkbox" data-s="casting"><span>الصب اليدوي</span></label>
         </div></div></div>
     <div class="sfr"><label>الفترة</label>
       <div class="seg" id="rg"><button data-r="today">اليوم</button><button data-r="7">٧ أيام</button><button data-r="month">الشهر</button><button data-r="all" class="on">الكل</button></div>
@@ -61,7 +62,7 @@
 <script src="reports.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const SECS=["glaze","deco","spray","repair"];
+const SECS=["glaze","deco","spray","repair","casting"];
 function range(){
   let f=$("f").value,t=$("t").value;
   if(!f&&!t){const r=(document.querySelector("#rg .on")||{}).dataset?.r||"all",T=today();[f,t]=r==="today"?[T,T]:r==="7"?[addDays(T,-6),T]:r==="month"?[T.slice(0,8)+"01",T]:["",""]}
@@ -69,7 +70,7 @@ function range(){
 }
 const tbl=(cols,rows)=>`<div style="overflow-x:auto"><table class="tbl" style="width:100%;border-collapse:collapse;font-size:.92rem"><thead><tr>${cols.map(c=>`<th style="text-align:right;padding:5px 6px;border-bottom:1px solid var(--line)">${c}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td style="padding:5px 6px;border-bottom:1px solid var(--line)">${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 function group(rows,keyf){const m=new Map();rows.forEach(r=>{const k=keyf(r);m.set(k,(m.get(k)||0)+r.qty)});return[...m].sort((a,b)=>b[1]-a[1])}
-const SN={glaze:"الجليز",deco:"الزخرفة",spray:"الرش",repair:"التصليح"};
+const SN={glaze:"الجليز",deco:"الزخرفة",spray:"الرش",repair:"التصليح",casting:"الصب اليدوي"};
 const msx=()=>[...document.querySelectorAll("#msp input")];
 function chosen(){const on=msx().filter(i=>i.checked&&i.dataset.s!=="all").map(i=>i.dataset.s);return on.length?SECS.filter(k=>on.includes(k)):SECS}
 function msLabel(){const c=chosen();$("msv").textContent=c.length===SECS.length?"كل الأقسام":c.map(k=>SN[k]).join(" + ")}
@@ -119,13 +120,13 @@ async function run(){
     if(!prod.length&&!waste.length)return;any=true;
     const tot=prod.reduce((a,x)=>a+x.qty,0),wq=waste.reduce((a,x)=>a+x.qty,0);
     head.push([S[k].name,tot,wq]);
-    let h=`<div class="card"><h3 style="margin-top:0;color:${S[k].color}">${S[k].name}</h3><div class="nums" style="margin-bottom:6px">${k==="repair"?"إجمالي التصليح":"إجمالي الإنتاج"}: <b>${nf(tot)}</b>${k==="glaze"?` · الهالك: <b style="color:var(--bad,#c0392b)">${nf(wq)}</b>`:""}</div>`;
+    let h=`<div class="card"><h3 style="margin-top:0;color:${S[k].color}">${S[k].name}</h3><div class="nums" style="margin-bottom:6px">${k==="repair"?"إجمالي التصليح":k==="casting"?"إجمالي الصب":"إجمالي الإنتاج"}: <b>${nf(tot)}</b>${k==="glaze"?` · الهالك: <b style="color:var(--bad,#c0392b)">${nf(wq)}</b>`:""}</div>`;
     if(prod.length){
-      const sk=k==="deco"?"الكود":k==="repair"?"":"اللون";
+      const sk=k==="deco"?"الكود":(k==="repair"||k==="casting")?"":"اللون";
       h+=`<b>ملخص حسب الصنف${sk?" و"+sk:""}</b>`+tbl(["الصنف",...(sk?[sk]:[]),"الكمية"],(()=>{const m=new Map();prod.forEach(x=>{const kk=x.item+"|"+x.sub;m.set(kk,(m.get(kk)||0)+x.qty)});return[...m].sort((a,b)=>b[1]-a[1]).map(([kk,v])=>{const[it,sb]=kk.split("|");return[esc(it),...(sk?[esc(sb||"—")]:[]),"<b>"+nf(v)+"</b>"]})})());
       const det=[...prod].sort((a,b)=>b.d.localeCompare(a.d));
-      const cols=k==="deco"?["التاريخ","الصنف","كود الرسمة","الكمية","العامل","وصف/ملاحظة"]:k==="repair"?["التاريخ","الصنف","الكمية"]:["التاريخ","الصنف","اللون","الكمية","العامل"];
-      h+=`<details style="margin-top:8px"><summary><b>التفاصيل بالتاريخ (${nf(det.length)})</b></summary>`+tbl(cols,det.map(x=>k==="deco"?[fmtDW(x.d),esc(x.item),esc(x.sub||"—"),"<b>"+nf(x.qty)+"</b>",esc(x.w||"—"),esc(x.n||"—")]:k==="repair"?[fmtDW(x.d),esc(x.item),"<b>"+nf(x.qty)+"</b>"]:[fmtDW(x.d),esc(x.item),esc(x.sub||"—"),"<b>"+nf(x.qty)+"</b>",esc(x.w||"—")]))+`</details>`;
+      const cols=k==="deco"?["التاريخ","الصنف","كود الرسمة","الكمية","العامل","وصف/ملاحظة"]:k==="repair"?["التاريخ","الصنف","الكمية"]:k==="casting"?["التاريخ","الصنف","الكمية","العامل","ملاحظة"]:["التاريخ","الصنف","اللون","الكمية","العامل"];
+      h+=`<details style="margin-top:8px"><summary><b>التفاصيل بالتاريخ (${nf(det.length)})</b></summary>`+tbl(cols,det.map(x=>k==="deco"?[fmtDW(x.d),esc(x.item),esc(x.sub||"—"),"<b>"+nf(x.qty)+"</b>",esc(x.w||"—"),esc(x.n||"—")]:k==="repair"?[fmtDW(x.d),esc(x.item),"<b>"+nf(x.qty)+"</b>"]:k==="casting"?[fmtDW(x.d),esc(x.item),"<b>"+nf(x.qty)+"</b>",esc(x.w||"—"),esc(x.n||"—")]:[fmtDW(x.d),esc(x.item),esc(x.sub||"—"),"<b>"+nf(x.qty)+"</b>",esc(x.w||"—")]))+`</details>`;
     }
     if(waste.length){
       h+=`<div style="margin-top:10px"><b style="color:var(--bad,#c0392b)">الهالك</b></div>`+tbl(["التاريخ","الصنف","هالك","سليم"],[...waste].sort((a,b)=>b.d.localeCompare(a.d)).map(x=>[fmtDW(x.d),esc(x.item),"<b>"+nf(x.qty)+"</b>",nf(x.good)]));

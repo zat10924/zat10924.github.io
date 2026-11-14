@@ -93,6 +93,11 @@ const SRC={
     async fetch(){
       const r=await all("repair_log","id,repair_date,item,qty");
       return{prod:r.map(x=>({d:D(x.repair_date),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0})),ord:null};
+    }},
+  casting:{name:"الصب اليدوي",page:"casting.html",icon:"casting",color:"#8A5A3C",noun:"الصب",sub:"",
+    async fetch(){
+      const r=await all("casting_log","id,casting_date,item,qty,worker,note").catch(()=>[]);
+      return{prod:r.map(x=>({d:D(x.casting_date),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0,w:x.worker||"",n:x.note||""})),ord:null};
     }}
 };
 const KEYS=Object.keys(SRC);
@@ -395,7 +400,7 @@ function printDialog(root,scope,secs,hooks={}){
 function mount(rootId,key){
   const root=typeof rootId==="string"?document.getElementById(rootId):rootId,cfg=SRC[key];
   const st={k:"month",f:"",t:"",item:"",col:"",wk:"",by:"item",data:null,moreB:false,moreO:false,moreL:false,printing:false,last:null};
-  const hasOrd=key!=="repair";
+  const hasOrd=key!=="repair"&&key!=="casting";
   root.innerHTML=`
   <div class="print-head"><h2>${APP} — تقرير ${cfg.name}</h2><div class="nums rpd"></div></div>
   <div class="card noprint">
@@ -804,7 +809,7 @@ function dashboard(rootId){
   };
   $(".rbk").onclick=async e=>{
     const b=e.currentTarget;b.disabled=true;b.classList.add("loading");
-    const TABLES=["free_production","glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log"];
+    const TABLES=["free_production","glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log","casting_log"];
     try{
       const out={exported_at:new Date().toISOString(),tables:{},errors:{}};
       for(const tb of TABLES){try{out.tables[tb]=await all(tb,"*")}catch(er){out.errors[tb]=er.message||String(er)}}

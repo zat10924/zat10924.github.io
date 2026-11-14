@@ -23,7 +23,7 @@
 <div class="wrap">
   <h1>العمال</h1>
   <div class="kpis mini three" id="stats"></div>
-  <div class="tabs noprint" id="tb"><button class="btn on" data-k="">الكل</button><button class="btn ghost" data-k="glaze">جليز</button><button class="btn ghost" data-k="deco">زخرفة</button><button class="btn ghost" data-k="spray">رش</button><button class="btn ghost" data-k="repair">تصليح</button></div>
+  <div class="tabs noprint" id="tb"><button class="btn on" data-k="">الكل</button><button class="btn ghost" data-k="glaze">جليز</button><button class="btn ghost" data-k="deco">زخرفة</button><button class="btn ghost" data-k="spray">رش</button><button class="btn ghost" data-k="repair">تصليح</button><button class="btn ghost" data-k="casting">الصب اليدوي</button></div>
   <div class="nums" style="margin-bottom:8px">العمال بيظهروا كاقتراحات في خانة «اسم العامل» وقت تسجيل الإنتاج، وفي التقرير اليومي.</div>
   <button class="btn" id="add" style="width:100%;margin-bottom:10px">+ إضافة عامل</button>
   <div class="search"><input type="search" id="q" placeholder="بحث عن عامل…" aria-label="بحث"></div>
@@ -35,7 +35,7 @@
 <script src="common.js"></script>
 <script>
 let sec="",all=[],Q="",prodToday=new Map();
-const SECN={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح"};
+const SECN={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي"};
 const secOpts=v=>'<option value="">كل الأقسام</option>'+Object.entries(SECN).map(([k,n])=>`<option value="${k}" ${k===v?"selected":""}>${n}</option>`).join("");
 async function load(){
   skel("list",3);

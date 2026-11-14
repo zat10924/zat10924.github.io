@@ -71,6 +71,12 @@ begin
              coalesce(r.qty, 0)::numeric, '', '', null::numeric
         from public.repair_log r
        where p_secs is null or 'repair' = any(p_secs)
+      union all
+      select 'casting', 'p', c.casting_date::date,
+             coalesce(nullif(c.item, ''), 'بدون صنف'), '',
+             coalesce(c.qty, 0)::numeric, coalesce(c.worker, ''), coalesce(c.note, ''), null::numeric
+        from public.casting_log c
+       where p_secs is null or 'casting' = any(p_secs)
     ),
     nm as (select distinct public.mas_norm(item) n from r),
     md as (
