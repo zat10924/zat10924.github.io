@@ -138,10 +138,22 @@ const USERS=["users.html","المستخدمين والصلاحيات","shield","
 const SEC_AR={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي"};
 const ROLE_DESC={admin:"صلاحية كاملة: كل الأقسام والتقارير والمستخدمين",manager:"مسؤول عن قسم أو أكتر: يشوف ويدير أقسامه بس",worker:"يسجّل الإنتاج في قسمه بس"};
 // صلاحيات تفصيلية: الافتراضي حسب الدور، والمدير يقدر يخصصها لكل مستخدم
-const PERM_LBL={view:["عرض صفحة القسم والطلبيات","فتح صفحة القسم ومشاهدة الطلبيات. لو مقفولة يقدر يسجّل إنتاج بس من صفحة «تسجيل الإنتاج»"],edit:["تعديل الطلبيات والسجلات","تعديل بيانات الطلبية واللون والهالك والتصليح"],delete:["الحذف","حذف الطلبيات والألوان وسجلات الإنتاج والهالك"],increase:["زيادة وتأجيل الطلبيات","زيادة الكمية وتأجيل تاريخ التسليم"],reports:["تقارير القسم","فتح تبويب التقارير داخل القسم"]};
-const PERM_DEF={manager:{view:true,edit:true,delete:false,increase:true,reports:true},worker:{view:true,edit:false,delete:false,increase:false,reports:false}};
+const PERM_LBL={view:["عرض صفحة القسم والطلبيات","فتح صفحة القسم ومشاهدة الطلبيات. لو مقفولة يقدر يسجّل إنتاج بس من صفحة «تسجيل الإنتاج»"],edit:["تعديل الطلبيات والسجلات","تعديل بيانات الطلبية واللون والهالك والتصليح"],delete:["الحذف","حذف الطلبيات والألوان وسجلات الإنتاج والهالك"],increase:["زيادة وتأجيل الطلبيات","زيادة الكمية وتأجيل تاريخ التسليم"],reports:["تقارير القسم","فتح تبويب التقارير داخل القسم"],editown:["تعديل إنتاجه في نفس اليوم","يعدّل تسجيلات الإنتاج اللي سجّلها هو بس، وما دام اليوم لسه ما خلصش. بعد انتهاء اليوم التعديل بيتقفل"]};
+const PERM_DEF={manager:{view:true,edit:true,delete:false,increase:true,reports:true,editown:true},worker:{view:true,edit:false,delete:false,increase:false,reports:false,editown:true}};
 const can=k=>{if(!ME||!ME.role)return false;if(ME.role==="admin")return true;const v=(ME.perms||{})[k];return typeof v==="boolean"?v:!!(PERM_DEF[ME.role]||{})[k]};
 const subsOf=f=>(SUBS[f]||[]).filter(x=>x[1]!=="prod"||can("reports"));
+// ===== تعديل الإنتاج في نفس اليوم فقط =====
+// اليوم بيعتبر منتهي لو تاريخ التسجيل أقدم من تاريخ السيرفر أو من تاريخ الجهاز (الأحدث فيهم) — عشان لو الصفحة فضلت مفتوحة بعد نص الليل.
+const localToday=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+const dayClosed=d=>{const t=[today(),localToday()].sort().pop();return !d||String(d).slice(0,10)<t};
+// e = تسجيل إنتاج: {date, by}. المدير/اللي معاه صلاحية «تعديل» بيعدّل أي وقت. غيره: تسجيلاته هو بس وفي نفس اليوم.
+const canEditEntry=e=>{
+  if(!ME||!ME.role||!e)return false;
+  if(can("edit"))return true;
+  if(!can("editown")||dayClosed(e.date))return false;
+  if(e.by&&ME.id&&e.by!==ME.id)return false;
+  return true;
+};
 function applyPerms(){Object.keys(PERM_LBL).forEach(k=>document.body.classList.toggle("np-"+k,!can(k)))}
 /* أقسام لسه هتتنشأ (بتظهر للمدير ومسؤول القسم كإعلان، من غير صفحة ولا صلاحيات) */
 const SOON=[["البرشر","brush","#A0522D"],["الفنش","finish","#3E7C6B"],["الفرز","sortx","#6B5B95"],["الحريق","fire","#C0502B"]];
