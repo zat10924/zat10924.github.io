@@ -1,12 +1,6 @@
--- =====================================================================
--- setup_search.sql — البحث الشامل على السيرفر (أسرع)
--- نفّذه مرة واحدة في Supabase > SQL Editor > New query > Run
--- آمن: بيعمل دالتين جداد بس (مفيش حذف ولا تعديل لأي بيانات).
--- لو حصل أي خطأ فيها، البرنامج بيرجع تلقائيًا للطريقة القديمة.
--- مطلوب إن الـ views دي تكون موجودة عندك: glaze_lines_status / deco_lines_status / spray_status
--- =====================================================================
+-- MAS: server-side item search. Run once in Supabase SQL Editor. Safe: only creates 2 functions.
+-- Needs views: glaze_lines_status, deco_lines_status, spray_status.
 
--- 1) تطبيع النص العربي (نفس دالة norm في البرنامج): حروف صغيرة، حذف التشكيل والتطويل، أ/إ/آ=ا، ة=ه، ى=ي
 create or replace function public.mas_norm(t text)
 returns text language sql immutable as $$
   select btrim(translate(
@@ -14,9 +8,6 @@ returns text language sql immutable as $$
     'أإآةى', 'اااهي'))
 $$;
 
--- 2) البحث عن صنف: بيرجع الصفوف المطابقة بس (بالفترة والأقسام) بدل ما البرنامج يسحب كل البيانات
---    p_mode: auto = لو الاسم مطابق بالظبط لصنف موجود يعرضه هو بس، غير كده كل الأصناف اللي فيها الكلمة
---            exact = المطابق بس | part = كل اللي فيها الكلمة
 create or replace function public.search_item_report(
   p_q text,
   p_mode text default 'auto',
@@ -32,7 +23,6 @@ declare
 begin
   return (
     with r as (
-      -- الجليز: إنتاج
       select 'glaze'::text sec, 'p'::text kind, p.prod_date::date d,
              coalesce(nullif(o.item, ''), '—') item, coalesce(l.color::text, '') sub,
              coalesce(p.qty, 0)::numeric qty, coalesce(to_jsonb(p)->>'worker', '') w,
@@ -43,7 +33,6 @@ begin
         left join public.glaze_orders o on o.id = l.order_id
        where p_secs is null or 'glaze' = any(p_secs)
       union all
-      -- الجليز: هالك
       select 'glaze', 'w', w.waste_date::date,
              coalesce(nullif(to_jsonb(w)->>'item', ''), nullif(o.item, ''), '-'), '',
              coalesce(w.qty, 0)::numeric, '', '',
@@ -52,7 +41,6 @@ begin
         left join public.glaze_orders o on o.id::text = to_jsonb(w)->>'order_id'
        where p_secs is null or 'glaze' = any(p_secs)
       union all
-      -- الزخرفة: إنتاج
       select 'deco', 'p', p.prod_date::date,
              coalesce(nullif(o.item, ''), '—'), coalesce(l.code::text, ''),
              coalesce(p.qty, 0)::numeric, coalesce(to_jsonb(p)->>'worker', ''),
@@ -63,7 +51,6 @@ begin
         left join public.deco_orders o on o.id = l.order_id
        where p_secs is null or 'deco' = any(p_secs)
       union all
-      -- الرش: إنتاج
       select 'spray', 'p', p.prod_date::date,
              coalesce(nullif(s.item, ''), '—'), coalesce(to_jsonb(p)->>'spray_color', ''),
              coalesce(p.qty, 0)::numeric, coalesce(to_jsonb(p)->>'worker', ''),
@@ -72,7 +59,6 @@ begin
         left join public.spray_status s on s.id = p.order_id
        where p_secs is null or 'spray' = any(p_secs)
       union all
-      -- الإنتاج بدون طلبية (جليز / زخرفة / رش)
       select x.section, 'p', x.prod_date::date,
              coalesce(nullif(x.item, ''), '—'),
              coalesce(case when x.section = 'spray' then to_jsonb(x)->>'spray_color' else x.sub end, ''),
@@ -80,7 +66,6 @@ begin
         from public.free_production x
        where p_secs is null or x.section = any(p_secs)
       union all
-      -- التصليح
       select 'repair', 'p', r.repair_date::date,
              coalesce(nullif(r.item, ''), 'بدون صنف'), '',
              coalesce(r.qty, 0)::numeric, '', '', null::numeric
@@ -118,6 +103,3 @@ $$;
 revoke all on function public.search_item_report(text, text, date, date, text[]) from public;
 grant execute on function public.search_item_report(text, text, date, date, text[]) to authenticated;
 grant execute on function public.mas_norm(text) to authenticated;
-
--- اختبار سريع (اختياري): بيرجع ملخص لكل الأصناف
--- select jsonb_array_length(public.search_item_report('', 'auto', null, null, null)->'rows');

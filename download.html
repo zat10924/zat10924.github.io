@@ -602,6 +602,47 @@ footer .wrap{display:block!important;padding-top:52px;padding-bottom:28px}
   .sec-pad{padding-top:64px}#devices,#faq{margin-top:64px;padding-bottom:64px}
 }
 </style>
+<style>
+/* ===== شاشة تحميل ويندوز ===== */
+#dlm{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:18px;background:rgba(20,6,10,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);opacity:0;transition:opacity .25s}
+#dlm[hidden]{display:none}#dlm.on{opacity:1}
+.dlc{position:relative;width:100%;max-width:440px;background:#fff;color:var(--text);border-radius:22px;padding:34px 28px 24px;text-align:center;box-shadow:0 40px 90px rgba(0,0,0,.5);transform:translateY(18px) scale(.97);transition:transform .35s var(--ease);overflow-x:hidden;overflow-y:auto;max-height:calc(100vh - 36px);max-height:calc(100dvh - 36px);overscroll-behavior:contain}
+#dlm.on .dlc{transform:none}
+.dlc::before{content:"";position:absolute;inset-inline:0;top:0;height:5px;background:linear-gradient(90deg,var(--wine),var(--gold),var(--wine))}
+.dlx{position:absolute;top:12px;inset-inline-start:12px;width:36px;height:36px;border:0;border-radius:50%;background:#F1ECE3;color:var(--wine-d);font-size:1.4rem;line-height:1;cursor:pointer}
+.dlx:hover{background:var(--gold-l)}
+.dll{position:relative;width:92px;height:92px;margin:0 auto 14px;display:grid;place-items:center}
+.dll img{width:60px;height:60px;border-radius:16px;position:relative;z-index:1}
+.dlr{position:absolute;inset:0;border-radius:50%;border:3px solid #EFE8DA;border-top-color:var(--gold-d);animation:dlspin 1.1s linear infinite}
+.dlk{position:absolute;inset:0;display:none;place-items:center;border-radius:50%;background:#E8F4EC;color:#1E7A4A}
+.dlk svg{width:44px;height:44px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40}
+.dlc.done .dlr,.dlc.done .dll img{display:none}.dlc.done .dlk{display:grid}.dlc.done .dlk svg{animation:dlck .55s .1s ease forwards}
+@keyframes dlspin{to{transform:rotate(360deg)}}@keyframes dlck{to{stroke-dashoffset:0}}
+.dlc h3{font-size:1.4rem;color:var(--wine-d)}
+.dls{margin:6px 0 0;color:var(--mute);font-size:.98rem}
+.dlf{display:flex;align-items:center;gap:12px;margin:20px 0 16px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--paper);text-align:start}
+.dlf svg{width:34px;height:34px;flex:none;color:var(--wine);fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.dlf b{display:block;font-size:1rem;color:var(--text);direction:ltr;text-align:start;word-break:break-all}
+.dlf small{color:var(--mute);font-size:.88rem}
+.dlb{height:10px;border-radius:99px;background:#EFE8DA;overflow:hidden}
+.dlb i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--wine),var(--gold-d),var(--gold));background-size:200% 100%;transition:width .6s var(--ease);animation:dlsh 1.6s linear infinite}
+.dlc.done .dlb i{animation:none;background:#1E7A4A}
+@keyframes dlsh{to{background-position:-200% 0}}
+.dlst{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:8px;text-align:start}
+.dlst li{display:flex;align-items:center;gap:10px;color:#9A97A0;font-size:.97rem;transition:color .3s}
+.dlst li::before{content:"";width:20px;height:20px;flex:none;border-radius:50%;border:2px solid #D9D3C7;transition:all .3s}
+.dlst li.on{color:var(--wine-d);font-weight:600}.dlst li.on::before{border-color:var(--gold-d);border-top-color:transparent;animation:dlspin .9s linear infinite}
+.dlst li.ok{color:var(--text)}.dlst li.ok::before{border-color:#1E7A4A;background:#1E7A4A url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5L20 7'/%3E%3C/svg%3E") center/70% no-repeat}
+.dld{margin-top:18px;padding:14px 16px;border-radius:14px;background:#FBF7EE;border:1px solid #E8DCC0;text-align:start;font-size:.94rem;line-height:1.8}
+.dld[hidden]{display:none}.dld b{color:var(--wine-d)}.dld ol{margin:6px 0 0;padding-inline-start:20px}
+.dlw{margin:12px 0 0;font-size:.9rem;color:#8A5A12;background:#FFF4DE;border-radius:10px;padding:8px 12px;text-align:start}
+.dlw[hidden]{display:none}
+.dla{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.dlbtn{flex:1;min-width:140px;display:inline-flex;align-items:center;justify-content:center;font:600 .98rem var(--font);padding:12px 16px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--wine-d);text-decoration:none;cursor:pointer}
+.dlbtn.p{background:var(--wine);border-color:var(--wine);color:#fff}.dlbtn:hover{filter:brightness(1.06)}
+@media(max-width:520px){.dlc{padding:30px 20px 20px}.dlbtn{min-width:100%}}
+@media(prefers-reduced-motion:reduce){.dlr,.dlb i,.dlst li.on::before{animation-duration:3s!important}.dlc{transition:none}}
+</style>
 </head>
 
 
@@ -687,6 +728,21 @@ footer .wrap{display:block!important;padding-top:52px;padding-bottom:28px}
 
 <footer><div class="wrap"><div class="fcols"><div><b>MAS</b><p>إدارة الإنتاج والطلبيات والتقارير لمصنع الماس للخزف والصيني.</p></div><div><b>الصفحة</b><a href="#features">المميزات</a><a href="#devices">الأجهزة</a><a href="#install">التثبيت</a><a href="#faq">الأسئلة</a></div><div><b>التحميل</b><a href="MAS-Manager.apk" download>أندرويد</a><a href="https://github.com/zat10924/zat10924.github.io/releases/latest/download/MAS-Setup.exe">ويندوز</a><a href="index.html">آيفون (من المتصفح)</a></div></div><div class="fbot">© 2026 MAS · جميع الحقوق محفوظة</div></div></footer>
 
+<div id="dlm" role="dialog" aria-modal="true" aria-labelledby="dlt" hidden>
+  <div class="dlc" id="dlc">
+    <button class="dlx" type="button" aria-label="إغلاق">×</button>
+    <div class="dll"><img src="icon-192.png" alt=""><i class="dlr"></i><span class="dlk"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span></div>
+    <h3 id="dlt">جاري تجهيز التحميل</h3>
+    <p class="dls" id="dls">MAS لويندوز</p>
+    <div class="dlf"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><div><b id="dfn">MAS-Setup.exe</b><small id="dfi">جاري فحص آخر إصدار…</small></div></div>
+    <div class="dlb" id="dlbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="dlfill"></i></div>
+    <ol class="dlst" id="dlst"><li data-s="1">فحص آخر إصدار</li><li data-s="2">تجهيز ملف التثبيت</li><li data-s="3">بدء التحميل</li></ol>
+    <p class="dlw" id="dlw" hidden>ملف التثبيت ده لويندوز بس. لو بتفتح من الهاتف استخدم «تحميل لأندرويد».</p>
+    <div class="dld" id="dld" hidden><b>بعد انتهاء التحميل:</b><ol><li>افتح ملف <span dir="ltr">MAS-Setup.exe</span> من مجلد التنزيلات.</li><li>لو ظهرت رسالة حماية من ويندوز، اضغط «مزيد من المعلومات» ثم «تشغيل على أي حال».</li><li>أكمل خطوات التثبيت وافتح MAS من سطح المكتب.</li></ol></div>
+    <div class="dla"><a class="dlbtn p" id="dlre" href="https://github.com/zat10924/zat10924.github.io/releases/latest/download/MAS-Setup.exe" rel="noopener">لو التحميل ما بدأش اضغط هنا</a><button class="dlbtn dlcl" type="button">إغلاق</button></div>
+  </div>
+</div>
+
 <div id="lb" role="dialog" aria-modal="true" aria-label="عرض الصورة"><button class="x" type="button" aria-label="إغلاق">×</button><img alt=""></div>
 
 <script>
@@ -767,6 +823,55 @@ addEventListener("scroll",()=>{if(!tk){tk=true;requestAnimationFrame(onS)}},{pas
 const bd=document.querySelector(".band");if(bd)bd.addEventListener("pointermove",e=>{const r=bd.getBoundingClientRect();bd.style.setProperty("--mx",(e.clientX-r.left)+"px");bd.style.setProperty("--my",(e.clientY-r.top)+"px")});
 $(".band .btn").forEach(b=>b.classList.add("mag"));
 }catch(e){console.warn(e)}})();
+</script>
+<script>
+(()=>{
+const REPO="zat10924/zat10924.github.io",FALL="https://github.com/"+REPO+"/releases/latest/download/MAS-Setup.exe";
+const $=id=>document.getElementById(id),m=$("dlm"),c=$("dlc"),fill=$("dlfill"),bar=$("dlbar"),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const isWin=/Windows NT/i.test(navigator.userAgent)&&!/Mobile/i.test(navigator.userAgent);
+let busy=false,last=null,seq=0;
+const mb=n=>(n/1048576).toLocaleString("ar-EG",{maximumFractionDigits:1})+" ميجابايت";
+const setP=v=>{fill.style.width=v+"%";bar.setAttribute("aria-valuenow",v)};
+const step=(n,st)=>{const li=document.querySelector('#dlst li[data-s="'+n+'"]');if(li){li.classList.remove("on","ok");if(st)li.classList.add(st)}};
+async function info(){
+  try{
+    const ac=new AbortController(),t=setTimeout(()=>ac.abort(),6000);
+    const r=await fetch("https://api.github.com/repos/"+REPO+"/releases/latest",{signal:ac.signal,headers:{Accept:"application/vnd.github+json"}});
+    clearTimeout(t);if(!r.ok)return null;
+    const j=await r.json(),a=(j.assets||[]).find(x=>/\.exe$/i.test(x.name));
+    return{ver:String(j.tag_name||"").replace(/^v/i,""),size:a?a.size:0,name:a?a.name:"MAS-Setup.exe",url:a&&a.browser_download_url?a.browser_download_url:FALL};
+  }catch(e){return null}
+}
+function open(){
+  c.classList.remove("done");setP(0);["1","2","3"].forEach(n=>step(n,""));
+  $("dlt").textContent="جاري تجهيز التحميل";$("dls").textContent="MAS لويندوز";$("dfn").textContent="MAS-Setup.exe";$("dfi").textContent="جاري فحص آخر إصدار…";
+  $("dld").hidden=true;$("dlw").hidden=isWin;
+  m.hidden=false;requestAnimationFrame(()=>m.classList.add("on"));document.body.style.overflow="hidden";
+  m.querySelector(".dlcl").focus({preventScroll:true});
+}
+function close(){seq++;busy=false;m.classList.remove("on");document.body.style.overflow="";setTimeout(()=>{if(!m.classList.contains("on"))m.hidden=true},260);if(last&&last.focus)last.focus({preventScroll:true})}
+async function start(){
+  if(busy)return;busy=true;const my=++seq;open();
+  step(1,"on");setP(10);
+  const [inf]=await Promise.all([info(),sleep(900)]);if(my!==seq)return;
+  const url=inf?inf.url:FALL;
+  step(1,"ok");setP(40);
+  if(inf){$("dfn").textContent=inf.name;$("dfi").textContent=(inf.ver?"الإصدار "+inf.ver:"")+(inf.ver&&inf.size?" · ":"")+(inf.size?mb(inf.size):"")||"ملف التثبيت جاهز";$("dls").textContent="MAS لويندوز"+(inf.ver?" · الإصدار "+inf.ver:"")}
+  else $("dfi").textContent="ملف التثبيت جاهز";
+  step(2,"on");await sleep(800);if(my!==seq)return;
+  step(2,"ok");setP(75);step(3,"on");$("dlre").href=url;await sleep(700);if(my!==seq)return;
+  const a=document.createElement("a");a.href=url;a.rel="noopener";a.style.display="none";document.body.appendChild(a);a.click();a.remove();
+  step(3,"ok");setP(100);c.classList.add("done");
+  $("dlt").textContent="بدأ تحميل البرنامج";$("dls").textContent="تابع التحميل من شريط التحميل في المتصفح.";
+  $("dld").hidden=false;busy=false;
+}
+document.querySelectorAll('a[href*="MAS-Setup.exe"]').forEach(a=>a.addEventListener("click",e=>{
+  if(e.defaultPrevented||e.button!==0||e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;
+  e.preventDefault();last=a;start();
+}));
+m.addEventListener("click",e=>{if(e.target===m||e.target.closest(".dlx,.dlcl"))close()});
+addEventListener("keydown",e=>{if(e.key==="Escape"&&!m.hidden)close()});
+})();
 </script>
 </body>
 

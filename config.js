@@ -57,7 +57,7 @@ window.masCacheClear=()=>{try{localStorage.removeItem("masc_uid")}catch(e){}retu
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {global:{fetch:MASC.fetch}});
 
 /* ===== إصدار البرنامج (غيّر الرقم هنا عند كل تحديث) ===== */
-const APP_VERSION = "3.0.18";
+const APP_VERSION = "3.0.19";
 // مفتاح الإشعارات العام (آمن إنه يبقى ظاهر)
 const VAPID_PUBLIC = "BMI1dksSzpLuotH8TRjMLlwd53SaAltxeJkdfGYnb0GNTjQLbqXy-HDXbWZUlA5jtahNrND9TZRV7afcjnDfLhs";
 /* مستودع GitHub: منه بتتجاب «ما الجديد» تلقائيًا من رسائل الـ commit العربي */
@@ -65,6 +65,9 @@ const GH_REPO = "zat10924/zat10924.github.io";
 const APP_BUILD = "2026-11-14";
 // آخر التحديثات (الأحدث أولاً) — بتظهر في الإعدادات > البرنامج > «ما الجديد»
 const APP_CHANGES = [
+  ["3.0.19", "2026-11-14", [
+    "صفحة التحميل: شاشة تحميل احترافية لويندوز (فحص آخر إصدار، حجم الملف، خطوات التجهيز، ثم بدء التحميل مع تعليمات التثبيت)"
+  ]],
   ["3.0.18", "2026-11-14", [
     "البحث الشامل بيتم على السيرفر (ملف setup_search.sql) فبيرجّع الصنف المطلوب بس بدل تحميل كل البيانات؛ ولو الملف مش متنفّذ بيشتغل بالطريقة القديمة"
   ]],
