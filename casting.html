@@ -25,7 +25,7 @@
   <div class="tabs noprint"><button class="btn on" id="t-log">السجل</button><button class="btn ghost" id="t-ord">الطلبيات</button><button class="btn ghost" id="t-prod">تقارير</button></div>
   <div id="logView">
   <div class="kpis mini three" id="stats"></div>
-  <button class="btn noprint" id="add" style="width:100%;margin-bottom:12px">+ تسجيل إنتاج</button>
+  <div class="row noprint" style="margin-bottom:12px"><button class="btn" id="add" style="flex:1">+ تسجيل إنتاج</button><button class="btn ghost" id="addw" style="flex:1">+ تسجيل هالك</button></div>
   <div class="card noprint">
     <div class="two"><div><label>من</label><input type="date" id="f-from"></div><div><label>إلى</label><input type="date" id="f-to"></div></div>
     <div class="two"><div><label>الصنف</label><select id="f-item"><option value="">الكل</option></select></div><div><label>العامل</label><select id="f-wk"><option value="">الكل</option></select></div></div>
@@ -34,6 +34,7 @@
   </div>
   <div class="total" id="total"></div>
   <div class="nums" id="brk" style="margin-bottom:10px"></div>
+  <div class="scroll" id="wq" style="margin-bottom:10px"></div>
   <div class="scroll" id="tbl"><table><thead><tr><th>التاريخ</th><th>الوردية</th><th>الصنف</th><th>الطلبية</th><th>العامل</th><th>القطع</th><th>هالك الجودة</th><th>ملاحظات</th><th class="noprint"></th></tr></thead><tbody id="body"></tbody></table></div>
   </div>
   <div id="ordView" style="display:none">
@@ -67,7 +68,7 @@ async function load(){
     fail("body",load);return}
   ordersOk=!b.error;
   orders=ordersOk?(b.data||[]).map(o=>{const g=GM.get(o.group_id);return{id:o.id,gid:o.group_id||null,title:g?(g.title||"").trim():(o.title||""),no:g&&g.order_no||null,item:o.item,req:o.qty_required,od:o.order_date,due:o.due_date||"",st:o.status,n:o.note||""}}):[];
-  rows=a.data.map(r=>({id:r.id,d:r.casting_date,item:r.item||"",qty:r.qty,sc:r.scrap||0,sh:r.shift||"",oid:r.order_id||null,w:r.worker||"",n:r.note||"",by:r.created_by||null}));
+  rows=a.data.map(r=>({id:r.id,d:r.casting_date,item:r.item||"",qty:r.qty,sc:r.scrap||0,isw:!(+r.qty>0)&&+r.scrap>0,sh:r.shift||"",oid:r.order_id||null,w:r.worker||"",n:r.note||"",by:r.created_by||null}));
   fillSel("f-item",[...new Set(rows.map(r=>r.item).filter(Boolean))],'<option value="__none">'+NONE+'</option>');
   fillSel("f-wk",[...new Set(rows.map(r=>r.w).filter(Boolean))],'<option value="__none">بدون عامل</option>');
   draw();drawStats();drawOrders();
@@ -107,10 +108,13 @@ const canDel=r=>can("delete")||(!can("edit")&&canRow(r));
 const dash='<span class="nums">—</span>';
 function draw(){
   const rs=filtered(),sum=rs.reduce((a,r)=>a+r.qty,0),scr=rs.reduce((a,r)=>a+r.sc,0);
-  document.getElementById("total").textContent="إجمالي الإنتاج: "+nf(sum)+(scr?" · هالك الجودة: "+nf(scr)+" ("+(Math.round(scr/(sum+scr)*1000)/10)+"%)":"");
+  document.getElementById("total").textContent="إجمالي الإنتاج: "+nf(sum)+(scr?" · هالك الجودة: "+nf(scr)+" (نسبة الهالك من الإجمالي "+(Math.round(scr/(sum+scr)*1000)/10)+"%)":"");
+  const wm=new Map();rs.forEach(r=>{if(!r.w)return;const o=wm.get(r.w)||{q:0,s:0};o.q+=r.qty;o.s+=r.sc;wm.set(r.w,o)});
+  const wl=[...wm.entries()].filter(([,o])=>o.s>0).sort((a,b)=>b[1].s-a[1].s);
+  document.getElementById("wq").innerHTML=wl.length?`<table><thead><tr><th>العامل</th><th>السليم</th><th>الهالك</th><th>نسبة الهالك</th></tr></thead><tbody>${wl.map(([n,o])=>`<tr><td><b>${esc(n)}</b></td><td>${nf(o.q)}</td><td><b style="color:var(--bad,#b3261e)">${nf(o.s)}</b></td><td>${Math.round(o.s/(o.q+o.s)*1000)/10}%</td></tr>`).join("")}</tbody></table>`:"";
   const by={};rs.forEach(r=>{const k=r.item||NONE;by[k]=(by[k]||0)+r.qty});
   document.getElementById("brk").textContent=Object.keys(by).length>1?Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+": "+nf(v)).join(" · "):"";
-  document.getElementById("body").innerHTML=rs.length?rs.map(r=>{const o=ordOf(r.oid);return `<tr><td>${fmtD(r.d)}</td><td>${r.sh?esc(r.sh):dash}</td><td>${r.item?esc(r.item):'<span class="nums">'+NONE+'</span>'}</td><td>${r.oid?esc(o?oLab(o):"#"+r.oid):'<span class="nums">بدون طلبية</span>'}</td><td>${r.w?esc(r.w):dash}</td><td><b>${nf(r.qty)}</b></td><td>${r.sc?'<b style="color:var(--bad,#b3261e)">'+nf(r.sc)+'</b>':dash}</td><td>${r.n?esc(r.n):dash}</td><td class="noprint" style="white-space:nowrap">${canRow(r)?`<button class="btn ghost sm" onclick="form(${r.id})">تعديل</button> `:""}${canDel(r)?`<button class="btn ghost sm" onclick="del(${r.id})">حذف</button>`:""}</td></tr>`}).join(""):'<tr><td colspan="9" class="empty">مفيش إنتاج مسجل</td></tr>';
+  document.getElementById("body").innerHTML=rs.length?rs.map(r=>{const o=ordOf(r.oid);return `<tr><td>${fmtD(r.d)}</td><td>${r.sh?esc(r.sh):dash}</td><td>${r.item?esc(r.item):'<span class="nums">'+NONE+'</span>'}</td><td>${r.isw?'<span class="tag late">هالك جودة</span>':r.oid?esc(o?oLab(o):"#"+r.oid):'<span class="nums">بدون طلبية</span>'}</td><td>${r.w?esc(r.w):dash}</td><td>${r.isw?dash:"<b>"+nf(r.qty)+"</b>"}</td><td>${r.sc?'<b style="color:var(--bad,#b3261e)">'+nf(r.sc)+'</b>':dash}</td><td>${r.n?esc(r.n):dash}</td><td class="noprint" style="white-space:nowrap">${canRow(r)?`<button class="btn ghost sm" onclick="form(${r.id})">تعديل</button> `:""}${canDel(r)?`<button class="btn ghost sm" onclick="del(${r.id})">حذف</button>`:""}</td></tr>`}).join(""):'<tr><td colspan="9" class="empty">مفيش إنتاج مسجل</td></tr>';
 }
 
 /* ===== نموذج تسجيل الإنتاج: بطلبية / بدون طلبية ===== */
@@ -118,8 +122,10 @@ function orderProg(o){
   let done=0,scrap=0;rows.forEach(r=>{if(r.oid===o.id){done+=r.qty;scrap+=r.sc}});
   return{done,scrap,rem:Math.max(0,o.req-done)};
 }
-function form(id,presetOid){
+function form(id,presetOid,waste){
   const rec=id?rows.find(r=>r.id===id):null;
+  if(rec&&rec.isw)waste=true; // هالك الجودة بيتسجل منفصل بعد مراجعة الجودة، مش مع الطلبيات
+  const legacySc=!waste&&rec&&rec.sc>0;
   if(rec&&!canRow(rec)){toast("التعديل مقفول — تقدر تعدّل تسجيلاتك انت في نفس اليوم بس");return}
   wkLoad();
   const openOrds=orders.filter(o=>(o.st==="open"&&orderProg(o).rem>0)||(rec&&rec.oid===o.id)||o.id===presetOid);
@@ -128,29 +134,31 @@ function form(id,presetOid){
   const items=[...new Set([...rows.map(r=>r.item),...orders.map(o=>o.item)].filter(Boolean))];
   const lockDate=!can("edit"); // مسجّل الإنتاج: التسجيل بتاريخ النهارده بس
   const shiftDef=rec?rec.sh:lastShift();
-  const modeSel=ordersOk?`<label>نوع التسجيل</label><select id="m-mode"><option value="order" ${startOrd?"selected":""}>بطلبية</option><option value="free" ${startOrd?"":"selected"}>بدون طلبية</option></select>
+  const modeSel=(ordersOk&&!waste)?`<label>نوع التسجيل</label><select id="m-mode"><option value="order" ${startOrd?"selected":""}>بطلبية</option><option value="free" ${startOrd?"":"selected"}>بدون طلبية</option></select>
     <div id="m-ow" style="display:${startOrd?"block":"none"}"><label>الطلبية</label><select id="m-o"><option value="">— اختار الطلبية —</option>${openOrds.map(o=>`<option value="${o.id}" ${o.id===curO?"selected":""}>${esc(oLab(o))}</option>`).join("")}</select><div class="nums" id="m-hint" style="margin:4px 0 0"></div></div>`:"";
-  openModal(rec?"تعديل تسجيل":"تسجيل إنتاج",`${modeSel}
+  openModal(waste?(rec?"تعديل هالك جودة":"تسجيل هالك جودة"):(rec?"تعديل تسجيل":"تسجيل إنتاج"),`${modeSel}
     <label>التاريخ</label><input type="date" id="m-d" value="${rec?rec.d:today()}" ${lockDate?"disabled":""}>
     <label>الوردية</label><select id="m-sh">${SHIFTS.map(s=>`<option ${s===shiftDef?"selected":""}>${s}</option>`).join("")}</select>
     ${XW(true)}
     <label>الصنف</label><input id="m-item" list="m-items" value="${rec?esc(rec.item):""}" maxlength="120"><datalist id="m-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
-    <label>عدد القطع</label><input type="number" id="m-q" min="0" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">
-    <label>هالك الجودة (اختياري)</label><input type="number" id="m-sc" min="0" max="100000" inputmode="numeric" placeholder="0" value="${rec&&rec.sc?rec.sc:""}">
-    <label>ملاحظات (اختياري)</label><input id="m-n" maxlength="300" placeholder="أي تعليق على الشغل" value="${rec?esc(rec.n):""}">`,async()=>{
-    const mode=ordersOk?document.getElementById("m-mode").value:"free";
+    ${waste?`<label>عدد القطع الهالكة</label><input type="number" id="m-scrap" min="1" max="100000" inputmode="numeric" value="${rec&&rec.sc?rec.sc:""}"><div class="nums" id="m-wh" style="margin:4px 0 0"></div>`
+      :`<label>عدد القطع</label><input type="number" id="m-q" min="${legacySc?0:1}" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">${legacySc?`<label>هالك الجودة (تسجيل قديم)</label><input type="number" id="m-scrap" min="0" max="100000" inputmode="numeric" value="${rec.sc}">`:""}`}
+    <label>${waste?"السبب / ملاحظات (اختياري)":"ملاحظات (اختياري)"}</label><input id="m-n" maxlength="300" placeholder="أي تعليق على الشغل" value="${rec?esc(rec.n):""}">`,async()=>{
+    const mode=(ordersOk&&!waste)?document.getElementById("m-mode").value:"free";
     const oid=mode==="order"?parseInt(document.getElementById("m-o").value)||null:null;
     if(mode==="order"&&!oid){toast("اختار الطلبية");return false}
-    const q=parseInt(document.getElementById("m-q").value)||0,sc=parseInt(document.getElementById("m-sc").value)||0;
-    if(q<0||sc<0||q+sc<1){toast("اكتب عدد القطع أو الهالك");return false}
+    const qe=document.getElementById("m-q"),se=document.getElementById("m-scrap");
+    const q=qe?(parseInt(qe.value)||0):0,sc=se?(parseInt(se.value)||0):0;
+    if(waste?sc<1:(q<0||sc<0||q+sc<1||(!legacySc&&q<1))){toast(waste?"اكتب عدد القطع الهالكة":"اكتب عدد القطع");return false}
     const item=document.getElementById("m-item").value.trim();
     if(!item){toast("اكتب اسم الصنف");return false}
     const sh=document.getElementById("m-sh").value,x=xfRead();
-    if(!x.worker){toast("اكتب اسم العامل");return false}
+    if(!x.worker){toast(waste?"اكتب اسم العامل اللي طلع منه الهالك":"اكتب اسم العامل");return false}
     if(oid){const o=ordOf(oid),p=o&&orderProg(o);
       const rem=o?p.rem+(rec&&rec.oid===oid?rec.qty:0):0;
       if(o&&q>rem&&!await ask("العدد ("+nf(q)+") أكبر من المتبقي في الطلبية ("+nf(rem)+"). تسجّله برضو؟","نعم، سجّل"))return false}
-    const row={casting_date:lockDate?(rec?rec.d:today()):(document.getElementById("m-d").value||today()),item,qty:q,scrap:sc,shift:sh,worker:x.worker,note:x.note||null,order_id:oid};
+    const row={casting_date:lockDate?(rec?rec.d:today()):(document.getElementById("m-d").value||today()),item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
+    if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
     const res=rec?await db.from("casting_log").update(row).eq("id",id):await castInsert(row);
     if(res.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
     const error=res.error;
@@ -160,6 +168,13 @@ function form(id,presetOid){
   });
   setTimeout(()=>{
     const w=document.getElementById("m-w");if(w&&rec)w.value=rec.w;
+    if(waste){ // سليم العامل وهالكه ونسبة الهالك في اليوم
+      const h=document.getElementById("m-wh"),dEl=document.getElementById("m-d"),sEl=document.getElementById("m-scrap");
+      const upd=()=>{const n=w.value.trim();if(!n){h.textContent="";return}
+        const mine=rows.filter(r=>r.w===n&&r.d===dEl.value&&(!rec||r.id!==rec.id)),g=mine.reduce((a,r)=>a+r.qty,0),s=mine.reduce((a,r)=>a+r.sc,0)+(parseInt(sEl.value)||0);
+        h.textContent="سليم "+n+" في اليوم: "+nf(g)+" · هالك: "+nf(s)+" · نسبة الهالك: "+(g+s?Math.round(s/(g+s)*1000)/10:0)+"%"};
+      ["input","change","blur"].forEach(ev=>[w,dEl,sEl].forEach(el=>el.addEventListener(ev,upd)));upd();
+    }
     const mode=document.getElementById("m-mode");if(!mode)return;
     const sel=document.getElementById("m-o"),item=document.getElementById("m-item"),hint=document.getElementById("m-hint");
     const sync=()=>{
@@ -193,7 +208,7 @@ function drawOrders(){
     const p=orderProg(o),pc=Math.min(100,Math.round(p.done/o.req*100));
     return `<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(oLab(o))}</b><span class="nums">${pc}%</span></div>
     <div style="height:8px;border-radius:6px;background:rgba(128,128,128,.25);margin:8px 0;overflow:hidden"><div style="height:100%;width:${pc}%;background:var(--ok)"></div></div>
-    <div class="nums">مطلوب ${nf(o.req)} · اتعمل ${nf(p.done)} · متبقي ${nf(p.rem)}${p.done>o.req?" · زيادة "+nf(p.done-o.req):""}${p.scrap?" · هالك "+nf(p.scrap):""}${o.due?" · التسليم "+fmtD(o.due):""}</div>
+    <div class="nums">مطلوب ${nf(o.req)} · اتعمل ${nf(p.done)} · متبقي ${nf(p.rem)}${p.done>o.req?" · زيادة "+nf(p.done-o.req):""}${o.due?" · التسليم "+fmtD(o.due):""}</div>
     ${o.n?`<div class="nums" style="margin-top:4px">${esc(o.n)}</div>`:""}
     <div class="row noprint" style="margin-top:10px">${isOpen(o)?`<button class="btn sm" onclick="form(0,${o.id})">سجّل إنتاج</button>`:""}</div></div>`}).join("")
     :'<div class="empty">'+(oFilter==="open"?"مفيش طلبيات صب مفتوحة. الطلبيات بتتوزّع على الصب من صفحة الطلبيات.":"مفيش طلبيات مكتملة")+'</div>';
@@ -204,6 +219,7 @@ function exportCsv(){
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="الصب-اليدوي.csv";a.click();
 }
 document.getElementById("add").onclick=()=>form(0);
+document.getElementById("addw").onclick=()=>form(0,null,true);
 document.getElementById("f-go").onclick=draw;
 document.getElementById("f-csv").onclick=exportCsv;
 document.getElementById("o-open").onclick=()=>{oFilter="open";drawOrders()};

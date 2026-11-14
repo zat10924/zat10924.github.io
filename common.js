@@ -776,7 +776,7 @@ async function addCat(kind,name){
 }
 // true = كمّل الحفظ | false = ارجع للتعديل
 async function checkNames(root){
-  const els=[...root.querySelectorAll(NAME_SEL)];if(!els.length)return true;
+  const els=[...root.querySelectorAll(NAME_SEL)].filter(el=>el.type!=="hidden");if(!els.length)return true; // الخانات المخفية (زي «الكمية» في طلبية الصب) مش أسماء ولا ألوان
   await catReady();if(!CAT)return true;
   for(const el of els){
     const kind=kindOf(el),v=el.value.trim();if(!v)continue;
@@ -1037,7 +1037,7 @@ function enhanceCombo(inp){
 }
 function enhanceAll(root){
   if(!root||!root.querySelectorAll)return;
-  root.querySelectorAll(COMBO_SEL).forEach(enhanceCombo);
+  root.querySelectorAll(COMBO_SEL).forEach(el=>{if(el.type!=="hidden")enhanceCombo(el)});
 }
 addEventListener("scroll",e=>{if(CBX.p&&!CBX.p.hidden&&!CBX.p.contains(e.target))cbPlace()},true);
 addEventListener("resize",cbPlace);

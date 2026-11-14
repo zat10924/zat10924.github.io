@@ -102,7 +102,7 @@ const SRC={
       const gl=x=>{const q=GM.get(x.group_id);return q?((q.order_no?"#"+q.order_no+" · ":"")+((q.title||"").trim()||"طلبية")):""};
       // هالك الجودة: كل تسجيل بيدخل بالسليم (good) والهالك (qty) عشان نسبة الهالك تتحسب صح
       return{
-        prod:r.map(x=>({d:D(x.casting_date),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0,w:x.worker||"",
+        prod:r.map(x=>({d:D(x.casting_date),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0,sc:+x.scrap||0,w:x.worker||"",
           n:[x.shift,(+x.scrap>0?"هالك "+x.scrap:""),(x.order_id?"":"بدون طلبية"),x.note].filter(Boolean).join(" · "),
           id:x.id,tb:"casting_log",raw:x,oid:x.order_id||null})),
         ord:o.map(x=>{const req=+x.qty_required||0,d=dn.get(x.id)||0;
@@ -255,7 +255,7 @@ function backlogInsights(bk,cfg){
 }
 function workerStats(rows){
   const m=new Map();
-  rows.forEach(r=>{if(!r.w)return;const o=m.get(r.w)||{w:r.w,q:0,days:new Set(),items:new Set()};o.q+=r.qty;o.days.add(r.d);o.items.add(r.item);m.set(r.w,o)});
+  rows.forEach(r=>{if(!r.w)return;const o=m.get(r.w)||{w:r.w,q:0,sc:0,days:new Set(),items:new Set()};o.q+=r.qty;o.sc+=r.sc||0;if(!(r.qty<=0&&r.sc>0)){o.days.add(r.d);o.items.add(r.item)}m.set(r.w,o)});
   return[...m.values()].sort((a,b)=>b.q-a.q);
 }
 
@@ -489,7 +489,8 @@ function mount(rootId,key){
     }
     // أداء العمال
     const ws=workerStats(rows);
-    $(".rwk").innerHTML=ws.length?`<table><thead><tr><th>العامل</th><th>الكمية</th><th>أيام</th><th>متوسط/يوم</th><th>أصناف</th></tr></thead><tbody>${ws.map(o=>`<tr><td><b>${esc(o.w)}</b></td><td><b>${nf(o.q)}</b></td><td>${o.days.size}</td><td>${nf(Math.round(o.q/o.days.size))}</td><td>${o.items.size}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">مفيش أسماء عمال مسجلة في الفترة دي</div>';
+    const cw=key==="casting",pcs=o=>o.q+o.sc?(Math.round(o.sc/(o.q+o.sc)*1000)/10)+"%":"0%";
+    $(".rwk").innerHTML=ws.length?`<table><thead><tr><th>العامل</th><th>${cw?"السليم":"الكمية"}</th>${cw?"<th>الهالك</th><th>نسبة الهالك</th>":""}<th>أيام</th><th>متوسط/يوم</th><th>أصناف</th></tr></thead><tbody>${ws.map(o=>`<tr><td><b>${esc(o.w)}</b></td><td><b>${nf(o.q)}</b></td>${cw?`<td>${o.sc?'<b style="color:var(--bad,#c0392b)">'+nf(o.sc)+"</b>":"—"}</td><td>${pcs(o)}</td>`:""}<td>${o.days.size}</td><td>${o.days.size?nf(Math.round(o.q/o.days.size)):"—"}</td><td>${o.items.size}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">مفيش أسماء عمال مسجلة في الفترة دي</div>';
     $('[data-ps="workers"]').toggleAttribute("data-empty",!ws.length);
     // سجل التفاصيل
     const lg=rows.slice().sort((a,b)=>b.d.localeCompare(a.d)),CAP=400,lv=st.printing?lg.slice(0,CAP):showMore(lg,st.moreL);
