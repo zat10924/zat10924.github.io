@@ -85,6 +85,7 @@ function form(id){
     const q=parseInt(document.getElementById("m-q").value);
     if(!q||q<1){toast("اكتب كمية صحيحة");return false}
     const row={repair_date:document.getElementById("m-d").value||today(),item:document.getElementById("m-item").value.trim()||null,qty:q};
+    if(!await reviewSave({title:"راجع التصليح قبل الحفظ",meta:[["التاريخ",fmtD(row.repair_date)]],items:[{title:row.item||"بدون صنف",rows:[["الكمية",nf(q)]]}]}))return false;
     const{error}=rec?await db.from("repair_log").update(row).eq("id",id):await db.from("repair_log").insert(row);
     if(error){toast("خطأ: "+error.message);return false}
     await load();toast(rec?"تم التعديل":"تم التسجيل");

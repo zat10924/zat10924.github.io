@@ -744,9 +744,12 @@ function postponeOrder(sec,table,o,reload){
 
 /* ===== القوائم الثابتة: اقتراحات + تصحيح الأخطاء الإملائية قبل الحفظ ===== */
 let CAT=null,_catP=null;
+// مسجّل الإنتاج (مش مدير ومعاه صلاحية التعديل مقفولة) يختار الصنف من قائمة الأصناف بس ومينفعش يضيف صنف جديد
+const itemsLocked=()=>!!ME&&ME.role!=="admin"&&!can("edit");
+const ITEM_CACHE="cat_items_v1";
 const PAGE_KIND=/decoration/.test(location.pathname)?"code":"color";
-const NAME_SEL="#m-item,#m-color,#m-color2,#m-name,#m-code,#m-sc,.msc,.nr .c,.it,.sb";
-const kindOf=el=>(el.id==="m-item"||el.classList.contains("it"))?"item":el.id==="m-code"?"code":el.dataset.kind||PAGE_KIND;
+const NAME_SEL="#m-item,#m-color,#m-color2,#m-name,#m-code,#m-sc,.msc,.nr .c,.it,.xi,.sb";
+const kindOf=el=>(el.id==="m-item"||el.classList.contains("it")||el.classList.contains("xi"))?"item":el.id==="m-code"?"code":el.dataset.kind||PAGE_KIND;
 const CATM={item:new Map(),color:new Map(),code:new Map()};
 function catReady(){
   if(!_catP)_catP=(async()=>{
@@ -755,6 +758,7 @@ function catReady(){
     if(r.error){CAT=null;return}
     CAT={item:[],color:[],code:[]};
     r.data.forEach(x=>{if(CAT[x.kind]){CAT[x.kind].push(x.name);CATM[x.kind].set(x.name,{id:x.id,code:x.code||""})}});fillLists();
+     try{localStorage.setItem(ITEM_CACHE,JSON.stringify(CAT.item))}catch(e){}
   })().catch(()=>{CAT=null});
   return _catP;
 }
@@ -783,13 +787,27 @@ async function addCat(kind,name){
 // true = كمّل الحفظ | false = ارجع للتعديل
 async function checkNames(root){
   const els=[...root.querySelectorAll(NAME_SEL)].filter(el=>el.type!=="hidden");if(!els.length)return true; // الخانات المخفية (زي «الكمية» في طلبية الصب) مش أسماء ولا ألوان
-  await catReady();if(!CAT)return true;
+  await catReady();
+  const lock=itemsLocked();let cache=null;
+  if(!CAT){ // مفيش اتصال بالكتالوج: مسجّل الإنتاج بيتراجع على آخر نسخة محفوظة من الأصناف
+    if(!lock)return true;
+    try{cache=JSON.parse(localStorage.getItem(ITEM_CACHE)||"null")}catch(e){}
+    if(!Array.isArray(cache))return true;
+  }
+  const similar=(list,nv)=>list.map(n=>[n,lev(norm(n),nv),Math.min(norm(n).length,nv.length)]).filter(x=>x[1]<=Math.max(1,Math.floor(x[2]/4))).sort((x,y)=>x[1]-y[1])[0];
   for(const el of els){
     const kind=kindOf(el),v=el.value.trim();if(!v)continue;
-    const list=CAT[kind],nv=norm(v),hit=list.find(n=>norm(n)===nv);
+    const locked=lock&&kind==="item"&&!el.readOnly; // الصنف المقفول من الطلبية (readOnly) مش بيتراجع
+    if(!CAT&&!locked)continue;
+    const list=CAT?CAT[kind]:cache,nv=norm(v),hit=list.find(n=>norm(n)===nv);
     if(hit){el.value=hit;continue}
+    if(locked){ // مسجّل الإنتاج: الصنف لازم يكون في قائمة الأصناف
+      const sm=similar(list,nv);
+      if(sm){const c=await pick(`«${v}» مش في قائمة الأصناف. تقصد «${sm[0]}»؟`,[`استخدم «${sm[0]}»`,"رجوع للتعديل"]);if(c===0){el.value=sm[0];continue}return false}
+      toast(`«${v}» مش في قائمة الأصناف — اختاره من القائمة أو كلّم المدير يضيفه`,"bad");return false;
+    }
     if(!list.length){if(!await addCat(kind,v))return false;continue}
-    const sim=list.map(n=>[n,lev(norm(n),nv),Math.min(norm(n).length,nv.length)]).filter(x=>x[1]<=Math.max(1,Math.floor(x[2]/4))).sort((x,y)=>x[1]-y[1])[0];
+    const sim=similar(list,nv);
     if(sim){
       const c=await pick(`«${v}» مش في القائمة. تقصد «${sim[0]}»؟`,[`استخدم «${sim[0]}»`,`إضافة «${v}» كاسم جديد`,"رجوع للتعديل"]);
       if(c===0){el.value=sim[0];continue}if(c!==1)return false;

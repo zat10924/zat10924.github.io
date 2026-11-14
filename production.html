@@ -332,13 +332,17 @@ function castForm(rec,presetOid,waste){
         extra.push({oid:free?null:e.oid,item:it2,qty:e.qty});
       }
     }
-    const tot=new Map();if(oid)tot.set(oid,q);extra.forEach(e=>{if(e.oid)tot.set(e.oid,(tot.get(e.oid)||0)+e.qty)});
-    for(const[k,v] of tot){const o=CO.get(k);if(!o)continue;const rem=Math.max((CO.get(k)||{}).req-(CO.get(k)||{}).done,0)+(rec&&rec.oid===k?rec.qty:0);
-      if(v>rem&&!await ask("«"+o.item+"»: العدد ("+nf(v)+") أكبر من المتبقي في الطلبية ("+nf(rem)+"). تسجّله برضو؟","نعم، سجّل"))return false}
-    const row={casting_date:lockDate?(rec?rec.date:today()):(document.getElementById("m-d").value||today()),item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
+    const cd=lockDate?(rec?rec.date:today()):(document.getElementById("m-d").value||today());
+    const ents=!rec?(auto?castAutoSplit([{item,qty:q},...extra.map(e=>({item:e.item,qty:e.qty}))],castOpen()):[{item,qty:q,order_id:oid},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid}))]):null;
+    const used=new Map();
+    if(!await reviewSave({title:waste?"راجع الهالك قبل الحفظ":"راجع الإنتاج قبل الحفظ",meta:[["التاريخ",fmtD(cd)],["الوردية",sh],...rvFields(x)],
+      items:(ents||[{item,qty:waste?sc:q,order_id:oid}]).map(e=>{const o=e.order_id?CO.get(e.order_id):null;
+        const rows=[[waste?"عدد القطع الهالكة":"عدد القطع",nf(e.qty)],["الطلبية",o?cLab(o):"بدون طلبية"]];let warn="";
+        if(o){const base=Math.max(o.req-o.done,0)+(rec&&rec.oid===o.id?rec.qty:0),u=(used.get(o.id)||0)+e.qty;used.set(o.id,u);rows.push(["المتبقي بعد التسجيل",remAfter(base,u)]);warn=overWarn(base,u)}
+        return{title:e.item,rows,warn}})}))return false;
+    const row={casting_date:cd,item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
     if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
     if(!rec){
-      const ents=auto?castAutoSplit([{item,qty:q},...extra.map(e=>({item:e.item,qty:e.qty}))],castOpen()):[{item,qty:q,order_id:oid},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid}))];
       const linked=ents.filter(e=>e.order_id).length;
       let ok=0,qd=0,err=null;
       for(const en of ents){const rr=await castInsert({...row,...en});if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
