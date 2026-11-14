@@ -74,7 +74,11 @@ begin
       union all
       select 'casting', 'p', c.casting_date::date,
              coalesce(nullif(c.item, ''), 'بدون صنف'), '',
-             coalesce(c.qty, 0)::numeric, coalesce(c.worker, ''), coalesce(c.note, ''), null::numeric
+             coalesce(c.qty, 0)::numeric, coalesce(c.worker, ''),
+             concat_ws(' · ', nullif(to_jsonb(c)->>'shift', ''),
+                       case when coalesce(nullif(to_jsonb(c)->>'scrap', '')::numeric, 0) > 0 then 'هالك ' || (to_jsonb(c)->>'scrap') end,
+                       case when to_jsonb(c)->>'order_id' is null then 'بدون طلبية' end,
+                       nullif(c.note, '')), null::numeric
         from public.casting_log c
        where p_secs is null or 'casting' = any(p_secs)
     ),

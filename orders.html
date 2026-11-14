@@ -385,7 +385,8 @@ function editG(id){
   });
 }
 async function delG(id){
-  if(!await ask("حذف الطلبية كلها وكل أصنافها من كل الأقسام؟"))return;
+  const hasC=(G.find(x=>x.id===id)||{secs:{}}).secs.casting?.length>0;
+  if(!await ask("حذف الطلبية كلها وكل أصنافها من كل الأقسام؟"+(hasC?" تسجيلات الصب المرتبطة بيها هتفضل في سجل الصب كإنتاج بدون طلبية.":"")))return;
   for(const t of["glaze_orders","deco_orders","spray_orders"]){
     const{error}=await db.from(t).delete().eq("group_id",id);
     if(error){toast("خطأ: "+error.message);return}

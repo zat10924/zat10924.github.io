@@ -96,8 +96,20 @@ const SRC={
     }},
   casting:{name:"الصب اليدوي",page:"casting.html",icon:"casting",color:"#8A5A3C",noun:"الصب",sub:"",
     async fetch(){
-      const r=await all("casting_log","id,casting_date,item,qty,worker,note").catch(()=>[]);
-      return{prod:r.map(x=>({d:D(x.casting_date),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0,w:x.worker||"",n:x.note||""})),ord:null};
+      const[r,o,g]=await Promise.all([all("casting_log","*").catch(()=>[]),all("casting_orders","*").catch(()=>[]),all("order_groups","id,title,order_no").catch(()=>[])]);
+      const GM=new Map(g.map(x=>[x.id,x])),dn=new Map();
+      r.forEach(x=>{if(x.order_id)dn.set(x.order_id,(dn.get(x.order_id)||0)+(+x.qty||0))});
+      const gl=x=>{const q=GM.get(x.group_id);return q?((q.order_no?"#"+q.order_no+" · ":"")+((q.title||"").trim()||"طلبية")):""};
+      // هالك الجودة: كل تسجيل بيدخل بالسليم (good) والهالك (qty) عشان نسبة الهالك تتحسب صح
+      return{
+        prod:r.map(x=>({d:D(x.casting_date),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0,w:x.worker||"",
+          n:[x.shift,(+x.scrap>0?"هالك "+x.scrap:""),(x.order_id?"":"بدون طلبية"),x.note].filter(Boolean).join(" · "),
+          id:x.id,tb:"casting_log",raw:x,oid:x.order_id||null})),
+        ord:o.map(x=>{const req=+x.qty_required||0,d=dn.get(x.id)||0;
+          return{id:x.id,gid:x.group_id||null,item:x.item,sub:gl(x),date:D(x.order_date),due:D(x.due_date),pc:0,
+            status:(x.status==="done"||d>=req)?"done":"open",req,done:Math.min(d,req),over:Math.max(d-req,0)}}),
+        waste:r.map(x=>({d:D(x.casting_date),item:x.item||"بدون صنف",good:+x.qty||0,qty:+x.scrap||0}))
+      };
     }}
 };
 const KEYS=Object.keys(SRC);
@@ -316,13 +328,13 @@ function editEntry(row,key,done){
   openModal("تعديل تسجيل الإنتاج",
     XT(deco)+(free?`<label>الصنف</label><input id="m-item" autocomplete="off"><label>${lab} (اختياري)</label><input id="${sid}" autocomplete="off">`
          :`<div class="nums"><b>${esc(entryTxt(row))}</b></div>`)+
-    `<label>الكمية</label><input type="number" id="m-q" min="1" inputmode="numeric" value="${row.qty}">`+
+    `<label>الكمية</label><input type="number" id="m-q" min="${key==="casting"?0:1}" inputmode="numeric" value="${row.qty}">`+
     (row.max?`<div class="hint" style="margin:0">المتاح للبند ده: ${nf(row.max)} (لو زدت عنه هيتسجل مع تنبيه في التقارير)</div>`:"")+
     `<label>التاريخ</label><input type="date" id="m-d" value="${esc(row.d||today())}">${spray?XS(raw.spray_color||""):""}${XF(deco)}`,async()=>{
-    const q=parseInt(document.getElementById("m-q").value);
-    if(!q||q<1){toast("اكتب كمية صحيحة");return false}
+    const q=parseInt(document.getElementById("m-q").value),cast=key==="casting";
+    if(cast?(isNaN(q)||q<0||q+(+raw.scrap||0)<1):(!q||q<1)){toast("اكتب كمية صحيحة");return false}
     const v=id=>((document.getElementById(id)||{}).value||"").trim();
-    const patch={qty:q,prod_date:v("m-d")||row.d||today(),worker:v("m-w")||null,note:v("m-n")||null};
+    const patch={qty:q,[cast?"casting_date":"prod_date"]:v("m-d")||row.d||today(),worker:v("m-w")||null,note:v("m-n")||null};
     if(deco)patch.design=v("m-ds")||null;
     if(spray){if(!v("m-sc")){toast("اكتب لون الرش");return false}patch.spray_color=v("m-sc")}
     if(free){const item=v("m-item");if(!item){toast("اكتب الصنف");return false}patch.item=item;patch.sub=v(sid)||null}
@@ -400,7 +412,7 @@ function printDialog(root,scope,secs,hooks={}){
 function mount(rootId,key){
   const root=typeof rootId==="string"?document.getElementById(rootId):rootId,cfg=SRC[key];
   const st={k:"month",f:"",t:"",item:"",col:"",wk:"",by:"item",data:null,moreB:false,moreO:false,moreL:false,printing:false,last:null};
-  const hasOrd=key!=="repair"&&key!=="casting";
+  const hasOrd=key!=="repair";
   root.innerHTML=`
   <div class="print-head"><h2>${APP} — تقرير ${cfg.name}</h2><div class="nums rpd"></div></div>
   <div class="card noprint">
@@ -809,7 +821,7 @@ function dashboard(rootId){
   };
   $(".rbk").onclick=async e=>{
     const b=e.currentTarget;b.disabled=true;b.classList.add("loading");
-    const TABLES=["free_production","glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log","casting_log"];
+    const TABLES=["free_production","glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log","casting_log","casting_orders"];
     try{
       const out={exported_at:new Date().toISOString(),tables:{},errors:{}};
       for(const tb of TABLES){try{out.tables[tb]=await all(tb,"*")}catch(er){out.errors[tb]=er.message||String(er)}}

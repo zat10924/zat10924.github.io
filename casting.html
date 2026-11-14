@@ -49,7 +49,7 @@
 <script src="reports.js"></script>
 <script>
 let rows=[],orders=[],ordersOk=false,Q="",repCtl=null,oFilter="open",
-    tab=location.hash==="#reports"?"prod":location.hash==="#orders"?"ord":"log";
+    tab=location.hash==="#reports"?"prod":(location.hash==="#orders"||location.hash==="#open")?"ord":"log";
 const NONE="بدون صنف",SHIFTS=["صباحي","مسائي","ليلي"],V2_ERR=/shift|scrap|order_id|casting_orders|schema cache/i;
 const ordOf=id=>orders.find(o=>o.id===id)||null;
 const oLab=o=>o?((o.no?"#"+o.no:"")+(o.no?" · ":"")+(o.title?o.title+" — ":"")+o.item):"";

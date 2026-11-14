@@ -14,7 +14,7 @@ declare t text; j jsonb; res jsonb := jsonb_build_object('exported_at', now());
 begin
   foreach t in array array['free_production','glaze_orders','glaze_order_lines','glaze_production','glaze_order_increases','glaze_waste',
                            'deco_orders','deco_lines','deco_production','deco_increases','spray_orders','spray_production',
-                           'repair_log','casting_log','workers','order_postponements'] loop
+                           'repair_log','casting_log','casting_orders','workers','order_postponements'] loop
     if to_regclass('public.' || t) is not null then
       execute format('select coalesce(jsonb_agg(to_jsonb(x)), ''[]''::jsonb) from public.%I x', t) into j;
       res := res || jsonb_build_object(t, j);

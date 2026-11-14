@@ -2,7 +2,8 @@
 const RING_SRC={
   "glaze.html":{o:"glaze_orders",l:"glaze_lines_status",req:"total_required",ok:"produced"},
   "decoration.html":{o:"deco_orders",l:"deco_lines_status",req:"total_required",ok:"produced"},
-  "spray.html":{s:"spray_status",req:"qty_required",ok:"produced"}};
+  "spray.html":{s:"spray_status",req:"qty_required",ok:"produced"},
+  "casting.html":{s:"casting_status",req:"qty_required",ok:"produced"}};
 async function pgAll(t,cols,f){
   const out=[];
   for(let i=0;;i+=1000){
