@@ -608,7 +608,7 @@ function ordersReport(rootId){
   <div class="card noprint">
     <h3>تقرير الطلبيات</h3>
     <div class="two"><div><label>القسم</label><select class="of-s"><option value="">كل الأقسام</option>${ORD_SECS.map(k=>`<option value="${k}">${SRC[k].name}</option>`).join("")}</select></div>
-    <div><label>الحالة</label><select class="of-t">${ORD_ST.map(([v,l])=>`<option value="${v}" ${v===st.stt?"selected":""}>${l}</option>`).join("")}</select></div></div>
+    <div><label>الحالة</label><select class="of-t">${ORD_ST.filter(x=>!hideDone()||["open","late","stalled","pp"].includes(x[0])).map(([v,l])=>`<option value="${v}" ${v===st.stt?"selected":""}>${l}</option>`).join("")}</select></div></div>
     <div class="two"><div><label>تاريخ الطلبية من</label><input type="date" class="of-f"></div><div><label>إلى</label><input type="date" class="of-e"></div></div>
     <label>بحث باسم الطلبية أو العميل أو الصنف أو اللون</label><input type="search" class="of-q" placeholder="اكتب جزء من الاسم">
   </div>

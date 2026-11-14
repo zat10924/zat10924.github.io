@@ -141,7 +141,9 @@ const ROLE_DESC={admin:"صلاحية كاملة: كل الأقسام والتق�
 const PERM_LBL={view:["عرض صفحة القسم والطلبيات","فتح صفحة القسم ومشاهدة الطلبيات. لو مقفولة يقدر يسجّل إنتاج بس من صفحة «تسجيل الإنتاج»"],edit:["تعديل الطلبيات والسجلات","تعديل بيانات الطلبية واللون والهالك والتصليح"],delete:["الحذف","حذف الطلبيات والألوان وسجلات الإنتاج والهالك"],increase:["زيادة وتأجيل الطلبيات","زيادة الكمية وتأجيل تاريخ التسليم"],reports:["تقارير القسم","فتح تبويب التقارير داخل القسم"],editown:["تعديل إنتاجه في نفس اليوم","يعدّل تسجيلات الإنتاج اللي سجّلها هو بس، وما دام اليوم لسه ما خلصش. بعد انتهاء اليوم التعديل بيتقفل"]};
 const PERM_DEF={manager:{view:true,edit:true,delete:false,increase:true,reports:true,editown:true},worker:{view:true,edit:false,delete:false,increase:false,reports:false,editown:true}};
 const can=k=>{if(!ME||!ME.role)return false;if(ME.role==="admin")return true;const v=(ME.perms||{})[k];return typeof v==="boolean"?v:!!(PERM_DEF[ME.role]||{})[k]};
-const subsOf=f=>(SUBS[f]||[]).filter(x=>x[1]!=="prod"||can("reports"));
+// مسجّل الإنتاج (مش مدير ومعاه صلاحية التعديل مقفولة) ما بيشوفش الطلبيات المكتملة
+const hideDone=()=>!!ME&&ME.role!=="admin"&&!can("edit");
+const subsOf=f=>(SUBS[f]||[]).filter(x=>(x[1]!=="prod"||can("reports"))&&(x[1]!=="done"||!hideDone()));
 // ===== تعديل الإنتاج في نفس اليوم فقط =====
 // اليوم بيعتبر منتهي لو تاريخ التسجيل أقدم من تاريخ السيرفر أو من تاريخ الجهاز (الأحدث فيهم) — عشان لو الصفحة فضلت مفتوحة بعد نص الليل.
 const localToday=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
@@ -234,6 +236,10 @@ async function requireAuth(file){
   await loadMe();
   if(!ME.role||ME.active===false){noAccess();return null}
   if(file&&file!=="index.html"&&!((file==="reports.html"||file==="search.html"||file==="orders.html")?canReports():canSee(file))){location.replace("index.html");return null}
+  if(hideDone()){ // إخفاء تبويبات «المكتملة» عن مسجّل الإنتاج
+    ["t-done","o-closed"].forEach(i=>{const b=document.getElementById(i);if(b)b.style.display="none"});
+    if(location.hash==="#done")history.replaceState(null,"",location.pathname+location.search);
+  }
   return session;
 }
 const SUBS={
