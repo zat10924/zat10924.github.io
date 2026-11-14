@@ -112,7 +112,7 @@ async function load(){
     rows=ch.rows;tod=D===today()?ch.tod:[];stale=ch.at;
   }
   // التسجيلات اللي لسه ما اتبعتتش بتتحسب في الأرقام
-  Q_.get().filter(i=>i.sec===sec).forEach(i=>{const r=rows.find(x=>x.id===i.rid);if(r)r.done+=i.qty;if((i.row&&i.row.prod_date||today())===D)tod.unshift({qty:i.qty,txt:i.txt+" ⏳",pend:1})});
+  Q_.get().filter(i=>i.sec===sec).forEach(i=>{const r=rows.find(x=>x.id===i.rid);if(r)r.done+=i.qty;if((i.row&&(i.row.prod_date||i.row.casting_date)||today())===D)tod.unshift({qty:i.qty,txt:i.txt+" ⏳",pend:1})});
   draw();
 }
 function draw(){
@@ -298,7 +298,7 @@ function castForm(rec,presetOid){
   const isO=rec?!!rec.oid:(presetOid?true:false);
   let ls="";try{ls=localStorage.getItem("cast_shift")||""}catch(e){}
   const shDef=rec?rec.sh:ls,lockDate=!can("edit");
-  const items=[...new Set([...CO.values()].map(o=>o.item))];
+  const items=[...new Set([...[...CO.values()].map(o=>o.item),...tod.map(e=>e.item).filter(Boolean)])];
   openModal(rec?"تعديل تسجيل الصب":"تسجيل صب يدوي",
    `<label>نوع التسجيل</label><select id="m-mode"><option value="order" ${isO?"selected":""}>بطلبية</option><option value="free" ${isO?"":"selected"}>بدون طلبية</option></select>
     <div id="m-ow" style="display:${isO?"block":"none"}"><label>الطلبية</label><select id="m-o"><option value="">— اختار الطلبية —</option>${ords.map(o=>`<option value="${o.id}" ${o.id===(rec?rec.oid:presetOid)?"selected":""}>${esc(cLab(o))}</option>`).join("")}</select><div class="nums" id="m-hint" style="margin:4px 0 0"></div></div>
@@ -321,8 +321,9 @@ function castForm(rec,presetOid){
     if(oid){const o=CO.get(oid);if(o){const rem=Math.max(o.req-o.done,0)+(rec&&rec.oid===oid?rec.qty:0);
       if(q>rem&&!await ask("العدد ("+nf(q)+") أكبر من المتبقي في الطلبية ("+nf(rem)+"). تسجّله برضو؟","نعم، سجّل"))return false}}
     const row={casting_date:lockDate?(rec?rec.date:today()):(document.getElementById("m-d").value||today()),item,qty:q,scrap:sc,shift:sh,worker:x.worker,note:x.note||null,order_id:oid};
-    let r=rec?await db.from("casting_log").update(row).eq("id",rec.id).select():await db.from("casting_log").insert(row).select();
-    if(r.error){toast(isNet(r.error)?"التسجيل محتاج اتصال بالإنترنت":(/shift|scrap|order_id/.test(r.error.message||"")?"شغّل ملف setup_casting_v2.sql من Supabase الأول":"خطأ: "+r.error.message),"bad");return false}
+    let r=rec?await db.from("casting_log").update(row).eq("id",rec.id).select():await castInsert(row);
+    if(r.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}await load();toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
+    if(r.error){toast(isNet(r.error)?"التعديل محتاج اتصال بالإنترنت":(/shift|scrap|order_id/.test(r.error.message||"")?"شغّل ملف setup_casting_v2.sql من Supabase الأول":"خطأ: "+r.error.message),"bad");return false}
     if(rec&&(!r.data||!r.data.length)){toast("لم يتم التعديل، راجع الصلاحيات","bad");return false}
     try{localStorage.setItem("cast_shift",sh)}catch(e){}
     await load();toast(rec?"تم التعديل":"تم التسجيل");

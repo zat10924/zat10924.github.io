@@ -88,6 +88,16 @@
           "sizes": "192x192"
         }
       ]
+    },
+    {
+      "name": "الصب اليدوي",
+      "url": "casting.html",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ],
   "id": "./index.html",

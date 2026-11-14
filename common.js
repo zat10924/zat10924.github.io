@@ -833,6 +833,16 @@ async function insertRow(t,row){
   if(r.error&&/client_id/.test(r.error.message||"")){CID=false;r=await db.from(t).insert(noCid(row))}
   return r;
 }
+// تسجيل الصب اليدوي: لو مفيش نت بيتحفظ على الجهاز وبيتبعت لوحده (زي باقي الأقسام)
+async function castInsert(row){
+  const id=uuid(),r2={...row,client_id:id};
+  let res;try{res=await insertRow("casting_log",r2)}catch(e){res={error:{message:String(e)}}}
+  if(res.error&&isNet(res.error)){
+    Q_.add({id,table:"casting_log",row:r2,sec:"casting",rid:row.order_id||"free",qty:row.qty,txt:(row.item||"—")+(row.shift?" · "+row.shift:"")+(row.scrap?" · هالك "+row.scrap:"")});
+    updateBadge();return{queued:true};
+  }
+  return res;
+}
 // بعد التسجيل: نظبط حالة الطلبية (مفتوحة / مكتملة)
 async function syncAfter(it){
   const s=it.sync;if(!s)return false;
@@ -1419,12 +1429,14 @@ const TIC={
   grid:'<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
   palette:'<path d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.8 1.6-1.6 0-.5-.2-.9-.5-1.2a1.7 1.7 0 0 1 1.2-2.9H16a5 5 0 0 0 5-5c0-4-4-7.3-9-7.3z"/><circle cx="7.8" cy="11" r=".8"/><circle cx="10.5" cy="7.2" r=".8"/><circle cx="15" cy="7.8" r=".8"/>',
   spray:'<rect x="7" y="10" width="10" height="11" rx="2.2"/><path d="M10 10V7h4v3M12 3.5V7"/><path d="M18 5h.01M20.5 8h.01M19.5 11.5h.01"/>',
-  wrench:'<path d="M14.5 6.5a4 4 0 0 0 5 5l-9 9a2.1 2.1 0 0 1-3-3l9-9a4 4 0 0 0-2-2z"/>'
+  wrench:'<path d="M14.5 6.5a4 4 0 0 0 5 5l-9 9a2.1 2.1 0 0 1-3-3l9-9a4 4 0 0 0-2-2z"/>',
+  cast:'<path d="M8 2.5h8"/><path d="M9.5 2.5v3.6c0 1.3-4 2.4-4 7.4a6.5 6.5 0 0 0 13 0c0-5-4-6.1-4-7.4V2.5"/><path d="M6 12.5h12"/>'
 };
 function tabIconKey(b){
   const t=b.textContent.trim(),k=[b.id,b.dataset.t,b.dataset.s,b.dataset.k].join(" ");
   const has=(re)=>re.test(k)||re.test(t);
   if(has(/repair|تصليح/))return"wrench";
+  if(has(/casting|الصب/)&&!has(/سجل الصب/))return"cast";
   if(has(/مفتوح|\bopen\b/))return"open";
   if(has(/مكتمل|\bdone\b/))return"done";
   if(has(/هالك|\brep\b/))return"waste";
@@ -1444,7 +1456,23 @@ function tabIconKey(b){
   if(t==="الكل")return"grid";
   return"";
 }
+function tabsScroll(){
+  document.querySelectorAll(".tabs").forEach(t=>{
+    if(!t.dataset.drag){
+      t.dataset.drag=1;let x0=0,s0=0,down=false,moved=false;
+      t.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse")return;down=true;moved=false;x0=e.clientX;s0=t.scrollLeft});
+      window.addEventListener("pointermove",e=>{if(!down)return;const d=e.clientX-x0;if(Math.abs(d)>4)moved=true;t.scrollLeft=s0-d});
+      window.addEventListener("pointerup",()=>{down=false});
+      t.addEventListener("click",e=>{if(moved){e.stopPropagation();e.preventDefault();moved=false}},true);
+    }
+    const on=t.querySelector("button.on");
+    if(on&&t.scrollWidth>t.clientWidth+2&&t._on!==on){t._on=on;
+      const r=on.getBoundingClientRect(),c=t.getBoundingClientRect();
+      t.scrollTo({left:t.scrollLeft+(r.left+r.width/2)-(c.left+c.width/2),behavior:"smooth"})}
+  });
+}
 function decorateTabs(){
+  tabsScroll();
   document.querySelectorAll(".tabs button").forEach(b=>{
     if(b.querySelector("svg"))return;
     const k=tabIconKey(b);if(!k||!TIC[k])return;

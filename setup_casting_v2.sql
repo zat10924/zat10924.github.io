@@ -59,6 +59,7 @@ begin
     select t.tgname, pg_get_triggerdef(t.oid) as d
       from pg_trigger t
      where t.tgrelid = 'public.casting_log'::regclass and not t.tgisinternal
+       and t.tgname not like 'trg_casting_%'   -- ما ننسخش triggers المزامنة (v4) على جدول الطلبيات
   loop
     def := replace(r.d, 'casting_log', 'casting_orders');
     execute format('drop trigger if exists %I on public.casting_orders', replace(r.tgname, 'casting_log', 'casting_orders'));

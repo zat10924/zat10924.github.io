@@ -125,7 +125,7 @@ function form(id,presetOid){
   const openOrds=orders.filter(o=>(o.st==="open"&&orderProg(o).rem>0)||(rec&&rec.oid===o.id)||o.id===presetOid);
   const startOrd=rec?!!rec.oid:(presetOid?true:openOrds.length>0);
   const curO=rec?rec.oid:presetOid||null;
-  const items=[...new Set(rows.map(r=>r.item).filter(Boolean))];
+  const items=[...new Set([...rows.map(r=>r.item),...orders.map(o=>o.item)].filter(Boolean))];
   const lockDate=!can("edit"); // مسجّل الإنتاج: التسجيل بتاريخ النهارده بس
   const shiftDef=rec?rec.sh:lastShift();
   const modeSel=ordersOk?`<label>نوع التسجيل</label><select id="m-mode"><option value="order" ${startOrd?"selected":""}>بطلبية</option><option value="free" ${startOrd?"":"selected"}>بدون طلبية</option></select>
@@ -151,7 +151,9 @@ function form(id,presetOid){
       const rem=o?p.rem+(rec&&rec.oid===oid?rec.qty:0):0;
       if(o&&q>rem&&!await ask("العدد ("+nf(q)+") أكبر من المتبقي في الطلبية ("+nf(rem)+"). تسجّله برضو؟","نعم، سجّل"))return false}
     const row={casting_date:lockDate?(rec?rec.d:today()):(document.getElementById("m-d").value||today()),item,qty:q,scrap:sc,shift:sh,worker:x.worker,note:x.note||null,order_id:oid};
-    const{error}=rec?await db.from("casting_log").update(row).eq("id",id):await db.from("casting_log").insert(row);
+    const res=rec?await db.from("casting_log").update(row).eq("id",id):await castInsert(row);
+    if(res.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
+    const error=res.error;
     if(error){toast(V2_ERR.test(error.message||"")?"شغّل ملف setup_casting_v2.sql من Supabase الأول":"خطأ: "+error.message);return false}
     try{localStorage.setItem("cast_shift",sh)}catch(e){}
     await load();toast(rec?"تم التعديل":"تم التسجيل");
@@ -191,13 +193,13 @@ function drawOrders(){
     const p=orderProg(o),pc=Math.min(100,Math.round(p.done/o.req*100));
     return `<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(oLab(o))}</b><span class="nums">${pc}%</span></div>
     <div style="height:8px;border-radius:6px;background:rgba(128,128,128,.25);margin:8px 0;overflow:hidden"><div style="height:100%;width:${pc}%;background:var(--ok)"></div></div>
-    <div class="nums">مطلوب ${nf(o.req)} · اتعمل ${nf(p.done)} · متبقي ${nf(p.rem)}${p.scrap?" · هالك "+nf(p.scrap):""}${o.due?" · التسليم "+fmtD(o.due):""}</div>
+    <div class="nums">مطلوب ${nf(o.req)} · اتعمل ${nf(p.done)} · متبقي ${nf(p.rem)}${p.done>o.req?" · زيادة "+nf(p.done-o.req):""}${p.scrap?" · هالك "+nf(p.scrap):""}${o.due?" · التسليم "+fmtD(o.due):""}</div>
     ${o.n?`<div class="nums" style="margin-top:4px">${esc(o.n)}</div>`:""}
     <div class="row noprint" style="margin-top:10px">${isOpen(o)?`<button class="btn sm" onclick="form(0,${o.id})">سجّل إنتاج</button>`:""}</div></div>`}).join("")
     :'<div class="empty">'+(oFilter==="open"?"مفيش طلبيات صب مفتوحة. الطلبيات بتتوزّع على الصب من صفحة الطلبيات.":"مفيش طلبيات مكتملة")+'</div>';
 }
 function exportCsv(){
-  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const q=s=>{s=String(s==null?"":s);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
   const csv="\uFEFF"+["التاريخ,الوردية,الصنف,الطلبية,العامل,عدد القطع,هالك الجودة,ملاحظات",...filtered().map(r=>[r.d,r.sh,r.item||NONE,r.oid?oLab(ordOf(r.oid))||"#"+r.oid:"بدون طلبية",r.w,r.qty,r.sc,r.n].map(q).join(","))].join("\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="الصب-اليدوي.csv";a.click();
 }

@@ -1147,3 +1147,9 @@ body:not(.sideopen) .side{will-change:auto}
   #repView .card:has(table){break-inside:auto!important}
   #repView th:nth-child(n+3):nth-child(-n+5),#repView td:nth-child(n+3):nth-child(-n+5){text-align:center;white-space:nowrap}
 }
+
+/* ===== قوائم الأقسام: تمرير يمين وشمال ===== */
+.tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none;scroll-snap-type:x proximity;cursor:grab}
+.tabs::-webkit-scrollbar{display:none}
+.tabs>button,.tabs>.btn{flex:1 0 auto!important;scroll-snap-align:center;white-space:nowrap}
+.tabs:active{cursor:grabbing}
