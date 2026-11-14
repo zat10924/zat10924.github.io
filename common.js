@@ -222,7 +222,7 @@ async function loadMe(){
 const secList=r=>{const a=[];if(r&&Array.isArray(r.sections))r.sections.forEach(x=>{if(SEC_AR[x]&&!a.includes(x))a.push(x)});if(r&&r.section&&SEC_AR[r.section]&&!a.includes(r.section))a.unshift(r.section);return a};
 const mySecs=()=>ME?(ME.role==="admin"?Object.keys(SEC_AR):secList(ME)):[];
 const secNames=l=>(l||[]).map(k=>SEC_AR[k]).filter(Boolean).join("، ");
-const canSee=f=>!!ME&&!!ME.role&&(f==="index.html"||f==="production.html"||f==="profile.html"||f==="settings.html"||ME.role==="admin"||(KEY[f]&&mySecs().includes(KEY[f])&&(f==="repair.html"||f==="casting.html"||can("view"))));
+const canSee=f=>!!ME&&!!ME.role&&(f==="index.html"||f==="production.html"||f==="profile.html"||f==="settings.html"||ME.role==="admin"||(KEY[f]&&mySecs().includes(KEY[f])&&(f==="repair.html"||(can("view")&&!(f==="casting.html"&&ME.role==="worker")))));
 const visibleSections=()=>SECTIONS.filter(s=>canSee(s[0]));
 const canReports=()=>!!ME&&ME.role==="admin";
 function noAccess(){
@@ -868,6 +868,18 @@ async function castInsert(row){
     updateBadge();return{queued:true};
   }
   return res;
+}
+// ربط تلقائي بالطلبيات: يوزّع الكمية على الطلبيات المفتوحة لنفس الصنف (الأقرب تسليمًا أولًا)، والزيادة عن المتبقي تتسجّل «بدون طلبية»
+function castAutoSplit(entries,orders){
+  const rem=new Map(orders.map(o=>[o.id,Math.max(+o.rem||0,0)])),key=o=>String(o.due||o.date||"9999-12-31");
+  const out=[];
+  for(const e of entries){
+    let left=e.qty;const k=norm(e.item);
+    const list=orders.filter(o=>norm(o.item)===k&&rem.get(o.id)>0).sort((a,b)=>key(a).localeCompare(key(b))||a.id-b.id);
+    for(const o of list){if(left<=0)break;const t=Math.min(left,rem.get(o.id));out.push({item:o.item,qty:t,order_id:o.id});rem.set(o.id,rem.get(o.id)-t);left-=t}
+    if(left>0)out.push({item:e.item,qty:left,order_id:null});
+  }
+  return out;
 }
 // بعد التسجيل: نظبط حالة الطلبية (مفتوحة / مكتملة)
 async function syncAfter(it){

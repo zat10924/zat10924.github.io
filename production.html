@@ -291,6 +291,7 @@ function quick(r){
 }
 /* ===== الصب اليدوي: تسجيل بطلبية أو بدون طلبية + وردية + هالك جودة ===== */
 const SHIFTS=["صباحي","مسائي","ليلي"],cLab=o=>o?(o.sub+" — "+o.item):"";
+const castOpen=()=>[...CO.values()].filter(o=>o.st==="open").map(o=>({id:o.id,item:o.item,rem:o.req-o.done,due:o.due,date:o.date}));
 function castForm(rec,presetOid,waste){
   if(rec&&!canEditEntry(rec)){toast(dayClosed(rec.date)?"التعديل مقفول — اليوم ده خلص":"تقدر تعدّل تسجيلاتك انت بس","warn");return}
   wkLoad();
@@ -303,7 +304,7 @@ function castForm(rec,presetOid,waste){
   const items=[...new Set([...[...CO.values()].map(o=>o.item),...tod.map(e=>e.item).filter(Boolean)])];
   let mx=null;
   openModal(waste?(rec?"تعديل هالك جودة · صب":"تسجيل هالك جودة · صب"):(rec?"تعديل تسجيل الصب":"تسجيل صب يدوي"),
-   `${waste?"":`<label>نوع التسجيل</label><select id="m-mode"><option value="order" ${isO?"selected":""}>بطلبية</option><option value="free" ${isO?"":"selected"}>بدون طلبية</option></select>
+   `${waste?"":`<label>نوع التسجيل</label><select id="m-mode">${rec?"":`<option value="auto" ${isO?"":"selected"}>تلقائي (يرتبط بالطلبيات حسب الصنف)</option>`}<option value="order" ${isO?"selected":""}>بطلبية</option><option value="free" ${isO||!rec?"":"selected"}>بدون طلبية</option></select><div class="nums" id="m-ah" style="margin:4px 0 0"></div>
     <div id="m-ow" style="display:${isO?"block":"none"}"><label>الطلبية</label><select id="m-o"><option value="">— اختار الطلبية —</option>${ords.map(o=>`<option value="${o.id}" ${o.id===(rec?rec.oid:presetOid)?"selected":""}>${esc(cLab(o))}</option>`).join("")}</select><div class="nums" id="m-hint" style="margin:4px 0 0"></div></div>`}
     <label>التاريخ</label><input type="date" id="m-d" value="${rec?rec.date:today()}" ${lockDate?"disabled":""}>
     <label>الوردية</label><select id="m-sh">${SHIFTS.map(x=>`<option ${x===shDef?"selected":""}>${x}</option>`).join("")}</select>
@@ -312,7 +313,7 @@ function castForm(rec,presetOid,waste){
     ${waste?`<label>عدد القطع الهالكة</label><input type="number" id="m-scrap" min="1" max="100000" inputmode="numeric" value="${rec&&rec.scrap?rec.scrap:""}"><div class="nums" id="m-wh" style="margin:4px 0 0"></div>`
       :`<label>عدد القطع</label><input type="number" id="m-q" min="${legacySc?0:1}" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">${legacySc?`<label>هالك الجودة (تسجيل قديم)</label><input type="number" id="m-scrap" min="0" max="100000" inputmode="numeric" value="${rec.scrap}">`:""}${rec?"":CM.html()}`}
     <label>${waste?"السبب / ملاحظات (اختياري)":"ملاحظات (اختياري)"}</label><input id="m-n" maxlength="300" placeholder="أي تعليق على الشغل" value="${rec?esc(rec.note):""}">`,async()=>{
-    const free=waste||document.getElementById("m-mode").value==="free";
+    const mv=waste?"free":document.getElementById("m-mode").value,free=waste||mv!=="order",auto=mv==="auto"&&!rec;
     const oid=free?null:(parseInt(document.getElementById("m-o").value)||null);
     if(!free&&!oid){toast("اختار الطلبية");return false}
     const qe=document.getElementById("m-q"),se=document.getElementById("m-scrap");
@@ -337,7 +338,8 @@ function castForm(rec,presetOid,waste){
     const row={casting_date:lockDate?(rec?rec.date:today()):(document.getElementById("m-d").value||today()),item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
     if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
     if(!rec){
-      const ents=[{item,qty:q,order_id:oid},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid}))];
+      const ents=auto?castAutoSplit([{item,qty:q},...extra.map(e=>({item:e.item,qty:e.qty}))],castOpen()):[{item,qty:q,order_id:oid},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid}))];
+      const linked=ents.filter(e=>e.order_id).length;
       let ok=0,qd=0,err=null;
       for(const en of ents){const rr=await castInsert({...row,...en});if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
       try{localStorage.setItem("cast_shift",sh)}catch(e){}
@@ -347,7 +349,7 @@ function castForm(rec,presetOid,waste){
         await load();toast("اتسجّل "+(ok+qd)+" من "+ents.length+" أصناف — "+m,"bad");return;
       }
       await load();
-      toast(qd?"مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع":(ok>1?"تم تسجيل "+ok+" أصناف":"تم التسجيل"),qd?"warn":undefined);return;
+      toast(qd?"مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع":(auto?(linked?"تم التسجيل وربطه تلقائيًا بالطلبية":"تم التسجيل (مفيش طلبية مفتوحة للصنف ده)"):(ok>1?"تم تسجيل "+ok+" أصناف":"تم التسجيل")),qd?"warn":undefined);return;
     }
     let r=rec?await db.from("casting_log").update(row).eq("id",rec.id).select():await castInsert(row);
     if(r.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}await load();toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
@@ -366,14 +368,23 @@ function castForm(rec,presetOid,waste){
       ["input","change","blur"].forEach(ev=>[w,dEl,sEl].forEach(el=>el.addEventListener(ev,upd)));upd();
     }
     const mode=document.getElementById("m-mode");if(!mode)return;
-    mx=(!waste&&!rec)?CM.wire(ords.map(o=>`<option value="${o.id}">${esc(cLab(o))}</option>`).join(""),()=>mode.value):null;
+    mx=(!waste&&!rec)?CM.wire(ords.map(o=>`<option value="${o.id}">${esc(cLab(o))}</option>`).join(""),()=>mode.value==="order"?"order":"free"):null;
     const sel=document.getElementById("m-o"),item=document.getElementById("m-item"),hint=document.getElementById("m-hint");
     const sync=()=>{
       const on=mode.value==="order";document.getElementById("m-ow").style.display=on?"block":"none";
       const o=on?CO.get(parseInt(sel.value)):null;item.readOnly=!!o;
       if(o){item.value=o.item;hint.textContent="مطلوب "+nf(o.req)+" · اتعمل "+nf(o.done)+" · متبقي "+nf(Math.max(o.req-o.done,0))}else hint.textContent="";
+      const ah=document.getElementById("m-ah");
+      if(ah){ // معاينة الربط التلقائي
+        if(mode.value!=="auto")ah.textContent="";
+        else{const it=item.value.trim();
+          if(!it)ah.textContent="اكتب الصنف وهيتربط لوحده بالطلبيات المفتوحة لنفس الصنف";
+          else{const qv=parseInt((document.getElementById("m-q")||{}).value)||1,sp=castAutoSplit([{item:it,qty:qv}],castOpen()).filter(e=>e.order_id);
+            ah.textContent=sp.length?"هيتربط بـ: "+sp.map(e=>cLab(CO.get(e.order_id))).join(" + "):"مفيش طلبية مفتوحة للصنف ده — هيتسجل بدون طلبية"}}
+      }
       if(mx)mx.mode();
     };
+    item.addEventListener("input",sync);const qIn=document.getElementById("m-q");if(qIn)qIn.addEventListener("input",sync);
     mode.onchange=sync;sel.onchange=sync;sync();
   },0);
 }

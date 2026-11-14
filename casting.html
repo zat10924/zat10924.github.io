@@ -129,12 +129,12 @@ function form(id,presetOid,waste){
   if(rec&&!canRow(rec)){toast("التعديل مقفول — تقدر تعدّل تسجيلاتك انت في نفس اليوم بس");return}
   wkLoad();
   const openOrds=orders.filter(o=>(o.st==="open"&&orderProg(o).rem>0)||(rec&&rec.oid===o.id)||o.id===presetOid);
-  const startOrd=rec?!!rec.oid:(presetOid?true:openOrds.length>0);
+  const startOrd=rec?!!rec.oid:!!presetOid;
   const curO=rec?rec.oid:presetOid||null;
   const items=[...new Set([...rows.map(r=>r.item),...orders.map(o=>o.item)].filter(Boolean))];
   const lockDate=!can("edit"); // مسجّل الإنتاج: التسجيل بتاريخ النهارده بس
   const shiftDef=rec?rec.sh:lastShift();
-  const modeSel=(ordersOk&&!waste)?`<label>نوع التسجيل</label><select id="m-mode"><option value="order" ${startOrd?"selected":""}>بطلبية</option><option value="free" ${startOrd?"":"selected"}>بدون طلبية</option></select>
+  const modeSel=(ordersOk&&!waste)?`<label>نوع التسجيل</label><select id="m-mode">${rec?"":`<option value="auto" ${startOrd?"":"selected"}>تلقائي (يرتبط بالطلبيات حسب الصنف)</option>`}<option value="order" ${startOrd?"selected":""}>بطلبية</option><option value="free" ${startOrd||!rec?"":"selected"}>بدون طلبية</option></select><div class="nums" id="m-ah" style="margin:4px 0 0"></div>
     <div id="m-ow" style="display:${startOrd?"block":"none"}"><label>الطلبية</label><select id="m-o"><option value="">— اختار الطلبية —</option>${openOrds.map(o=>`<option value="${o.id}" ${o.id===curO?"selected":""}>${esc(oLab(o))}</option>`).join("")}</select><div class="nums" id="m-hint" style="margin:4px 0 0"></div></div>`:"";
   let mx=null;
   openModal(waste?(rec?"تعديل هالك جودة":"تسجيل هالك جودة"):(rec?"تعديل تسجيل":"تسجيل إنتاج"),`${modeSel}
@@ -155,7 +155,7 @@ function form(id,presetOid,waste){
     if(!item){toast("اكتب اسم الصنف");return false}
     const sh=document.getElementById("m-sh").value,x=xfRead();
     if(!x.worker){toast(waste?"اكتب اسم العامل اللي طلع منه الهالك":"اكتب اسم العامل");return false}
-    const free=mode!=="order";
+    const free=mode!=="order",auto=mode==="auto"&&!rec;
     let extra=[];
     if(!waste&&!rec&&mx){
       for(const e of mx.read()){
@@ -171,7 +171,8 @@ function form(id,presetOid,waste){
     const row={casting_date:lockDate?(rec?rec.d:today()):(document.getElementById("m-d").value||today()),item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
     if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
     if(!rec){
-      const ents=[{item,qty:q,order_id:oid},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid}))];
+      const ents=auto?castAutoSplit([{item,qty:q},...extra.map(e=>({item:e.item,qty:e.qty}))],orders.filter(o=>o.st==="open").map(o=>({id:o.id,item:o.item,rem:orderProg(o).rem,due:o.due,date:o.od}))):[{item,qty:q,order_id:oid},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid}))];
+      const linked=ents.filter(e=>e.order_id).length;
       let ok=0,qd=0,err=null;
       for(const en of ents){const rr=await castInsert({...row,...en});if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
       try{localStorage.setItem("cast_shift",sh)}catch(e){}
@@ -181,7 +182,7 @@ function form(id,presetOid,waste){
         await load();toast("اتسجّل "+(ok+qd)+" من "+ents.length+" أصناف — "+m,"bad");return;
       }
       await load();
-      toast(qd?"مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع":(ok>1?"تم تسجيل "+ok+" أصناف":"تم التسجيل"),qd?"warn":undefined);return;
+      toast(qd?"مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع":(auto?(linked?"تم التسجيل وربطه تلقائيًا بالطلبية":"تم التسجيل (مفيش طلبية مفتوحة للصنف ده)"):(ok>1?"تم تسجيل "+ok+" أصناف":"تم التسجيل")),qd?"warn":undefined);return;
     }
     const res=rec?await db.from("casting_log").update(row).eq("id",id):await castInsert(row);
     if(res.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
@@ -200,7 +201,7 @@ function form(id,presetOid,waste){
       ["input","change","blur"].forEach(ev=>[w,dEl,sEl].forEach(el=>el.addEventListener(ev,upd)));upd();
     }
     const mode=document.getElementById("m-mode");
-    mx=(!waste&&!rec)?CM.wire(openOrds.map(o=>`<option value="${o.id}">${esc(oLab(o))}</option>`).join(""),()=>mode?mode.value:"free"):null;
+    mx=(!waste&&!rec)?CM.wire(openOrds.map(o=>`<option value="${o.id}">${esc(oLab(o))}</option>`).join(""),()=>mode&&mode.value==="order"?"order":"free"):null;
     if(!mode)return;
     const sel=document.getElementById("m-o"),item=document.getElementById("m-item"),hint=document.getElementById("m-hint");
     const sync=()=>{
@@ -210,8 +211,17 @@ function form(id,presetOid,waste){
       item.readOnly=!!o;
       if(o){item.value=o.item;const p=orderProg(o);hint.textContent="مطلوب "+nf(o.req)+" · اتعمل "+nf(p.done)+" · متبقي "+nf(p.rem)+(o.due?" · التسليم "+fmtD(o.due):"")}
       else hint.textContent="";
+      const ah=document.getElementById("m-ah");
+      if(ah){
+        if(mode.value!=="auto")ah.textContent="";
+        else{const it=item.value.trim();
+          if(!it)ah.textContent="اكتب الصنف وهيتربط لوحده بالطلبيات المفتوحة لنفس الصنف";
+          else{const qv=parseInt((document.getElementById("m-q")||{}).value)||1,sp=castAutoSplit([{item:it,qty:qv}],orders.filter(x=>x.st==="open").map(x=>({id:x.id,item:x.item,rem:orderProg(x).rem,due:x.due,date:x.od}))).filter(e=>e.order_id);
+            ah.textContent=sp.length?"هيتربط بـ: "+sp.map(e=>oLab(ordOf(e.order_id))).join(" + "):"مفيش طلبية مفتوحة للصنف ده — هيتسجل بدون طلبية"}}
+      }
       if(mx)mx.mode();
     };
+    item.addEventListener("input",sync);const qIn=document.getElementById("m-q");if(qIn)qIn.addEventListener("input",sync);
     mode.onchange=sync;sel.onchange=sync;sync();
   },0);
 }
