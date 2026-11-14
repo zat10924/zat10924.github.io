@@ -16,17 +16,41 @@
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="theme.css">
+<style>
+.sf .sfr{margin-bottom:12px}.sf .sfr>label{display:block;margin-bottom:5px;font-weight:700}.sf label small{font-weight:400;opacity:.7}
+.sfa{display:flex;gap:8px}.sfa .btn{flex:1}.sfa #clr{flex:0 0 28%}
+.msel{position:relative}
+.msb{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:start;padding:11px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:inherit;cursor:pointer;min-height:46px}
+.msb svg{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
+.msel.open .msb{border-color:var(--gold)}.msel.open .msb svg{transform:rotate(180deg)}
+.msp{margin-top:6px;border:1.5px solid var(--gold);border-radius:12px;background:var(--card);padding:4px;animation:msIn .15s ease both}
+.msp[hidden]{display:none}
+@keyframes msIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.mso{display:flex;align-items:center;gap:10px;margin:0;padding:10px;border-radius:9px;cursor:pointer}
+.mso:hover{background:color-mix(in srgb,var(--pri) 8%,transparent)}
+.mso input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--pri)}
+</style>
 </head>
 <body>
 <div id="splash"><svg class="gears" viewBox="0 0 120 80" aria-hidden="true"><path class="g1" fill-rule="evenodd" fill="#D7B96F" d="M56.5,42.0 L63.4,44.7 L62.8,48.1 L55.4,48.3 L54.0,51.2 L58.6,57.0 L56.4,59.7 L49.9,56.1 L47.2,58.0 L48.4,65.3 L45.1,66.5 L41.3,60.2 L38.0,60.5 L35.3,67.4 L31.9,66.8 L31.7,59.4 L28.8,58.0 L23.0,62.6 L20.3,60.4 L23.9,53.9 L22.0,51.2 L14.7,52.4 L13.5,49.1 L19.8,45.3 L19.5,42.0 L12.6,39.3 L13.2,35.9 L20.6,35.7 L22.0,32.8 L17.4,27.0 L19.6,24.3 L26.1,27.9 L28.8,26.0 L27.6,18.7 L30.9,17.5 L34.7,23.8 L38.0,23.5 L40.7,16.6 L44.1,17.2 L44.3,24.6 L47.2,26.0 L53.0,21.4 L55.7,23.6 L52.1,30.1 L54.0,32.8 L61.3,31.6 L62.5,34.9 L56.2,38.7Z M45,42 a7,7 0 1,0 -14,0 a7,7 0 1,0 14,0Z"/><path class="g2" fill-rule="evenodd" fill="#E8D49B" d="M85.6,30.0 L90.2,32.7 L89.3,36.2 L83.9,36.2 L81.9,38.9 L83.2,44.1 L80.2,45.9 L76.3,42.2 L73.0,42.6 L70.3,47.2 L66.8,46.3 L66.8,40.9 L64.1,38.9 L58.9,40.2 L57.1,37.2 L60.8,33.3 L60.4,30.0 L55.8,27.3 L56.7,23.8 L62.1,23.8 L64.1,21.1 L62.8,15.9 L65.8,14.1 L69.7,17.8 L73.0,17.4 L75.7,12.8 L79.2,13.7 L79.2,19.1 L81.9,21.1 L87.1,19.8 L88.9,22.8 L85.2,26.7Z M78,30 a5,5 0 1,0 -10,0 a5,5 0 1,0 10,0Z"/><path class="g3" fill-rule="evenodd" fill="#B9984C" d="M95.2,52.5 L98.6,54.8 L97.7,57.6 L93.7,57.7 L91.8,59.7 L92.0,63.7 L89.3,64.8 L86.7,61.7 L83.9,61.5 L81.0,64.2 L78.4,62.8 L79.3,58.8 L77.7,56.5 L73.7,55.9 L73.2,53.0 L76.9,51.2 L77.7,48.5 L75.7,45.0 L77.7,42.8 L81.3,44.5 L83.9,43.5 L85.4,39.8 L88.4,40.0 L89.3,43.9 L91.8,45.3 L95.6,44.1 L97.3,46.6 L94.8,49.7Z M90,52.5 a4,4 0 1,0 -8,0 a4,4 0 1,0 8,0Z"/></svg><img src="icon.svg" alt=""><b>إدارة الأقسام</b><div class="ld"><i></i></div><small class="ldt">جاري التحميل…</small></div>
 <script>try{var n=performance.getEntriesByType("navigation")[0];if(sessionStorage.getItem("sp")&&!(n&&n.type==="reload"))document.getElementById("splash").remove()}catch(e){}</script>
 <div class="wrap" style="overflow-x:hidden">
   <h1>بحث شامل عن صنف</h1>
-  <div class="card noprint">
-    <label>الصنف</label><input id="q" data-kind="item" list="itl" placeholder="اكتب جزء من اسم الصنف (فاضي = كل الأصناف)" autocomplete="off"><datalist id="itl"></datalist>
-    <div class="seg" id="rg" style="margin-top:8px"><button data-r="today">اليوم</button><button data-r="7">٧ أيام</button><button data-r="month">الشهر</button><button data-r="all" class="on">الكل</button></div>
-    <div class="two" style="margin-top:8px"><div><label>من تاريخ</label><input type="date" id="f"></div><div><label>إلى تاريخ</label><input type="date" id="t"></div></div>
-    <button class="btn" id="go" style="width:100%;margin-top:10px">بحث</button>
+  <div class="card noprint sf">
+    <div class="sfr"><label>الصنف</label><input id="q" data-kind="item" placeholder="اكتب جزء من اسم الصنف أو اختار من القائمة (فاضي = كل الأصناف)" autocomplete="off"></div>
+    <div class="sfr"><label>القسم <small>(اختياري)</small></label>
+      <div class="msel" id="ms"><button type="button" class="msb" id="msb" aria-expanded="false"><span id="msv">كل الأقسام</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="msp" id="msp" hidden>
+          <label class="mso"><input type="checkbox" data-s="all" checked><span>كل الأقسام</span></label>
+          <label class="mso"><input type="checkbox" data-s="glaze"><span>الجليز</span></label>
+          <label class="mso"><input type="checkbox" data-s="deco"><span>الزخرفة</span></label>
+          <label class="mso"><input type="checkbox" data-s="spray"><span>الرش</span></label>
+          <label class="mso"><input type="checkbox" data-s="repair"><span>التصليح</span></label>
+        </div></div></div>
+    <div class="sfr"><label>الفترة</label>
+      <div class="seg" id="rg"><button data-r="today">اليوم</button><button data-r="7">٧ أيام</button><button data-r="month">الشهر</button><button data-r="all" class="on">الكل</button></div>
+      <div class="two" style="margin-top:8px"><div><label>من تاريخ</label><input type="date" id="f"></div><div><label>إلى تاريخ</label><input type="date" id="t"></div></div></div>
+    <div class="sfa"><button class="btn" id="go">بحث</button><button class="btn ghost" id="clr" type="button">مسح</button></div>
   </div>
   <div id="res"><div class="empty">اكتب اسم الصنف واختر الفترة، وهيظهرلك اتجلّز منه كام، وطلع هالك كام، واتزخرف منه كام وبأنهي كود رسمة.</div></div>
 </div>
@@ -45,19 +69,33 @@ function range(){
 }
 const tbl=(cols,rows)=>`<div style="overflow-x:auto"><table class="tbl" style="width:100%;border-collapse:collapse;font-size:.92rem"><thead><tr>${cols.map(c=>`<th style="text-align:right;padding:5px 6px;border-bottom:1px solid var(--line)">${c}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td style="padding:5px 6px;border-bottom:1px solid var(--line)">${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 function group(rows,keyf){const m=new Map();rows.forEach(r=>{const k=keyf(r);m.set(k,(m.get(k)||0)+r.qty)});return[...m].sort((a,b)=>b[1]-a[1])}
+const SN={glaze:"الجليز",deco:"الزخرفة",spray:"الرش",repair:"التصليح"};
+const msx=()=>[...document.querySelectorAll("#msp input")];
+function chosen(){const on=msx().filter(i=>i.checked&&i.dataset.s!=="all").map(i=>i.dataset.s);return on.length?SECS.filter(k=>on.includes(k)):SECS}
+function msLabel(){const c=chosen();$("msv").textContent=c.length===SECS.length?"كل الأقسام":c.map(k=>SN[k]).join(" + ")}
+function msOpen(o){$("msp").hidden=!o;$("ms").classList.toggle("open",o);$("msb").setAttribute("aria-expanded",o)}
+$("msb").onclick=()=>msOpen($("msp").hidden);
+$("msp").addEventListener("change",e=>{
+  const i=e.target,all=msx().find(x=>x.dataset.s==="all");
+  if(i.dataset.s==="all")msx().forEach(x=>x.checked=x===all);
+  else{all.checked=false;if(!msx().some(x=>x.checked))all.checked=true}
+  msLabel();
+});
+document.addEventListener("pointerdown",e=>{if(!$("msp").hidden&&!e.target.closest("#ms"))msOpen(false)});
+$("clr").onclick=()=>{$("q").value="";$("f").value="";$("t").value="";msx().forEach(x=>x.checked=x.dataset.s==="all");msLabel();msOpen(false);document.querySelectorAll("#rg button").forEach(x=>x.classList.toggle("on",x.dataset.r==="all"));PART=false;$("res").innerHTML='<div class="empty">اكتب اسم الصنف واختر الفترة، وهيظهرلك اتجلّز منه كام، وطلع هالك كام، واتزخرف منه كام وبأنهي كود رسمة.</div>'};
 let PART=false; // true = عرض كل الأصناف اللي فيها الكلمة (مش المطابق تمامًا بس)
 async function run(){
   const q=norm($("q").value),[f,t]=range(),box=$("res");
   box.innerHTML='<i class="sk" style="height:140px;border-radius:14px"></i>';
   const ok=d=>(!f||d>=f)&&(!t||d<=t);
-  const S=Reports.sources,res=await Promise.allSettled(SECS.map(k=>Reports.getData(k,true)));
+  const AS=chosen(),S=Reports.sources,res=await Promise.allSettled(AS.map(k=>Reports.getData(k,true)));
   let html="",any=false;const head=[];
   // لو اللي اتكتب هو اسم صنف كامل بالظبط (مثلًا «شي إن») بنعرض الصنف ده بس، ومش كل صنف الكلمة جواه (زي «قهوة شي إن»)
   const names=new Set();res.forEach(r=>{if(r.status==='fulfilled'){r.value.prod.forEach(x=>names.add(norm(x.item)));(r.value.waste||[]).forEach(x=>names.add(norm(x.item)))}});
   const exact=!!q&&!PART&&names.has(q),m=x=>exact?norm(x)===q:hit(q,x);
   const others=q?[...names].filter(n=>n!==q&&n.includes(q)).length:0;
   res.forEach((r,i)=>{
-    const k=SECS[i];if(r.status!=="fulfilled")return;
+    const k=AS[i];if(r.status!=="fulfilled")return;
     const d=r.value,prod=d.prod.filter(x=>ok(x.d)&&m(x.item)),waste=(d.waste||[]).filter(x=>ok(x.d)&&m(x.item));
     if(!prod.length&&!waste.length)return;any=true;
     const tot=prod.reduce((a,x)=>a+x.qty,0),wq=waste.reduce((a,x)=>a+x.qty,0);
@@ -76,16 +114,22 @@ async function run(){
     html+=h+"</div>";
   });
   if(!any){box.innerHTML='<div class="empty">مفيش نتائج للصنف ده في الفترة دي</div>';return}
-  box.innerHTML=`<div class="card"><h3 style="margin-top:0">النتيجة${$("q").value.trim()?" — «"+esc($("q").value.trim())+"»":""}</h3><div class="nums">${Reports.sources&&(f||t?(f?"من "+fmtDW(f):"")+(t?" إلى "+fmtDW(t):""):"كل الفترات")}</div>${head.map(h=>`<div class="r" style="display:flex;justify-content:space-between;padding:4px 0"><span>${h[0]}</span><span><b>${nf(h[1])}</b>${h[2]?` <span class="nums">· هالك ${nf(h[2])}</span>`:""}</span></div>`).join("")}</div>`+html;
+  const qv=$("q").value.trim(),per=f||t?(f?"من "+fmtDW(f):"")+(t?" إلى "+fmtDW(t):""):"كل الفترات";
+  box.innerHTML=`<div class="print-head"><h2>تقرير بحث شامل${qv?": «"+esc(qv)+"»":" (كل الأصناف)"}</h2><div class="nums">${AS.length<SECS.length?"القسم: "+AS.map(k=>SN[k]).join(" + ")+" · ":""}الفترة: ${per}${exact?" · الصنف المطابق فقط":(PART&&q?" · كل الأصناف اللي فيها الكلمة":"")}</div></div><div class="card"><div class="noprint" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h3 style="margin:0">النتيجة${qv?" — «"+esc(qv)+"»":""}</h3><button type="button" class="btn sm ibt" id="prt">${ui("print")}طباعة / PDF</button></div><div class="nums noprint">${AS.length<SECS.length?AS.map(k=>SN[k]).join(" + ")+" · ":""}${per}</div>${head.map(h=>`<div class="r" style="display:flex;justify-content:space-between;padding:4px 0"><span>${h[0]}</span><span><b>${nf(h[1])}</b>${h[2]?` <span class="nums">· هالك ${nf(h[2])}</span>`:""}</span></div>`).join("")}</div>`+html;
   if(q&&(exact&&others||PART&&names.has(q))){
     box.insertAdjacentHTML("afterbegin",`<div class="hint" style="margin:0 0 8px">${exact?"معروض الصنف المطابق «"+esc($("q").value.trim())+"» بس. فيه "+others+" صنف تاني اسمه فيه نفس الكلمة. ":"معروض كل الأصناف اللي اسمها فيه «"+esc($("q").value.trim())+"». "}<button type="button" class="btn ghost sm" id="partT">${exact?"عرض كل الأصناف اللي فيها الكلمة":"عرض المطابق بس"}</button></div>`);
     $("partT").onclick=()=>{PART=!PART;run()};
   }
 }
+// فتح كل التفاصيل وقت الطباعة عشان تطلع كاملة في الـ PDF
+let _dt=[];
+window.addEventListener("beforeprint",()=>{_dt=[...document.querySelectorAll("#res details:not([open])")];_dt.forEach(d=>d.open=true)});
+window.addEventListener("afterprint",()=>{_dt.forEach(d=>d.open=false);_dt=[]});
+document.addEventListener("click",e=>{if(e.target.closest("#prt"))setTimeout(()=>window.print(),50)});
 async function loadNames(){
-  try{const{data}=await db.from("catalog").select("name").eq("kind","item").order("name");$("itl").innerHTML=(data||[]).map(x=>`<option value="${esc(x.name)}">`).join("")}catch(e){}
+  try{const{data}=await db.from("catalog").select("name").eq("kind","item").order("name");const q=$("q");q._extra=(data||[]).map(x=>x.name);if(!q.closest(".cbw")&&typeof enhanceCombo==="function")enhanceCombo(q)}catch(e){}
 }
-$("go").onclick=()=>{PART=false;run()};$("q").onkeydown=e=>{if(e.key==="Enter"){if(typeof CBX!=="undefined"&&CBX.p&&!CBX.p.hidden&&CBX.act>=0)return;PART=false;run()}};
+$("go").onclick=()=>{PART=false;msOpen(false);run()};$("q").onkeydown=e=>{if(e.key==="Enter"){if(typeof CBX!=="undefined"&&CBX.p&&!CBX.p.hidden&&CBX.act>=0)return;PART=false;run()}};
 document.querySelectorAll("#rg button").forEach(b=>b.onclick=()=>{$("f").value="";$("t").value="";document.querySelectorAll("#rg button").forEach(x=>x.classList.toggle("on",x===b))});
 ["f","t"].forEach(i=>$(i).onchange=()=>document.querySelectorAll("#rg button").forEach(x=>x.classList.remove("on")));
 (async()=>{if(await requireAuth("search.html")){renderNav("search.html");loadNames();settle()}})();
