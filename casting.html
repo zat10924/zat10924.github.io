@@ -181,7 +181,7 @@ function castForm(id,presetOid,waste){if(roBlock())return;
       const linked=ents.filter(e=>e.order_id).length;
       let ok=0,qd=0,err=null;
       for(const en of ents){const rr=await castInsert({...row,...en});if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
-      try{localStorage.setItem("cast_shift",sh)}catch(e){}
+      try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("casting",{w:x.worker,i:item,q:q});
       if(err){
         const m=V2_ERR.test(err.message||"")?"شغّل ملف setup_casting_v2.sql من Supabase الأول":"خطأ: "+err.message;
         if(!ok&&!qd){toast(m,"bad");return false}
@@ -191,14 +191,15 @@ function castForm(id,presetOid,waste){if(roBlock())return;
       toast(qd?"مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع":(auto?(linked?"تم التسجيل وربطه تلقائيًا بالطلبية":"تم التسجيل (مفيش طلبية مفتوحة للصنف ده)"):(ok>1?"تم تسجيل "+ok+" أصناف":"تم التسجيل")),qd?"warn":undefined);return;
     }
     const res=rec?await db.from("casting_log").update(row).eq("id",id):await castInsert(row);
-    if(res.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
+    if(res.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("casting",{w:x.worker,i:item,q:q});toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
     const error=res.error;
     if(error){toast(V2_ERR.test(error.message||"")?"شغّل ملف setup_casting_v2.sql من Supabase الأول":"خطأ: "+error.message);return false}
-    try{localStorage.setItem("cast_shift",sh)}catch(e){}
+    try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("casting",{w:x.worker,i:item,q:q});
     await load();toast(rec?"تم التعديل":"تم التسجيل");
   });
   setTimeout(()=>{
     const w=document.getElementById("m-w");if(w&&rec)w.value=rec.w;
+    if(!waste)smartFill("casting",rec);
     if(waste){ // سليم العامل وهالكه ونسبة الهالك في اليوم
       const h=document.getElementById("m-wh"),dEl=document.getElementById("m-d"),sEl=document.getElementById("m-scrap");
       const upd=()=>{const n=w.value.trim();if(!n){h.textContent="";return}

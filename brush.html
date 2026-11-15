@@ -59,6 +59,7 @@ const pendQ=id=>Q_.get().filter(i=>i.sec==="brush"&&i.rid===id).reduce((a,i)=>a+
 const lastShift=()=>{try{return localStorage.getItem("cast_shift")||""}catch(e){return ""}};
 
 async function load(){
+  brcLoad();
   const[a,b,gr]=await Promise.all([
     db.from("brush_log").select("*").order("brush_date",{ascending:false}).order("id",{ascending:false}),
     db.from("brush_orders").select("*").order("id",{ascending:false}),
@@ -70,7 +71,7 @@ async function load(){
     fail("body",load);return}
   ordersOk=!b.error;
   orders=ordersOk?(b.data||[]).map(o=>{const g=GM.get(o.group_id);return{id:o.id,gid:o.group_id||null,title:g?(g.title||"").trim():(o.title||""),no:g&&g.order_no||null,item:o.item,req:o.qty_required,od:o.order_date,due:o.due_date||"",st:o.status,n:o.note||""}}):[];
-  rows=a.data.map(r=>({id:r.id,d:r.brush_date,item:r.item||"",qty:r.qty,sc:r.scrap||0,isw:!(+r.qty>0)&&+r.scrap>0,sh:r.shift||"",oid:r.order_id||null,w:r.worker||"",n:r.note||"",by:r.created_by||null}));
+  rows=a.data.map(r=>({id:r.id,d:r.brush_date,item:r.item||"",qty:r.qty,sc:r.scrap||0,isw:!(+r.qty>0)&&+r.scrap>0,sh:r.shift||"",oid:r.order_id||null,w:r.worker||"",n:r.note||"",by:r.created_by||null,mo:r.molds==null?null:+r.molds,po:r.pours==null?null:+r.pours}));
   fillSel("f-item",[...new Set(rows.map(r=>r.item).filter(Boolean))],'<option value="__none">'+NONE+'</option>');
   fillSel("f-wk",[...new Set(rows.map(r=>r.w).filter(Boolean))],'<option value="__none">بدون عامل</option>');
   draw();drawStats();drawOrders();
@@ -116,7 +117,7 @@ function draw(){
   document.getElementById("wq").innerHTML=wl.length?`<table><thead><tr><th>العامل</th><th>السليم</th><th>الهالك</th><th>نسبة الهالك</th></tr></thead><tbody>${wl.map(([n,o])=>`<tr><td><b>${esc(n)}</b></td><td>${nf(o.q)}</td><td><b style="color:var(--bad,#b3261e)">${nf(o.s)}</b></td><td>${Math.round(o.s/(o.q+o.s)*1000)/10}%</td></tr>`).join("")}</tbody></table>`:"";
   const by={};rs.forEach(r=>{const k=r.item||NONE;by[k]=(by[k]||0)+r.qty});
   document.getElementById("brk").textContent=Object.keys(by).length>1?Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+": "+nf(v)).join(" · "):"";
-  document.getElementById("body").innerHTML=rs.length?rs.map(r=>{const o=ordOf(r.oid);return `<tr><td>${fmtD(r.d)}</td><td>${r.sh?esc(r.sh):dash}</td><td>${r.item?esc(r.item):'<span class="nums">'+NONE+'</span>'}</td><td>${r.isw?'<span class="tag late">هالك جودة</span>':r.oid?esc(o?oLab(o):"#"+r.oid):'<span class="nums">بدون طلبية</span>'}</td><td>${r.w?esc(r.w):dash}</td><td>${r.isw?dash:"<b>"+nf(r.qty)+"</b>"}</td><td>${r.sc?'<b style="color:var(--bad,#b3261e)">'+nf(r.sc)+'</b>':dash}</td><td>${r.n?esc(r.n):dash}</td><td class="noprint" style="white-space:nowrap">${canRow(r)?`<button class="btn ghost sm" onclick="castForm(${r.id})">تعديل</button> `:""}${canDel(r)?`<button class="btn ghost sm" onclick="del(${r.id})">حذف</button>`:""}</td></tr>`}).join(""):'<tr><td colspan="9" class="empty">مفيش إنتاج مسجل</td></tr>';
+  document.getElementById("body").innerHTML=rs.length?rs.map(r=>{const o=ordOf(r.oid);return `<tr><td>${fmtD(r.d)}</td><td>${r.sh?esc(r.sh):dash}</td><td>${r.item?esc(r.item):'<span class="nums">'+NONE+'</span>'}</td><td>${r.isw?'<span class="tag late">هالك جودة</span>':r.oid?esc(o?oLab(o):"#"+r.oid):'<span class="nums">بدون طلبية</span>'}</td><td>${r.w?esc(r.w):dash}</td><td>${r.isw?dash:"<b>"+nf(r.qty)+"</b>"+((r.mo!=null||r.po!=null)?'<div class="nums">'+(r.mo!=null?"قوالب "+nf(r.mo):"")+(r.mo!=null&&r.po!=null?" · ":"")+(r.po!=null?"صبات "+nf(r.po):"")+"</div>":"")}</td><td>${r.sc?'<b style="color:var(--bad,#b3261e)">'+nf(r.sc)+'</b>':dash}</td><td>${r.n?esc(r.n):dash}</td><td class="noprint" style="white-space:nowrap">${canRow(r)?`<button class="btn ghost sm" onclick="castForm(${r.id})">تعديل</button> `:""}${canDel(r)?`<button class="btn ghost sm" onclick="del(${r.id})">حذف</button>`:""}</td></tr>`}).join(""):'<tr><td colspan="9" class="empty">مفيش إنتاج مسجل</td></tr>';
 }
 
 /* ===== نموذج تسجيل الإنتاج: بطلبية / بدون طلبية ===== */
@@ -145,7 +146,7 @@ function castForm(id,presetOid,waste){if(roBlock())return;
     ${XW(true)}
     <label>الصنف</label><input id="m-item" list="m-items" value="${rec?esc(rec.item):""}" maxlength="120"><datalist id="m-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
     ${waste?`<label>عدد القطع الهالكة</label><input type="number" id="m-scrap" min="1" max="100000" inputmode="numeric" value="${rec&&rec.sc?rec.sc:""}"><div class="nums" id="m-wh" style="margin:4px 0 0"></div>`
-      :`<label>عدد القطع</label><input type="number" id="m-q" min="${legacySc?0:1}" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">${legacySc?`<label>هالك الجودة (تسجيل قديم)</label><input type="number" id="m-scrap" min="0" max="100000" inputmode="numeric" value="${rec.sc}">`:""}${rec?"":CM.html()}`}
+      :`<label>عدد القطع</label><input type="number" id="m-q" min="${legacySc?0:1}" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">${legacySc?`<label>هالك الجودة (تسجيل قديم)</label><input type="number" id="m-scrap" min="0" max="100000" inputmode="numeric" value="${rec.sc}">`:""}${brcHtml(rec)}${rec?"":CM.html()}`}
     <label>${waste?"السبب / ملاحظات (اختياري)":"ملاحظات (اختياري)"}</label><input id="m-n" maxlength="300" placeholder="أي تعليق على الشغل" value="${rec?esc(rec.n):""}">`,async()=>{
     const mode=(ordersOk&&!waste)?document.getElementById("m-mode").value:"free";
     const oid=mode==="order"?parseInt(document.getElementById("m-o").value)||null:null;
@@ -176,14 +177,15 @@ function castForm(id,presetOid,waste){if(roBlock())return;
         if(o){const base=Math.max(orderProg(o).rem-pendQ(o.id),0)+(rec&&rec.oid===o.id?rec.qty:0),u=(used.get(o.id)||0)+e.qty;used.set(o.id,u);rows.push(["المتبقي بعد التسجيل",remAfter(base,u)]);warn=overWarn(base,u)}
         return{title:e.item,rows,warn}})}))return false;
     const row={brush_date:cd,item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
+    if(!waste){const b=brcRead();if(b.molds!=null||b.pours!=null||(rec&&(rec.mo!=null||rec.po!=null))){row.molds=b.molds;row.pours=b.pours}}
     if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
     if(!rec){
       const linked=ents.filter(e=>e.order_id).length;
       let ok=0,qd=0,err=null;
-      for(const en of ents){const rr=await castInsert({...row,...en},"brush_log","brush");if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
-      try{localStorage.setItem("cast_shift",sh)}catch(e){}
+      let ix=0;for(const en of ents){const r1={...row,...en};if(ix++>0){delete r1.molds;delete r1.pours}const rr=await castInsert(r1,"brush_log","brush");if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
+      try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("brush",{w:x.worker,i:item,q:q});
       if(err){
-        const m=V2_ERR.test(err.message||"")?"شغّل ملف setup_brush.sql من Supabase الأول":"خطأ: "+err.message;
+        const m=BRC_ERR.test(err.message||"")?"شغّل ملف setup_v4_4.sql من Supabase الأول":V2_ERR.test(err.message||"")?"شغّل ملف setup_brush.sql من Supabase الأول":"خطأ: "+err.message;
         if(!ok&&!qd){toast(m,"bad");return false}
         await load();toast("اتسجّل "+(ok+qd)+" من "+ents.length+" أصناف — "+m,"bad");return;
       }
@@ -191,14 +193,15 @@ function castForm(id,presetOid,waste){if(roBlock())return;
       toast(qd?"مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع":(auto?(linked?"تم التسجيل وربطه تلقائيًا بالطلبية":"تم التسجيل (مفيش طلبية مفتوحة للصنف ده)"):(ok>1?"تم تسجيل "+ok+" أصناف":"تم التسجيل")),qd?"warn":undefined);return;
     }
     const res=rec?await db.from("brush_log").update(row).eq("id",id):await castInsert(row,"brush_log","brush");
-    if(res.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
+    if(res.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("brush",{w:x.worker,i:item,q:q});toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
     const error=res.error;
-    if(error){toast(V2_ERR.test(error.message||"")?"شغّل ملف setup_brush.sql من Supabase الأول":"خطأ: "+error.message);return false}
-    try{localStorage.setItem("cast_shift",sh)}catch(e){}
+    if(error){toast(BRC_ERR.test(error.message||"")?"شغّل ملف setup_v4_4.sql من Supabase الأول":V2_ERR.test(error.message||"")?"شغّل ملف setup_brush.sql من Supabase الأول":"خطأ: "+error.message);return false}
+    try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("brush",{w:x.worker,i:item,q:q});
     await load();toast(rec?"تم التعديل":"تم التسجيل");
   });
   setTimeout(()=>{
     const w=document.getElementById("m-w");if(w&&rec)w.value=rec.w;
+    if(!waste){brcWire(rec);smartFill("brush",rec)}
     if(waste){ // سليم العامل وهالكه ونسبة الهالك في اليوم
       const h=document.getElementById("m-wh"),dEl=document.getElementById("m-d"),sEl=document.getElementById("m-scrap");
       const upd=()=>{const n=w.value.trim();if(!n){h.textContent="";return}

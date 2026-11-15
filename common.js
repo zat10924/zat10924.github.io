@@ -146,13 +146,19 @@ const seesAll=()=>!!ME&&(ME.role==="admin"||ME.role==="owner");
 // صاحب المصنع: عرض فقط. الواجهة بتخفي أزرار التسجيل والتعديل (body.ro) وبتمنع الكتابة هنا كشبكة أمان،
 // والحماية الحقيقية في قاعدة البيانات: setup_owner_readonly.sql
 const isOwner=()=>!!ME&&ME.role==="owner";
-const roBlock=()=>{if(isOwner()){toast("صاحب المصنع: عرض فقط — التسجيل والتعديل للمدير ومسؤول القسم ومسجّل الإنتاج","warn");return true}return false};
+// مسؤول القسم اللي معاه «يشوف باقي الأقسام»: بيشوف كل الأقسام والتقارير، ويسجّل ويدير أقسامه بس
+const viewsAll=()=>seesAll()||(!!ME&&ME.role==="manager"&&!!ME.view_all);
+const SEC_OF_TBL=t=>/^glaze_/.test(t)?"glaze":/^deco_/.test(t)?"deco":/^spray_/.test(t)?"spray":t==="repair_log"?"repair":/^casting_/.test(t)?"casting":/^brush_/.test(t)?"brush":"";
+const roTbl=t=>{const k=SEC_OF_TBL(t);return !!k&&!!ME&&ME.role==="manager"&&!!ME.view_all&&!secList(ME).includes(k)};
+// صفحة قسم مش من أقسام المستخدم (وهو بيشوفها بصلاحية «يشوف باقي الأقسام») = عرض فقط
+const roPage=()=>{const k=KEY[location.pathname.split("/").pop()];return !!k&&!!ME&&ME.role==="manager"&&!!ME.view_all&&!secList(ME).includes(k)};
+const roBlock=()=>{if(isOwner()){toast("صاحب المصنع: عرض فقط — التسجيل والتعديل للمدير ومسؤول القسم ومسجّل الإنتاج","warn");return true}if(roPage()){toast("ده قسم مش من أقسامك: عرض فقط","warn");return true}return false};
 (()=>{
   const from=db.from.bind(db),OK=new Set(["profiles","push_subs","push_subscriptions","activity_log"]);
   const dead=()=>new Proxy(function(){},{get:(_,k)=>k==="then"?(a,b)=>Promise.resolve({data:null,error:{message:"صاحب المصنع: عرض فقط"}}).then(a,b):dead(),apply:()=>dead()});
   db.from=t=>{
     const q=from(t);if(OK.has(t))return q;
-    for(const m of["insert","update","delete","upsert"]){const o=q[m].bind(q);q[m]=(...a)=>isOwner()?dead():o(...a)}
+    for(const m of["insert","update","delete","upsert"]){const o=q[m].bind(q);q[m]=(...a)=>(isOwner()||roTbl(t))?dead():o(...a)}
     return q;
   };
 })();
@@ -170,7 +176,7 @@ const canEditEntry=e=>{
   if(e.by&&ME.id&&e.by!==ME.id)return false;
   return true;
 };
-function applyPerms(){Object.keys(PERM_LBL).forEach(k=>document.body.classList.toggle("np-"+k,!can(k)));document.body.classList.toggle("ro",isOwner())}
+function applyPerms(){Object.keys(PERM_LBL).forEach(k=>document.body.classList.toggle("np-"+k,!can(k)));document.body.classList.toggle("ro",isOwner()||roPage())}
 /* أقسام لسه هتتنشأ (بتظهر للمدير ومسؤول القسم كإعلان، من غير صفحة ولا صلاحيات) */
 const SOON=[["الفنش","finish","#3E7C6B"],["الفرز","sortx","#6B5B95"],["الحريق","fire","#C0502B"]];
 const soonSections=()=>canReports()?SOON:[];
@@ -212,10 +218,10 @@ async function loadMe(){
   const session=await getSess();if(!session)return null;
   // لو عمود active لسه مش موجود (قبل تشغيل setup_users.sql) نرجع للاستعلام القديم
   const getP=async()=>{
-    let cols=["full_name","role","section","sections","active","perms","avatar","phone","whatsapp"],r;
+    let cols=["full_name","role","section","sections","active","perms","avatar","phone","whatsapp","view_all"],r;
     for(let i=0;i<8;i++){
       r=await db.from("profiles").select(cols.join(",")).eq("id",session.user.id).maybeSingle();
-      const bad=r.error&&["perms","active","avatar","sections","phone","whatsapp"].find(c=>cols.includes(c)&&(r.error.message||"").includes(c));
+      const bad=r.error&&["perms","active","avatar","sections","phone","whatsapp","view_all"].find(c=>cols.includes(c)&&(r.error.message||"").includes(c));
       if(!bad)break;cols=cols.filter(c=>c!==bad);
     }
     return r};
@@ -236,9 +242,9 @@ async function loadMe(){
 const secList=r=>{const a=[];if(r&&Array.isArray(r.sections))r.sections.forEach(x=>{if(SEC_AR[x]&&!a.includes(x))a.push(x)});if(r&&r.section&&SEC_AR[r.section]&&!a.includes(r.section))a.unshift(r.section);return a};
 const mySecs=()=>ME?(seesAll()?Object.keys(SEC_AR):secList(ME)):[];
 const secNames=l=>(l||[]).map(k=>SEC_AR[k]).filter(Boolean).join("، ");
-const canSee=f=>!!ME&&!!ME.role&&(f==="index.html"||f==="production.html"||f==="profile.html"||f==="settings.html"||ME.role==="admin"||(ME.role==="owner"&&f!=="users.html")||(KEY[f]&&mySecs().includes(KEY[f])&&(f==="repair.html"||(can("view")&&!((f==="casting.html"||f==="brush.html")&&ME.role==="worker")))));
+const canSee=f=>!!ME&&!!ME.role&&(f==="index.html"||f==="production.html"||f==="profile.html"||f==="settings.html"||ME.role==="admin"||(ME.role==="owner"&&f!=="users.html")||(KEY[f]&&ME.role==="manager"&&ME.view_all&&can("view"))||(KEY[f]&&mySecs().includes(KEY[f])&&(f==="repair.html"||(can("view")&&!((f==="casting.html"||f==="brush.html")&&ME.role==="worker")))));
 const visibleSections=()=>SECTIONS.filter(s=>canSee(s[0]));
-const canReports=()=>seesAll();
+const canReports=()=>viewsAll();
 function noAccess(){
   const off=ME&&ME.active===false;
   document.body.innerHTML='<div class="wrap"><div class="card empty" style="margin-top:40px">'+(off?'حسابك موقوف.<br>كلّم المدير لو محتاج تفعّله تاني.':'حسابك لسه مش متفعّل على قسم.<br>كلّم المدير عشان يدّيك صلاحية.')+'<br><button class="btn" id="o" style="margin-top:14px">خروج</button></div></div>';
@@ -893,6 +899,45 @@ document.addEventListener("input",e=>{const x=e.target;if(!x||x.id!=="m-wx")retu
   Object.defineProperty(HTMLSelectElement.prototype,"value",{configurable:true,get(){return d.get.call(this)},set(v){
     if(this.id==="m-w"&&v&&![...this.options].some(o=>o.value===v)){const o=document.createElement("option");o.value=v;o.textContent=v;this.appendChild(o)}
     d.set.call(this,v);if(this._spr)this._spr()}});})();
+// ===== البرشر: عدد القوالب وعدد الصبات (اختياريين) — القيم الافتراضية بتيجي من الصنف في الأصناف =====
+// ===== تسجيل أذكى: بيفتكر آخر عامل وصنف وكمية لكل قسم، وأزرار كميات سريعة =====
+const smartGet=k=>{try{return JSON.parse(localStorage.getItem("smart_"+k))||{}}catch(e){return{}}};
+const smartSave=(k,o)=>{try{localStorage.setItem("smart_"+k,JSON.stringify({w:o.w||"",i:o.i||"",q:+o.q||0,at:Date.now()}))}catch(e){}};
+function smartFill(k,rec){
+  const q=document.getElementById("m-q");if(!q||q.dataset.sm)return;q.dataset.sm="1";
+  const last=smartGet(k);
+  if(!rec){
+    const w=document.getElementById("m-w"),it=document.getElementById("m-item");
+    if(w&&!w.value&&last.w)w.value=last.w; // القائمة المنسدلة بتضيف الاسم لو مش موجود
+    if(it&&!it.value&&!it.readOnly&&last.i){it.value=last.i;it.dispatchEvent(new Event("input",{bubbles:true}))}
+  }
+  const ch=[...(last.q>0?[[last.q,"آخر كمية "+nf(last.q),0]]:[]),[10,"+10",1],[25,"+25",1],[50,"+50",1],[100,"+100",1]];
+  const row=document.createElement("div");row.className="qchips";
+  row.innerHTML=ch.map((c,i)=>`<button type="button" class="chip" data-i="${i}">${c[1]}</button>`).join("")+`<button type="button" class="chip" data-z="1">مسح</button>`;
+  row.onclick=e=>{const b=e.target.closest("button");if(!b)return;
+    if(b.dataset.z){q.value="";}else{const c=ch[+b.dataset.i];q.value=c[2]?(parseInt(q.value)||0)+c[0]:c[0]}
+    q.dispatchEvent(new Event("input",{bubbles:true}))};
+  q.insertAdjacentElement("afterend",row);
+}
+let BRC=new Map();
+async function brcLoad(){
+  try{const r=await db.from("catalog").select("name,molds,pours").eq("kind","item");
+    if(r.error)return;BRC=new Map((r.data||[]).map(x=>[norm(x.name),{m:x.molds,p:x.pours}]))}catch(e){}
+}
+const brcHtml=rec=>`<div class="two"><div><label>عدد القوالب (اختياري)</label><input type="number" id="m-mo" min="0" max="100000" inputmode="numeric" value="${rec&&rec.mo!=null?rec.mo:""}"></div><div><label>عدد الصبات (اختياري)</label><input type="number" id="m-po" min="0" max="100000" inputmode="numeric" value="${rec&&rec.po!=null?rec.po:""}"></div></div><div class="nums" id="m-brh" style="margin:2px 0 6px"></div>`;
+// بيملا القوالب والصبات من بيانات الصنف أول ما يتختار، ولو المستخدم كتب قيمة بإيده بيسيبها
+function brcWire(rec){
+  const it=document.getElementById("m-item"),mo=document.getElementById("m-mo"),po=document.getElementById("m-po"),h=document.getElementById("m-brh");
+  if(!it||!mo||!po)return;
+  [mo,po].forEach(e=>e.addEventListener("input",()=>{e.dataset.t="1"}));
+  const fill=()=>{const c=BRC.get(norm(it.value.trim()));
+    if(!c||(c.m==null&&c.p==null)){if(h)h.textContent="";return}
+    if(h)h.textContent="من بيانات الصنف: "+(c.m!=null?c.m+" قالب":"")+(c.m!=null&&c.p!=null?" · ":"")+(c.p!=null?c.p+" صبة":"");
+    if(!rec){if(!mo.dataset.t&&c.m!=null)mo.value=c.m;if(!po.dataset.t&&c.p!=null)po.value=c.p}};
+  it.addEventListener("input",fill);it.addEventListener("change",fill);(BRC.size?Promise.resolve():brcLoad()).then(fill);
+}
+const brcRead=()=>{const g=id=>{const e=document.getElementById(id);if(!e)return undefined;const v=e.value.trim();return v===""?null:Math.max(0,Math.min(100000,parseInt(v)||0))};return{molds:g("m-mo"),pours:g("m-po")}};
+const BRC_ERR=/molds|pours/i;
 const XW=(deco)=>'<label>'+(deco?'اسم العامل':'اسم العامل (اختياري)')+'</label><select id="m-w">'+wkOpts()+'</select><input id="m-wx" maxlength="60" placeholder="اكتب اسم العامل" autocomplete="off" style="display:none;margin-top:6px">';
 // الزخرفة: اسم العامل بيظهر في أول الشاشة (XT)، وباقي الحقول في آخرها (XF)
 const XT=(deco)=>{if(!deco)return "";wkLoad();return XW(true).replace("<label>اسم العامل</label>","<label>اسم العامل (اختياري)</label>")};
@@ -1112,7 +1157,7 @@ async function cbPreview(inp){
     box.hidden=false;
   }catch(e){}
 }
-const cbSheetMode=()=>matchMedia("(pointer:coarse)").matches||innerWidth<700;
+const cbSheetMode=inp=>(matchMedia("(pointer:coarse)").matches||innerWidth<700)&&!!(inp&&inp.closest("#ov"));
 function cbSheet(inp){
   if(!inp||!inp.isConnected||inp.readOnly||inp.disabled||document.getElementById("spo"))return;
   const k=inp.dataset.cb,wrap=inp.closest(".cbw"),lbEl=(wrap?wrap:inp).previousElementSibling,
@@ -1152,20 +1197,20 @@ function enhanceCombo(inp){
   b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';w.appendChild(b);
   b.addEventListener("pointerdown",e=>e.preventDefault());
   b.addEventListener("click",()=>{
-    if(inp.readOnly||inp.disabled)return;if(cbSheetMode()){catReady().then(()=>cbSheet(inp));return}
+    if(inp.readOnly||inp.disabled)return;if(cbSheetMode(inp)){catReady().then(()=>cbSheet(inp));return}
     if(CBX.inp===inp&&CBX.p&&!CBX.p.hidden){cbHide();return}
     catReady().then(()=>cbShow(inp,true));
   });
-  if(cbSheetMode()){inp.setAttribute("inputmode","none");
+  if(cbSheetMode(inp)){inp.setAttribute("inputmode","none");
     inp.addEventListener("pointerdown",e=>{if(!inp.readOnly&&!inp.disabled)e.preventDefault()}); // يمنع الكيبورد والتركيز بس
     inp.addEventListener("click",e=>{if(inp.readOnly||inp.disabled)return;e.preventDefault();inp.blur();catReady().then(()=>cbSheet(inp))}); // نفس طريقة السهم (click) عشان تشتغل من أي مكان في الخانة
     inp.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&!inp.readOnly&&!inp.disabled){e.preventDefault();catReady().then(()=>cbSheet(inp))}})}
   inp.addEventListener("focus",()=>{
-    if(cbSheetMode())return;
+    if(cbSheetMode(inp))return;
     const v=inp.value.trim();
     catReady().then(()=>{if(document.activeElement!==inp)return;const ex=cbOpts(inp).some(o=>o[0]===v);cbShow(inp,!v||ex)});
   });
-  inp.addEventListener("input",()=>{if(inp._setting||cbSheetMode())return;catReady().then(()=>cbShow(inp,false))});
+  inp.addEventListener("input",()=>{if(inp._setting||cbSheetMode(inp))return;catReady().then(()=>cbShow(inp,false))});
   if(inp.dataset.cb==="item"||inp.dataset.cb==="code"){
     let _pt;const pv=()=>{clearTimeout(_pt);_pt=setTimeout(()=>catReady().then(()=>cbPreview(inp)),200)};
     inp.addEventListener("input",pv);inp.addEventListener("change",pv);

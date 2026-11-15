@@ -133,23 +133,31 @@ async function prodRows(t,col,from){
   }
   return out;
 }
-function drawChart(vs,days,vals){
-  const W=340,H=190,pl=10,pr=10,pt=20,pb=28,bw=(W-pl-pr)/days.length,w=bw*.58,ch=H-pt-pb;
-  const tot=vals.map(v=>v.reduce((a,b)=>a+b,0)),mx=Math.max(1,...tot);
-  let g="";
-  [0,.5,1].forEach(f=>{const y=pt+ch*(1-f);g+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-dasharray="3 4"/>`});
+const niceTop4=mx=>{if(mx<=4)return 4;const raw=mx/4,pw=Math.pow(10,Math.floor(Math.log10(raw)));return([1,1.2,1.5,2,2.5,3,4,5,6,8,10].map(m=>m*pw).find(v=>v>=raw)||10*pw)*4};
+const kf=v=>v>=10000?(Math.round(v/100)/10)+"k":nf(v);
+const rTop=(x,y,w,h,r)=>{r=Math.min(r,h,w/2);return`M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`};
+function drawChart(vs,days,vals,prevTot){
+  const W=360,H=240,pl=34,pr=8,pt=28,pb=42,n=days.length,bw=(W-pl-pr)/n,w=Math.min(34,bw*.58),ch=H-pt-pb,y0=pt+ch;
+  const tot=vals.map(v=>v.reduce((a,b)=>a+b,0)),pm=Math.max(...tot),top=niceTop4(Math.max(1,pm,...(prevTot||[0]))),Y=v=>y0-v/top*ch,T=today();
+  let g="<defs>"+vs.map((x,k)=>`<linearGradient id="dg${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${x.s[3]}" stop-opacity=".8"/><stop offset="1" stop-color="${x.s[3]}"/></linearGradient>`).join("")+"</defs>";
+  for(let i=0;i<=4;i++){const v=top/4*i,y=Y(v);g+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" class="gl${i?"":" base"}"/><text x="${pl-6}" y="${y+3}" text-anchor="end" class="yl">${kf(v)}</text>`}
+  const act=tot.filter(v=>v>0),avgV=act.length?act.reduce((a,b)=>a+b,0)/act.length:0;
+  if(avgV>0){const ya=Y(avgV);g+=`<line x1="${pl}" x2="${W-pr}" y1="${ya}" y2="${ya}" class="avl"/><rect x="${W-pr-74}" y="${ya-17}" width="74" height="15" rx="7.5" class="avb"/><text x="${W-pr-37}" y="${ya-6.5}" text-anchor="middle" class="avt">متوسط ${nf(Math.round(avgV))}</text>`}
   days.forEach((d,i)=>{
-    const cx=pl+bw*i+bw/2;let y=pt+ch;
-    const top=vals[i].map((v,k)=>v>0?k:-1).filter(k=>k>=0).pop();
+    const cx=pl+bw*i+bw/2,x=cx-w/2,isT=d===T,isP=pm>0&&tot[i]===pm;
+    g+=`<g class="dg${isT?" today":""}${isP?" peak":""}" data-i="${i}"><rect class="hit" x="${pl+bw*i+1}" y="${pt-16}" width="${bw-2}" height="${ch+pb+8}" rx="10"/><rect class="trk" x="${x}" y="${pt}" width="${w}" height="${ch}" rx="${Math.min(9,w/2)}"/>`;
+    let y=y0;const tk=vals[i].map((v,k)=>v>0?k:-1).filter(k=>k>=0).pop();
     vals[i].forEach((v,k)=>{
-      if(v<=0)return;const h=Math.max(2,v/mx*ch);y-=h;
-      g+=`<rect class="seg-r" x="${cx-w/2}" y="${y}" width="${w}" height="${h}" rx="${k===top?4:0}" fill="${vs[k].s[3]}" style="animation-delay:${i*.05}s"><title>${esc(vs[k].s[1])}: ${nf(v)}</title></rect>`;
+      if(v<=0)return;const h=Math.max(2.5,v/top*ch);y-=h;const st=`style="animation-delay:${i*.05}s"`;
+      g+=k===tk?`<path class="seg-r" d="${rTop(x,y,w,h,6)}" fill="url(#dg${k})" ${st}/>`:`<rect class="seg-r" x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#dg${k})" ${st}/>`;
     });
-    if(tot[i]>0)g+=`<text class="tot" x="${cx}" y="${y-5}" text-anchor="middle">${nf(tot[i])}</text>`;
-    const lbl=new Date(d+"T00:00:00Z").toLocaleDateString("ar-EG",{weekday:"short",timeZone:"UTC"});
-    g+=`<text x="${cx}" y="${H-9}" text-anchor="middle" ${d===today()?'class="tot"':""}>${lbl}</text>`;
+    if(prevTot&&prevTot[i]>0){const yp=Y(prevTot[i]);g+=`<line class="pvl" x1="${x-5}" x2="${x+w+5}" y1="${yp}" y2="${yp}"/>`}
+    if(tot[i]>0)g+=`<text class="tot tv" x="${cx}" y="${y-7}" text-anchor="middle">${nf(tot[i])}</text>`;
+    const dt=new Date(d+"T00:00:00Z"),lbl=dt.toLocaleDateString("ar-EG",{weekday:"short",timeZone:"UTC"}),dn=dt.toLocaleDateString("ar-EG",{day:"numeric",timeZone:"UTC"});
+    if(isT)g+=`<rect class="tp" x="${cx-bw/2+3}" y="${y0+8}" width="${bw-6}" height="18" rx="9"/>`;
+    g+=`<text x="${cx}" y="${y0+21}" text-anchor="middle" class="${isT?"pill":"dwd"}">${lbl}</text><text x="${cx}" y="${y0+36}" text-anchor="middle" class="ddn">${dn}</text></g>`;
   });
-  return `<svg class="dchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="الإنتاج آخر 7 أيام">${g}</svg>`;
+  return`<svg class="dchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="الإنتاج آخر 7 أيام">${g}</svg>`;
 }
 async function dash(){
   const vs=visibleSections().filter(s=>DSRC[s[0]]).map(s=>({s,t:DSRC[s[0]][0],c:DSRC[s[0]][1]}));
@@ -173,7 +181,18 @@ async function dash(){
   const hk=document.getElementById("hk");hk.style.display="";
   kpis(hk,[["إنتاج النهارده",tot[6],"var(--pri)"],["آخر 7 أيام",week,"var(--ok)",{},delta],["أفضل يوم",best,null,{},best>0?["flat",new Date(days[bi]+"T00:00:00Z").toLocaleDateString("ar-EG",{weekday:"long",timeZone:"UTC"})]:null]]);
   const sums=vs.map((x,k)=>vals.reduce((a,v)=>a+v[k],0));
-  document.getElementById("hc").innerHTML=`<div class="card"><div class="top"><b>الإنتاج آخر 7 أيام</b><span class="tag">${nf(week)}</span></div>${week>0?drawChart(vs,days,vals):'<div class="empty">مفيش إنتاج متسجّل الأسبوع ده</div>'}${week>0?`<div class="legend">${vs.map((x,k)=>`<span><i style="background:${x.s[3]}"></i>${x.s[1]} <b>${nf(sums[k])}</b></span>`).join("")}</div>`:""}</div>`;
+  const prevTot=prevDays.map(d=>vs.reduce((b,x)=>b+sumOn(x,d),0)),hasPrev=prevTot.some(v=>v>0);
+  document.getElementById("hc").innerHTML=`<div class="card"><div class="top"><b>الإنتاج آخر 7 أيام</b><span class="tag">${nf(week)}</span></div>${week>0?drawChart(vs,days,vals,prevTot)+'<div class="dinfo" id="dinfo"></div>':'<div class="empty">مفيش إنتاج متسجّل الأسبوع ده</div>'}${week>0?`<div class="legend">${vs.map((x,k)=>`<span><i style="background:${x.s[3]}"></i>${x.s[1]} <b>${nf(sums[k])}</b></span>`).join("")}${hasPrev?'<span><i class="pvk"></i>نفس اليوم الأسبوع اللي فات</span>':""}</div>`:""}</div>`;
+  if(week>0){
+    const svg=document.querySelector("#hc .dchart"),info=document.getElementById("dinfo");let cur=-1;
+    const show=i=>{cur=i;svg.querySelectorAll(".dg").forEach(el=>el.classList.toggle("sel",+el.dataset.i===i));svg.classList.toggle("hasSel",i>=0);
+      if(i<0){info.className="dinfo";info.textContent="اضغط على أي يوم لعرض التفاصيل";return}
+      const dn=new Date(days[i]+"T00:00:00Z").toLocaleDateString("ar-EG",{weekday:"long",day:"numeric",month:"long",timeZone:"UTC"}),pv=prevTot[i],dl=pv>0?Math.round((tot[i]-pv)/pv*100):null;
+      info.className="dinfo on";
+      info.innerHTML=`<div class="chd"><span>${dn}${days[i]===today()?" · النهارده":""}</span><b>${nf(tot[i])}</b></div>${dl!==null?`<span class="cmp ${dl>=0?"up":"dn"}">${dl>=0?"▲":"▼"} ${nf(Math.abs(dl))}% عن نفس اليوم الأسبوع اللي فات</span>`:""}<div class="cparts">${vs.map((x,k)=>vals[i][k]>0?`<span><i style="background:${x.s[3]}"></i>${x.s[1]}: <b>${nf(vals[i][k])}</b></span>`:"").join("")||"<span>مفيش إنتاج في اليوم ده</span>"}</div>`};
+    svg.addEventListener("click",e=>{const gg=e.target.closest(".dg");if(!gg)return;const i=+gg.dataset.i;show(cur===i?-1:i)});
+    show(6);
+  }
 }
 async function fillSums(){
   let tot=0,n=0;

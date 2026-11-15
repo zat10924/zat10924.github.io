@@ -89,6 +89,7 @@ function entryForm(x){
   newImg=undefined;x=x||{};const im=safeAv(x.image);
   return `<label>${LBLN[kind]}</label><input id="c-name" maxlength="80" autocomplete="off" value="${esc(x.name||"")}">
     ${hasCode()?`<label>${kind==="item"?"كود الصنف":"كود اللون"} (اختياري)</label><input id="c-code" maxlength="40" dir="ltr" autocomplete="off" placeholder="مثال: P-100" value="${esc(x.code||"")}">`:""}
+    ${kind==="item"?`<div class="two"><div><label>عدد القوالب (اختياري)</label><input id="c-mo" type="number" min="0" max="100000" inputmode="numeric" value="${x.molds!=null?x.molds:""}"></div><div><label>عدد الصبات (اختياري)</label><input id="c-po" type="number" min="0" max="100000" inputmode="numeric" value="${x.pours!=null?x.pours:""}"></div></div><div class="hint">بيظهروا تلقائي في تسجيل البرشر لما الصنف يتختار، والعامل يقدر يعدّلهم.</div>`:""}
     <label>${kind==="code"?"صورة الرسمة":"الصورة"} (اختياري)</label>
     <div class="photoedit"><span class="cthumb ${im?"has":""}" id="c-prev" ${im?`style="background-image:url('${im}')"`:""}>${im?"":NOPIC}</span>
       <div class="pa"><button type="button" class="btn ghost sm" id="c-ph">اختيار صورة</button><button type="button" class="btn ghost sm" id="c-phx">حذف الصورة</button></div></div>
@@ -100,6 +101,7 @@ function designPicker(x){
   return`<label>الرسمات على الصنف (اختر أكتر من كود)</label><input id="c-dq" type="search" placeholder="بحث في الأكواد…" autocomplete="off">
     <div id="c-dl" class="dpick">${codes.map(k=>{const im=safeAv(k.image);return`<label class="dp" data-n="${esc(norm(k.name))}"><input type="checkbox" value="${esc(k.name)}" ${have.has(norm(k.name))?"checked":""}><span class="cthumb ${im?"has":""}" ${im?`style="background-image:url('${im}')"`:""}>${im?"":NOPIC}</span><b>${esc(k.name)}</b></label>`}).join("")}</div><div class="hint" id="c-dn"></div>`;
 }
+const readBrc=()=>{const g=id=>{const e=document.getElementById(id);if(!e)return null;const v=e.value.trim();return v===""?null:Math.max(0,Math.min(100000,parseInt(v)||0))};return{molds:g("c-mo"),pours:g("c-po")}};
 const readDesigns=()=>[...document.querySelectorAll("#c-dl input:checked")].map(i=>i.value);
 function wireDesigns(){
   const l=document.getElementById("c-dl");if(!l)return;
@@ -121,9 +123,10 @@ function addEntry(){
     if(!name){toast("اكتب الاسم");return false}
     if(all.some(x=>x.kind===kind&&norm(x.name)===norm(name))){toast("الاسم ده موجود بالفعل","warn");return false}
     const row={kind,name};if(code)row.code=code;if(newImg)row.image=newImg;
+    const bm=readBrc();if(kind==="item"){if(bm.molds!=null)row.molds=bm.molds;if(bm.pours!=null)row.pours=bm.pours}
     const ds=kind==="item"?readDesigns():[];
     const{data:ins,error}=await db.from("catalog").insert(row).select("id").single();
-    if(error){toast(/code|image|column/i.test(error.message||"")?NEED:"خطأ: "+error.message,"bad");return false}
+    if(error){toast(/molds|pours/i.test(error.message||"")?"شغّل ملف setup_v4_4.sql في Supabase الأول":/code|image|column/i.test(error.message||"")?NEED:"خطأ: "+error.message,"bad");return false}
     if(ds.length){const r=await db.rpc("catalog_set_designs",{p_id:ins.id,p_designs:ds});if(r.error){await load();toast(NEED2,"bad");return false}}
     await load();toast("تمت الإضافة");
   });
@@ -146,6 +149,13 @@ function rename(id){
     if(!merged&&(code!==(x.code||"")||newImg!==undefined)){
       const r=await db.rpc("catalog_set_meta",{p_id:x.id,p_code:code,p_image:newImg===undefined?null:newImg,p_set_image:newImg!==undefined});
       if(r.error){toast(r.error.code==="PGRST202"||/code|image|column/i.test(r.error.message||"")?NEED:"خطأ: "+r.error.message,"bad");return false}
+    }
+    if(!merged&&kind==="item"&&document.getElementById("c-mo")){
+      const b=readBrc();
+      if(b.molds!==(x.molds==null?null:+x.molds)||b.pours!==(x.pours==null?null:+x.pours)){
+        const r=await db.rpc("catalog_set_brush",{p_id:x.id,p_molds:b.molds,p_pours:b.pours});
+        if(r.error){toast(r.error.code==="PGRST202"||/molds|pours|column/i.test(r.error.message||"")?"شغّل ملف setup_v4_4.sql في Supabase الأول":"خطأ: "+r.error.message,"bad");return false}
+      }
     }
     if(!merged&&kind==="item"&&document.getElementById("c-dl")){
       const nd=readDesigns(),od=(x.designs||[]);

@@ -270,6 +270,24 @@ function niceTop(max){ // أقرب سقف «مدوّر» يتقسم على 4 خ�
   return st*4;
 }
 const kfmt=v=>v>=10000?(Math.round(v/100)/10)+"k":nf(v);
+// تحليل ذكي للرسم: الاتجاه، أعلى فترة، أيام التوقف، التذبذب، وتوقّع نهاية الشهر
+function chartInsights({tot,bl,m,f,t,sum,act,avg,max,mi}){
+  const I=[],n=tot.length;
+  if(n>=6&&act>=4){
+    const h=Math.floor(n/2),mean=a=>a.reduce((x,y)=>x+y,0)/(a.length||1),a1=mean(tot.slice(0,h)),a2=mean(tot.slice(n-h));
+    if(a1>0){const ch=Math.round((a2-a1)/a1*100);
+      I.push(ch>=8?["up","↗ الاتجاه صاعد "+nf(ch)+"% (النصف التاني من الفترة مقابل الأول)"]:ch<=-8?["dn","↘ الاتجاه هابط "+nf(Math.abs(ch))+"% (النصف التاني من الفترة مقابل الأول)"]:["flat","→ الإنتاج مستقر تقريبًا طول الفترة"])}
+  }
+  I.push(["flat","★ الأعلى: "+longL(bl[mi],m)+" ("+nf(max)+")"]);
+  if(m==="day"){const z=tot.filter(v=>!v).length;if(z>0&&z<n)I.push([z>=Math.ceil(n/3)?"warn":"flat","⏸ "+nf(z)+" يوم من غير إنتاج في الفترة"])}
+  if(act>=5){const sd=Math.sqrt(tot.filter(Boolean).reduce((a,v)=>a+(v-avg)*(v-avg),0)/act);if(avg&&sd/avg>.6)I.push(["warn","〰 الإنتاج متذبذب: الفرق كبير بين الفترات"])}
+  const T=today();
+  if(m==="day"&&t>=T&&f.slice(0,7)===T.slice(0,7)&&f<=T.slice(0,8)+"01"){
+    const dim=new Date(+T.slice(0,4),+T.slice(5,7),0).getDate(),dn=+T.slice(8,10),left=dim-dn;
+    if(left>0&&dn>=5&&act>0){const rate=act/dn,proj=Math.round(sum+avg*rate*left);I.push(["flat","📈 المتوقع آخر الشهر ≈ "+nf(proj)+" لو فضل نفس المعدل"])}
+  }
+  return I;
+}
 function drawChart(el,{f,t,series}){
   if(!f||!t){
     const ds=series.flatMap(s=>s.rows.map(r=>r.d)).sort();
@@ -283,18 +301,34 @@ function drawChart(el,{f,t,series}){
   const max=Math.max(...tot),top=niceTop(max),step=Math.ceil(bl.length/8),few=bl.length<=12,mi=tot.indexOf(max);
   const unit=m==="day"?"يوم":m==="week"?"أسبوع":"شهر",sum=tot.reduce((a,v)=>a+v,0),act=tot.filter(Boolean).length,avg=Math.round(sum/act),ap=avg/top*100;
   const ticks=[4,3,2,1,0].map(i=>top/4*i);
-  el.innerHTML=`<div class="chart2">
+  let mode="bars";try{mode=localStorage.getItem("chart_mode")==="line"?"line":"bars"}catch(e){}
+  const nn=bl.length,pts=tot.map((v,i)=>[100-(i+.5)/nn*100,100-v/top*100]);
+  const smooth=P=>{if(P.length<2)return"";let d="M"+P[0][0]+","+P[0][1];
+    for(let i=0;i<P.length-1;i++){const a=P[i-1]||P[i],b=P[i],c=P[i+1],e=P[i+2]||c,cl=y=>Math.max(0,Math.min(100,y));
+      d+=` C${b[0]+(c[0]-a[0])/6},${cl(b[1]+(c[1]-a[1])/6)} ${c[0]-(e[0]-b[0])/6},${cl(c[1]-(e[1]-b[1])/6)} ${c[0]},${c[1]}`}return d};
+  const lp=smooth(pts),lc=series.length===1?series[0].color:"var(--pri)",uid="lg"+Math.random().toString(36).slice(2,7);
+  const lsvg=`<svg class="lsvg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:${lc};stop-opacity:.34"/><stop offset="1" style="stop-color:${lc};stop-opacity:0"/></linearGradient></defs><path class="ar" d="${lp} L${pts[nn-1][0]},100 L${pts[0][0]},100 Z" fill="url(#${uid})"/><path class="ln" d="${lp}" style="stroke:${lc}"/></svg>`;
+  el.innerHTML=`<div class="chart2 ${mode==="line"?"line":""}" style="--lc:${lc}">
+    <div class="chdr"><div class="cmode" role="tablist"><button type="button" data-m="bars" class="${mode==="bars"?"on":""}">أعمدة</button><button type="button" data-m="line" class="${mode==="line"?"on":""}">خط</button></div></div>
     <div class="cst"><div><small>الإجمالي</small><b>${nf(sum)}</b></div><div><small>متوسط ${unit} عمل</small><b>${nf(avg)}</b></div><div><small>الأعلى</small><b>${nf(max)}</b></div></div>
     <div class="cplot"><div class="cy">${ticks.map(v=>`<span>${kfmt(v)}</span>`).join("")}</div>
-      <div class="cw"><div class="cgrid">${ticks.map(()=>"<i></i>").join("")}</div>
+      <div class="cw"><div class="cgl">${ticks.map(()=>"<i></i>").join("")}</div>
         <div class="cavg" style="bottom:${ap}%"><span>متوسط ${nf(avg)}</span></div>
+        ${lsvg}
         <div class="bars">${bl.map((k,i)=>{
           const h=tot[i]/top*100;
-          return `<div class="b ${tot[i]?"":"zero"} ${i===mi?"peak":""}" data-i="${i}"><div class="st" data-h="${h}" style="height:0">${series.map((s,si)=>sums[si][k]?`<i style="flex:${sums[si][k]};background:${s.color}"></i>`:"").join("")}</div>${tot[i]&&(few||i===mi)?`<span class="bv" style="bottom:calc(${h}% + 3px)">${nf(tot[i])}</span>`:""}</div>`}).join("")}</div></div></div>
+          return `<div class="b ${tot[i]?"":"zero"} ${i===mi?"peak":""}" data-i="${i}"><div class="st" data-h="${h}" style="height:0">${series.map((s,si)=>sums[si][k]?`<i style="flex:${sums[si][k]};background:${s.color}"></i>`:"").join("")}</div>${tot[i]?`<i class="dt" style="bottom:${h}%"></i>`:""}${tot[i]&&(few||i===mi)?`<span class="bv" style="bottom:calc(${h}% + 3px)">${nf(tot[i])}</span>`:""}</div>`}).join("")}</div></div></div>
     <div class="axis">${bl.map((k,i)=>`<span>${i%step===0?shortL(k,m):""}</span>`).join("")}</div>
     <div class="cinfo">كل عمود = ${unit} · اضغط على عمود للتفاصيل</div></div>
-    ${series.length>1?`<div class="legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${s.name}</span>`).join("")}</div>`:""}`;
+    ${series.length>1?`<div class="legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${s.name}</span>`).join("")}</div>`:""}
+    <div class="cins">${chartInsights({tot,bl,m,f,t,sum,act,avg,max,mi}).map(i=>`<span class="ci ${i[0]}">${i[1]}</span>`).join("")}</div>`;
   requestAnimationFrame(()=>requestAnimationFrame(()=>el.querySelectorAll(".st").forEach(s=>s.style.height=s.dataset.h+"%")));
+  el.querySelectorAll(".cmode button").forEach(b=>b.onclick=()=>{
+    const ln=b.dataset.m==="line";el.querySelector(".chart2").classList.toggle("line",ln);
+    el.querySelectorAll(".cmode button").forEach(x=>x.classList.toggle("on",x===b));
+    try{localStorage.setItem("chart_mode",ln?"line":"bars")}catch(e){}
+    const sv=el.querySelector(".lsvg");if(sv){sv.style.animation="none";void sv.getBoundingClientRect();sv.style.animation=""}
+  });
   const bars=el.querySelector(".bars"),info=el.querySelector(".cinfo");
   bars.onclick=e=>{
     const b=e.target.closest(".b");if(!b)return;const i=+b.dataset.i,was=b.classList.contains("sel");

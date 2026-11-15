@@ -78,7 +78,7 @@ async function load(){
       (o.error?[]:o.data||[]).forEach(x=>{const gg=GM.get(x.group_id);CO.set(x.id,{id:x.id,item:x.item,req:+x.qty_required||0,done:dn.get(x.id)||0,st:x.status,date:x.order_date,due:x.due_date,
         sub:gg?((gg.order_no?"#"+gg.order_no+" · ":"")+((gg.title||"").trim()||"طلبية")):"طلبية #"+x.id})});
       rows=[...CO.values()].filter(x=>x.st==="open"&&x.req-x.done>0).map(x=>({id:x.id,oid:x.id,title:x.item,sub:x.sub,req:x.req,done:x.done,date:x.date,due:x.due}));
-      tod=(p.data||[]).map(e=>({k:"cast",tb:CT.l,id:e.id,qty:e.qty,date:e[CT.d],by:e.created_by||null,worker:e.worker||"",note:e.note||"",item:e.item||"",sh:e.shift||"",scrap:e.scrap||0,oid:e.order_id||null,isw:!(+e.qty>0)&&+e.scrap>0,
+      tod=(p.data||[]).map(e=>({k:"cast",tb:CT.l,id:e.id,qty:e.qty,date:e[CT.d],by:e.created_by||null,worker:e.worker||"",note:e.note||"",item:e.item||"",sh:e.shift||"",scrap:e.scrap||0,mo:e.molds==null?null:+e.molds,po:e.pours==null?null:+e.pours,oid:e.order_id||null,isw:!(+e.qty>0)&&+e.scrap>0,
         txt:(!(+e.qty>0)&&+e.scrap>0?"هالك جودة · ":"")+(e.item||"—")+(e.shift?" · "+e.shift:"")+(+e.qty>0&&e.scrap?" · هالك "+e.scrap:"")+(!(+e.qty>0)&&+e.scrap>0?"":(e.order_id?"":" · بدون طلبية"))}));
     }else if(c.o){
       const[o,l,p]=await Promise.all([db.from(c.o).select("*"),db.from(c.l).select("*").order("id"),
@@ -318,7 +318,7 @@ function castForm(rec,presetOid,waste){if(roBlock())return;
     ${XW(true)}
     <label>الصنف</label><input id="m-item" list="m-items" maxlength="120" value="${rec?esc(rec.item):""}"><datalist id="m-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
     ${waste?`<label>عدد القطع الهالكة</label><input type="number" id="m-scrap" min="1" max="100000" inputmode="numeric" value="${rec&&rec.scrap?rec.scrap:""}"><div class="nums" id="m-wh" style="margin:4px 0 0"></div>`
-      :`<label>عدد القطع</label><input type="number" id="m-q" min="${legacySc?0:1}" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">${legacySc?`<label>هالك الجودة (تسجيل قديم)</label><input type="number" id="m-scrap" min="0" max="100000" inputmode="numeric" value="${rec.scrap}">`:""}${rec?"":CM.html()}`}
+      :`<label>عدد القطع</label><input type="number" id="m-q" min="${legacySc?0:1}" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">${legacySc?`<label>هالك الجودة (تسجيل قديم)</label><input type="number" id="m-scrap" min="0" max="100000" inputmode="numeric" value="${rec.scrap}">`:""}${sec==="brush"?brcHtml(rec):""}${rec?"":CM.html()}`}
     <label>${waste?"السبب / ملاحظات (اختياري)":"ملاحظات (اختياري)"}</label><input id="m-n" maxlength="300" placeholder="أي تعليق على الشغل" value="${rec?esc(rec.note):""}">`,async()=>{
     const mv=waste?"free":document.getElementById("m-mode").value,free=waste||mv!=="order",auto=mv==="auto"&&!rec;
     const oid=free?null:(parseInt(document.getElementById("m-o").value)||null);
@@ -348,14 +348,15 @@ function castForm(rec,presetOid,waste){if(roBlock())return;
         if(o){const base=Math.max(o.req-o.done-pendQ(o.id),0)+(rec&&rec.oid===o.id?rec.qty:0),u=(used.get(o.id)||0)+e.qty;used.set(o.id,u);rows.push(["المتبقي بعد التسجيل",remAfter(base,u)]);warn=overWarn(base,u)}
         return{title:e.item,rows,warn}})}))return false;
     const row={[CAST[sec].d]:cd,item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
+    if(sec==="brush"&&!waste){const b=brcRead();if(b.molds!=null||b.pours!=null||(rec&&(rec.mo!=null||rec.po!=null))){row.molds=b.molds;row.pours=b.pours}}
     if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
     if(!rec){
       const linked=ents.filter(e=>e.order_id).length;
       let ok=0,qd=0,err=null;
-      for(const en of ents){const rr=await castInsert({...row,...en},CAST[sec].l,sec);if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
-      try{localStorage.setItem("cast_shift",sh)}catch(e){}
+      let ix=0;for(const en of ents){const r1={...row,...en};if(ix++>0){delete r1.molds;delete r1.pours}const rr=await castInsert(r1,CAST[sec].l,sec);if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
+      try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave(sec,{w:x.worker,i:item,q:q});
       if(err){
-        const m=/shift|scrap|order_id/.test(err.message||"")?"شغّل ملف "+castSql()+" من Supabase الأول":"خطأ: "+err.message;
+        const m=BRC_ERR.test(err.message||"")?"شغّل ملف setup_v4_4.sql من Supabase الأول":/shift|scrap|order_id/.test(err.message||"")?"شغّل ملف "+castSql()+" من Supabase الأول":"خطأ: "+err.message;
         if(!ok&&!qd){toast(m,"bad");return false}
         await load();toast("اتسجّل "+(ok+qd)+" من "+ents.length+" أصناف — "+m,"bad");return;
       }
@@ -363,14 +364,16 @@ function castForm(rec,presetOid,waste){if(roBlock())return;
       toast(qd?"مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع":(auto?(linked?"تم التسجيل وربطه تلقائيًا بالطلبية":"تم التسجيل (مفيش طلبية مفتوحة للصنف ده)"):(ok>1?"تم تسجيل "+ok+" أصناف":"تم التسجيل")),qd?"warn":undefined);return;
     }
     let r=rec?await db.from(CAST[sec].l).update(row).eq("id",rec.id).select():await castInsert(row,CAST[sec].l,sec);
-    if(r.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}await load();toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
-    if(r.error){toast(isNet(r.error)?"التعديل محتاج اتصال بالإنترنت":(/shift|scrap|order_id/.test(r.error.message||"")?"شغّل ملف "+castSql()+" من Supabase الأول":"خطأ: "+r.error.message),"bad");return false}
+    if(r.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave(sec,{w:x.worker,i:item,q:q});await load();toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
+    if(r.error){toast(isNet(r.error)?"التعديل محتاج اتصال بالإنترنت":(BRC_ERR.test(r.error.message||"")?"شغّل ملف setup_v4_4.sql من Supabase الأول":/shift|scrap|order_id/.test(r.error.message||"")?"شغّل ملف "+castSql()+" من Supabase الأول":"خطأ: "+r.error.message),"bad");return false}
     if(rec&&(!r.data||!r.data.length)){toast("لم يتم التعديل، راجع الصلاحيات","bad");return false}
-    try{localStorage.setItem("cast_shift",sh)}catch(e){}
+    try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave(sec,{w:x.worker,i:item,q:q});
     await load();toast(rec?"تم التعديل":"تم التسجيل");
   });
   setTimeout(()=>{
     const w=document.getElementById("m-w");if(w&&rec)w.value=rec.worker;
+    if(sec==="brush"&&!waste)brcWire(rec);
+    if(!waste)smartFill(sec,rec);
     if(waste){ // سليم العامل وهالكه ونسبة الهالك في اليوم المعروض
       const h=document.getElementById("m-wh"),dEl=document.getElementById("m-d"),sEl=document.getElementById("m-scrap");
       const upd=()=>{const n=w.value.trim();if(!n||dEl.value!==D){h.textContent=n&&dEl.value!==D?"النسبة بتظهر لليوم المعروض بس":"";return}

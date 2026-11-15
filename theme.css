@@ -1169,9 +1169,9 @@ body:not(.sideopen) .side{will-change:auto}
 .cy span{line-height:0;transform:translateY(0)}
 .cy span:first-child{transform:translateY(5px)}.cy span:last-child{transform:translateY(-5px)}
 .cw{position:relative;flex:1;min-width:0;height:190px}
-.cgrid{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}
-.cgrid i{display:block;height:0;border-top:1px dashed color-mix(in srgb,var(--ink2) 28%,transparent)}
-.cgrid i:last-child{border-top:1.5px solid color-mix(in srgb,var(--ink2) 45%,transparent)}
+.cgl{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}
+.cgl i{display:block;height:0;border-top:1px dashed color-mix(in srgb,var(--ink2) 28%,transparent)}
+.cgl i:last-child{border-top:1.5px solid color-mix(in srgb,var(--ink2) 45%,transparent)}
 .cavg{position:absolute;inset-inline:0;height:0;border-top:1.5px dashed var(--gold);z-index:2;pointer-events:none;opacity:.95}
 .cavg span{position:absolute;inset-inline-start:0;top:-19px;font-size:.66rem;font-weight:800;color:var(--pri-d);background:color-mix(in srgb,var(--gold) 55%,var(--card));padding:1px 7px;border-radius:99px;white-space:nowrap}
 .chart2 .bars{position:absolute;inset:0;height:auto;gap:4px;padding:0 2px;z-index:1}
@@ -1441,3 +1441,58 @@ body:not(.sideopen) .side{will-change:auto}
 #login #go{transition:transform .15s,box-shadow .2s,opacity .2s!important}
 #login #go:active:not(:disabled){transform:scale(.98)}
 @media(prefers-reduced-motion:reduce){#login .lshell,#login .err:not(:empty){animation:none!important}#login *{transition:none!important}}
+
+/* تحليل ذكي تحت الرسم البياني */
+.cins{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cins .ci{font-size:12.5px;line-height:1.5;padding:5px 10px;border-radius:99px;background:var(--bg2,rgba(127,127,127,.1));color:var(--ink)}
+.cins .ci.up{background:rgba(46,125,50,.12);color:var(--ok,#2e7d32)}
+.cins .ci.dn,.cins .ci.warn{background:rgba(198,40,40,.1);color:var(--bad,#b3261e)}
+
+/* أزرار الكميات السريعة في نموذج التسجيل */
+.qchips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.qchips .chip{font-size:13px;padding:5px 11px}
+
+/* =====================================================================
+   v4.4.1 — رسوم بيانية أكثر احترافية
+   ===================================================================== */
+.chdr{display:flex;justify-content:flex-end;margin:0 0 10px}
+.cmode{display:inline-flex;gap:2px;padding:3px;border-radius:99px;background:color-mix(in srgb,var(--ink2) 11%,transparent)}
+.cmode button{border:0;background:none;padding:5px 16px;border-radius:99px;font:inherit;font-size:.8rem;font-weight:700;color:var(--ink2);cursor:pointer;min-height:32px;transition:background .2s,color .2s}
+.cmode button.on{background:var(--card);color:var(--pri-d);box-shadow:0 1px 5px rgba(0,0,0,.18)}
+.chart2.line .st{display:none}
+.chart2:not(.line) .dt,.chart2:not(.line) .lsvg{display:none}
+.chart2.line .bars{gap:0}
+.chart2.line .bars.hasSel .b:not(.sel){opacity:1}
+.chart2.line .b.sel{background:color-mix(in srgb,var(--lc,var(--pri)) 9%,transparent);border-radius:8px}
+.lsvg{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:visible;animation:lrev .9s var(--ease,ease) both}
+@keyframes lrev{from{clip-path:inset(-10% 0 -10% 100%)}to{clip-path:inset(-10% -10% -10% -10%)}}
+.lsvg .ln{fill:none;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 3px 4px rgba(0,0,0,.18))}
+.dt{position:absolute;left:50%;width:12px;height:12px;margin:0 0 -6px -6px;border-radius:50%;background:var(--card);border:2.5px solid var(--lc,var(--pri));box-shadow:0 2px 6px rgba(0,0,0,.28);z-index:3;pointer-events:none;transition:transform .2s;animation:fade .4s .5s both}
+.b.sel .dt{transform:scale(1.4)}
+.b.peak .dt{border-color:var(--gold);background:var(--gold)}
+@media(prefers-reduced-motion:reduce){.lsvg,.dt{animation:none}}
+
+/* رسم الصفحة الرئيسية */
+.dchart{overflow:visible;-webkit-tap-highlight-color:transparent}
+.dchart .gl{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4}
+.dchart .gl.base{stroke-dasharray:none;stroke-width:1.4}
+.dchart text.yl{font-size:9px;font-variant-numeric:tabular-nums}
+.dchart .trk{fill:var(--line);fill-opacity:.38}
+.dchart .dg{cursor:pointer}
+.dchart .hit{fill:transparent;transition:fill .2s}
+.dchart .dg.sel .hit{fill:var(--pri);fill-opacity:.08}
+.dchart.hasSel .dg:not(.sel) .seg-r{opacity:.45}
+.dchart .seg-r{transition:opacity .2s}
+.dchart .dg.peak .trk{stroke:var(--gold);stroke-width:1.4;stroke-dasharray:3 3;fill-opacity:.5}
+.dchart text.tv{font-size:10.5px;font-variant-numeric:tabular-nums}
+.dchart text.dwd{font-size:10px;font-weight:600}
+.dchart text.ddn{font-size:9px;opacity:.8}
+.dchart .tp{fill:var(--pri)}
+.dchart text.pill{fill:#fff!important;font-size:10px;font-weight:800}
+.dchart .avl{stroke:var(--gold);stroke-width:1.4;stroke-dasharray:5 4}
+.dchart .avb{fill:color-mix(in srgb,var(--gold) 55%,var(--card))}
+.dchart text.avt{fill:var(--pri-d)!important;font-size:8.5px;font-weight:800}
+.dchart .pvl{stroke:var(--gold);stroke-width:2.4;stroke-linecap:round}
+.pvk{display:inline-block;width:14px!important;height:3px!important;border-radius:2px!important;background:var(--gold)!important;vertical-align:middle}
+.dinfo{margin-top:10px;padding:9px 12px;border-radius:12px;text-align:center;font-size:.82rem;color:var(--ink2);background:color-mix(in srgb,var(--pri) 5%,var(--card));border:1px dashed var(--line)}
+.dinfo.on{text-align:start;color:var(--ink);border:1.5px solid var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--card));animation:cbIn .18s var(--ease) both}
