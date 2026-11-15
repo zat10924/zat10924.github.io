@@ -961,7 +961,7 @@ async function insertRow(t,row){
 // الصب اليدوي: أكتر من صنف لنفس العامل في تسجيل واحد
 const CM={
   html:()=>'<div id="m-xr"></div><button type="button" class="btn ghost sm" id="m-xadd" style="margin:8px 0 2px">+ إضافة صنف آخر لنفس العامل</button>',
-  wire(optsHtml,getMode){
+  wire(optsHtml,getMode,br){ // br: دالة بترجّع اسم الصنف من رقم الطلبية (للبرشر: بتضيف القوالب والصبات لكل صنف)
     const box=document.getElementById("m-xr"),add=document.getElementById("m-xadd");
     if(!box||!add)return{mode(){},read:()=>[]};
     const setMode=()=>{const o=getMode()==="order";
@@ -969,10 +969,20 @@ const CM={
       box.querySelectorAll(".xi-w").forEach(e=>e.style.display=o?"none":"")};
     add.onclick=()=>{
       const d=document.createElement("div");d.className="xr";d.style.cssText="border-top:1px dashed var(--line,#ddd);margin-top:10px;padding-top:4px";
-      d.innerHTML='<div class="xo-w"><label>الطلبية</label><select class="xo"><option value="">— اختار الطلبية —</option>'+optsHtml+'</select></div><div class="xi-w"><label>الصنف</label><input class="xi" list="m-items" maxlength="120" autocomplete="off"></div><label>عدد القطع</label><input class="xq" type="number" min="1" max="100000" inputmode="numeric"><button type="button" class="btn ghost sm xrm" style="margin-top:6px">حذف الصنف ده</button>';
+      d.innerHTML='<div class="xo-w"><label>الطلبية</label><select class="xo"><option value="">— اختار الطلبية —</option>'+optsHtml+'</select></div><div class="xi-w"><label>الصنف</label><input class="xi" list="m-items" maxlength="120" autocomplete="off"></div><label>عدد القطع</label><input class="xq" type="number" min="1" max="100000" inputmode="numeric">'+(br?'<div class="two"><div><label>عدد القوالب (اختياري)</label><input class="xmo" type="number" min="0" max="100000" inputmode="numeric"></div><div><label>عدد الصبات (اختياري)</label><input class="xpo" type="number" min="0" max="100000" inputmode="numeric"></div></div><div class="nums xbh" style="margin:2px 0 6px"></div>':'')+'<button type="button" class="btn ghost sm xrm" style="margin-top:6px">حذف الصنف ده</button>';
       box.appendChild(d);d.querySelector(".xrm").onclick=()=>d.remove();setMode();
+      if(br){
+        const mo=d.querySelector(".xmo"),po=d.querySelector(".xpo"),h=d.querySelector(".xbh"),xo=d.querySelector(".xo"),xi=d.querySelector(".xi");
+        [mo,po].forEach(e=>e.addEventListener("input",()=>{e.dataset.t="1"}));
+        const fill=()=>{const nm=getMode()==="order"?(br(parseInt(xo.value)||null)||""):xi.value.trim(),c=BRC.get(norm(nm));
+          if(!c||(c.m==null&&c.p==null)){h.textContent="";return}
+          h.textContent="من بيانات الصنف: "+(c.m!=null?c.m+" قالب":"")+(c.m!=null&&c.p!=null?" · ":"")+(c.p!=null?c.p+" صبة":"");
+          if(!mo.dataset.t&&c.m!=null)mo.value=c.m;if(!po.dataset.t&&c.p!=null)po.value=c.p};
+        xi.addEventListener("input",fill);xi.addEventListener("change",fill);xo.addEventListener("change",fill);
+        (BRC.size?Promise.resolve():brcLoad()).then(fill);
+      }
     };
-    return{mode:setMode,read:()=>[...box.querySelectorAll(".xr")].map(d=>({oid:parseInt(d.querySelector(".xo").value)||null,item:d.querySelector(".xi").value.trim(),qty:parseInt(d.querySelector(".xq").value)||0}))};
+    return{mode:setMode,read:()=>[...box.querySelectorAll(".xr")].map(d=>({oid:parseInt(d.querySelector(".xo").value)||null,item:d.querySelector(".xi").value.trim(),qty:parseInt(d.querySelector(".xq").value)||0,...(br?(()=>{const g=c=>{const v=d.querySelector(c).value.trim();return v===""?null:Math.max(0,Math.min(100000,parseInt(v)||0))};return{molds:g(".xmo"),pours:g(".xpo")}})():{})}))};
   }
 };
 // تسجيل الصب اليدوي: لو مفيش نت بيتحفظ على الجهاز وبيتبعت لوحده (زي باقي الأقسام)
@@ -990,10 +1000,10 @@ function castAutoSplit(entries,orders){
   const rem=new Map(orders.map(o=>[o.id,Math.max(+o.rem||0,0)])),key=o=>String(o.due||o.date||"9999-12-31");
   const out=[];
   for(const e of entries){
-    let left=e.qty;const k=norm(e.item);
+    let left=e.qty;const k=norm(e.item);let fst=true;const mp=()=>{if(!fst)return{};fst=false;const o={};if(e.molds!=null)o.molds=e.molds;if(e.pours!=null)o.pours=e.pours;return o};
     const list=orders.filter(o=>norm(o.item)===k&&rem.get(o.id)>0).sort((a,b)=>key(a).localeCompare(key(b))||a.id-b.id);
-    for(const o of list){if(left<=0)break;const t=Math.min(left,rem.get(o.id));out.push({item:o.item,qty:t,order_id:o.id});rem.set(o.id,rem.get(o.id)-t);left-=t}
-    if(left>0)out.push({item:e.item,qty:left,order_id:null});
+    for(const o of list){if(left<=0)break;const t=Math.min(left,rem.get(o.id));out.push({item:o.item,qty:t,order_id:o.id,...mp()});rem.set(o.id,rem.get(o.id)-t);left-=t}
+    if(left>0)out.push({item:e.item,qty:left,order_id:null,...mp()});
   }
   return out;
 }

@@ -165,24 +165,25 @@ function castForm(id,presetOid,waste){if(roBlock())return;
         if(!e.qty&&!e.item&&!e.oid)continue;
         const it2=free?e.item:((ordOf(e.oid)||{}).item||"");
         if(e.qty<1||!it2||(!free&&!e.oid)){toast("كمّل بيانات الأصناف الإضافية (الصنف أو الطلبية وعدد القطع)");return false}
-        extra.push({oid:free?null:e.oid,item:it2,qty:e.qty});
+        extra.push({oid:free?null:e.oid,item:it2,qty:e.qty,molds:e.molds,pours:e.pours});
       }
     }
     const cd=lockDate?(rec?rec.d:today()):(document.getElementById("m-d").value||today());
-    const ents=!rec?(auto?castAutoSplit([{item,qty:q},...extra.map(e=>({item:e.item,qty:e.qty}))],orders.filter(o=>o.st==="open").map(o=>({id:o.id,item:o.item,rem:orderProg(o).rem-pendQ(o.id),due:o.due,date:o.od}))):[{item,qty:q,order_id:oid},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid}))]):null;
+    const brx=(!waste&&true&&!rec)?(()=>{const b=brcRead(),o={};if(b.molds!=null)o.molds=b.molds;if(b.pours!=null)o.pours=b.pours;return o})():{},exb=e=>{const o={};if(e.molds!=null)o.molds=e.molds;if(e.pours!=null)o.pours=e.pours;return o};
+    const ents=!rec?(auto?castAutoSplit([{item,qty:q,...brx},...extra.map(e=>({item:e.item,qty:e.qty,...exb(e)}))],orders.filter(o=>o.st==="open").map(o=>({id:o.id,item:o.item,rem:orderProg(o).rem-pendQ(o.id),due:o.due,date:o.od}))):[{item,qty:q,order_id:oid,...brx},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid,...exb(e)}))]):null;
     const used=new Map();
     if(!await reviewSave({title:waste?"راجع الهالك قبل الحفظ":"راجع الإنتاج قبل الحفظ",meta:[["التاريخ",fmtD(cd)],["الوردية",sh],...rvFields(x)],
       items:(ents||[{item,qty:waste?sc:q,order_id:oid}]).map(e=>{const o=e.order_id?ordOf(e.order_id):null;
-        const rows=[[waste?"عدد القطع الهالكة":"عدد القطع",nf(waste?sc:e.qty)],["الطلبية",o?oLab(o):"بدون طلبية"]];let warn="";
+        const rows=[[waste?"عدد القطع الهالكة":"عدد القطع",nf(waste?sc:e.qty)],["الطلبية",o?oLab(o):"بدون طلبية"]];if(e.molds!=null)rows.push(["عدد القوالب",nf(e.molds)]);if(e.pours!=null)rows.push(["عدد الصبات",nf(e.pours)]);let warn="";
         if(o){const base=Math.max(orderProg(o).rem-pendQ(o.id),0)+(rec&&rec.oid===o.id?rec.qty:0),u=(used.get(o.id)||0)+e.qty;used.set(o.id,u);rows.push(["المتبقي بعد التسجيل",remAfter(base,u)]);warn=overWarn(base,u)}
         return{title:e.item,rows,warn}})}))return false;
     const row={brush_date:cd,item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
-    if(!waste){const b=brcRead();if(b.molds!=null||b.pours!=null||(rec&&(rec.mo!=null||rec.po!=null))){row.molds=b.molds;row.pours=b.pours}}
+    if(!waste&&rec){const b=brcRead();if(b.molds!=null||b.pours!=null||(rec&&(rec.mo!=null||rec.po!=null))){row.molds=b.molds;row.pours=b.pours}}
     if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
     if(!rec){
       const linked=ents.filter(e=>e.order_id).length;
       let ok=0,qd=0,err=null;
-      let ix=0;for(const en of ents){const r1={...row,...en};if(ix++>0){delete r1.molds;delete r1.pours}const rr=await castInsert(r1,"brush_log","brush");if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
+      let ix=0;for(const en of ents){const r1={...row,...en};ix++;const rr=await castInsert(r1,"brush_log","brush");if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
       try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("brush",{w:x.worker,i:item,q:q});
       if(err){
         const m=BRC_ERR.test(err.message||"")?"شغّل ملف setup_v4_4.sql من Supabase الأول":V2_ERR.test(err.message||"")?"شغّل ملف setup_brush.sql من Supabase الأول":"خطأ: "+err.message;
@@ -210,7 +211,7 @@ function castForm(id,presetOid,waste){if(roBlock())return;
       ["input","change","blur"].forEach(ev=>[w,dEl,sEl].forEach(el=>el.addEventListener(ev,upd)));upd();
     }
     const mode=document.getElementById("m-mode");
-    mx=(!waste&&!rec)?CM.wire(openOrds.map(o=>`<option value="${o.id}">${esc(oLab(o))}</option>`).join(""),()=>mode&&mode.value==="order"?"order":"free"):null;
+    mx=(!waste&&!rec)?CM.wire(openOrds.map(o=>`<option value="${o.id}">${esc(oLab(o))}</option>`).join(""),()=>mode&&mode.value==="order"?"order":"free",id=>(ordOf(id)||{}).item):null;
     if(!mode)return;
     const sel=document.getElementById("m-o"),item=document.getElementById("m-item"),hint=document.getElementById("m-hint");
     const sync=()=>{
