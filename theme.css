@@ -1153,3 +1153,182 @@ body:not(.sideopen) .side{will-change:auto}
 .tabs::-webkit-scrollbar{display:none}
 .tabs>button,.tabs>.btn{flex:1 0 auto!important;scroll-snap-align:center;white-space:nowrap}
 .tabs:active{cursor:grabbing}
+
+/* =====================================================================
+   v4.1.1 — رسم بياني احترافي + قوائم ذكية + كروت الأصناف
+   ===================================================================== */
+
+/* ---------- الرسم البياني ---------- */
+.chart2{padding-top:2px}
+.cst{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.cst>div{padding:8px 6px;border-radius:12px;text-align:center;background:color-mix(in srgb,var(--pri) 7%,var(--card));border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line))}
+.cst small{display:block;font-size:.72rem;color:var(--ink2);font-weight:600;margin-bottom:1px}
+.cst b{display:block;font-size:1.12rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.cplot{display:flex;gap:6px;direction:rtl;align-items:stretch}
+.cy{display:flex;flex-direction:column;justify-content:space-between;height:190px;flex:none;min-width:30px;text-align:start;font-size:.68rem;color:var(--ink2);font-weight:600;font-variant-numeric:tabular-nums;direction:ltr}
+.cy span{line-height:0;transform:translateY(0)}
+.cy span:first-child{transform:translateY(5px)}.cy span:last-child{transform:translateY(-5px)}
+.cw{position:relative;flex:1;min-width:0;height:190px}
+.cgrid{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}
+.cgrid i{display:block;height:0;border-top:1px dashed color-mix(in srgb,var(--ink2) 28%,transparent)}
+.cgrid i:last-child{border-top:1.5px solid color-mix(in srgb,var(--ink2) 45%,transparent)}
+.cavg{position:absolute;inset-inline:0;height:0;border-top:1.5px dashed var(--gold);z-index:2;pointer-events:none;opacity:.95}
+.cavg span{position:absolute;inset-inline-start:0;top:-19px;font-size:.66rem;font-weight:800;color:var(--pri-d);background:color-mix(in srgb,var(--gold) 55%,var(--card));padding:1px 7px;border-radius:99px;white-space:nowrap}
+.chart2 .bars{position:absolute;inset:0;height:auto;gap:4px;padding:0 2px;z-index:1}
+.chart2 .bars .b{min-width:4px}
+.chart2 .bars .b .st{border-radius:7px 7px 2px 2px;box-shadow:0 3px 8px -3px rgba(66,27,36,.45);position:relative}
+.chart2 .bars .b .st::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.28),rgba(255,255,255,0) 45%,rgba(0,0,0,.08));pointer-events:none}
+.chart2 .bars .b.peak .st{box-shadow:0 0 0 2px var(--gold),0 4px 12px -2px rgba(215,185,111,.7)}
+.chart2 .bars .b.zero .st{height:3px!important;border-radius:2px;box-shadow:none;background:color-mix(in srgb,var(--ink2) 25%,transparent)}
+.chart2 .bars.hasSel .b:not(.sel){opacity:.45}
+.chart2 .bars .b{transition:opacity .2s}
+.chart2 .bars .b .bv{top:auto;font-size:.68rem;color:var(--ink);background:var(--card);padding:0 4px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.chart2 .axis{margin-inline-start:36px;margin-top:6px;gap:4px;padding:0 2px}
+.chart2 .axis{direction:rtl}
+.chart2 .cinfo{margin-top:10px;padding:9px 12px;border-radius:12px;background:color-mix(in srgb,var(--pri) 5%,var(--card));border:1px dashed var(--line);text-align:center;transition:background .2s}
+.chart2 .cinfo.on{text-align:start;border:1.5px solid var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--card));animation:cbIn .18s var(--ease) both}
+.chd{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.chd span{color:var(--ink2);font-weight:700;font-size:.88rem}.chd b{font-size:1.35rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.cmp{display:inline-block;margin-top:3px;font-size:.78rem;font-weight:800;padding:2px 9px;border-radius:99px}
+.cmp.up{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.cmp.dn{color:var(--bad);background:color-mix(in srgb,var(--bad) 13%,transparent)}
+.cparts{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:.82rem;color:var(--ink2)}
+.cparts i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-inline-end:5px}
+@media(max-width:380px){.cst b{font-size:1rem}}
+
+/* ---------- القوائم الذكية (بديل select) ---------- */
+.spw{display:block;position:relative;min-width:0}
+.spw>select{display:none!important}
+.spb{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;margin:4px 0 8px;padding:6px 10px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--bg) 55%,var(--card));color:var(--ink);font:inherit;font-weight:600;text-align:start;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+.spb:hover{border-color:var(--gold)}
+.spb:focus-visible,.spb.open{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(215,185,111,.3)}
+.spb .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spb .t.ph{color:var(--ink2);font-weight:500;opacity:.8}
+.spb .ch{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--pri) 11%,transparent);color:var(--pri-d)}
+.spb .ch svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+.spb:disabled{opacity:.55;cursor:not-allowed}
+.spav{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:.9rem;font-weight:800;color:hsl(var(--h,350) 55% 26%);background:hsl(var(--h,350) 45% 86%);border:1.5px solid hsl(var(--h,350) 40% 70%)}
+.spb .spav{width:28px;height:28px;font-size:.8rem}
+.spo{position:fixed;inset:0;z-index:90;background:rgba(20,8,12,.5);display:flex;align-items:flex-end;justify-content:center;animation:fade .15s both;-webkit-tap-highlight-color:transparent}
+.sps{width:100%;max-width:560px;max-height:82vh;max-height:82dvh;display:flex;flex-direction:column;background:var(--card);border-radius:22px 22px 0 0;border-top:3px solid var(--gold);box-shadow:0 -14px 50px rgba(0,0,0,.4);animation:spUp .22s var(--ease) both;padding-bottom:env(safe-area-inset-bottom)}
+@keyframes spUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.sps .hd{padding:8px 16px 4px;text-align:center}
+.sps .hd:before{content:"";display:block;width:42px;height:4px;border-radius:9px;background:var(--line);margin:0 auto 10px}
+.sps .hd h4{margin:0;font-size:1.05rem;color:var(--ink)}
+.sps .sq{padding:6px 14px 4px}
+.sps .sq input{margin:0;min-height:46px;padding-inline-start:14px}
+.sps .ls{overflow-y:auto;padding:4px 10px 12px;overscroll-behavior:contain}
+.sps .gh{padding:10px 8px 4px;font-size:.76rem;font-weight:800;color:var(--ink2);letter-spacing:.2px}
+.spo-i{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:8px 10px;border:0;border-radius:14px;background:none;color:var(--ink);font:inherit;font-weight:700;text-align:start;cursor:pointer}
+.spo-i:active,.spo-i.act{background:color-mix(in srgb,var(--gold) 28%,transparent)}
+.spo-i .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.spo-i .tx span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spo-i small{color:var(--ink2);font-weight:600;font-size:.76rem}
+.spo-i .ck{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:var(--on-pri,#fff);background:var(--pri);opacity:0}
+.spo-i.on{background:color-mix(in srgb,var(--pri) 8%,transparent)}.spo-i.on .ck{opacity:1}
+.spo-i .ck svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+.spo-i.none{color:var(--ink2);font-weight:600;min-height:44px}
+.spo-i.other{color:var(--pri-d);border:1.5px dashed var(--gold);margin-top:6px}
+.spo-i mark{background:color-mix(in srgb,var(--gold) 55%,transparent);color:inherit;border-radius:4px;padding:0 1px}
+.sps .em{padding:26px 12px;text-align:center;color:var(--ink2)}
+.sps .ft{padding:6px 16px 10px;text-align:center;font-size:.76rem;color:var(--ink2)}
+:root[data-theme=dark] .sps{background:var(--card2,var(--card))}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .sps{background:var(--card2,var(--card))}
+  .spav{color:hsl(var(--h,350) 70% 82%);background:hsl(var(--h,350) 30% 24%);border-color:hsl(var(--h,350) 30% 38%)}}
+:root[data-theme=dark] .spav{color:hsl(var(--h,350) 70% 82%);background:hsl(var(--h,350) 30% 24%);border-color:hsl(var(--h,350) 30% 38%)}
+@media(min-width:700px){.spo{align-items:center}.sps{border-radius:22px;max-height:70vh}}
+@media print{.spo{display:none!important}}
+
+/* القائمة المنسدلة للكتابة (الأصناف/الألوان): تمييز الكلمة المكتوبة */
+.cbo mark{background:color-mix(in srgb,var(--gold) 55%,transparent);color:inherit;border-radius:4px;padding:0 1px}
+.cbo{min-height:46px;border-radius:12px}
+.cbl .cbf{padding:6px 12px 4px;text-align:center;font-size:.72rem;color:var(--ink2)}
+
+/* ---------- كروت الأصناف ---------- */
+.itg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(min-width:560px){.itg{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}}
+.itc{position:relative;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--sh);transition:transform .2s var(--ease),box-shadow .2s,border-color .2s}
+.itc:active{transform:scale(.985)}
+.itc.sel{border-color:var(--pri);box-shadow:0 0 0 2px color-mix(in srgb,var(--pri) 40%,transparent),var(--sh)}
+.itm{position:relative;aspect-ratio:4/3;display:grid;place-items:center;background:center/cover no-repeat;overflow:hidden}
+.itm.has{cursor:zoom-in}
+.itm.mono{background:linear-gradient(145deg,hsl(var(--h) 42% 90%),hsl(var(--h) 38% 80%));color:hsl(var(--h) 50% 28%)}
+.itm.mono:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 10%,rgba(255,255,255,.55),transparent 45%),repeating-linear-gradient(45deg,rgba(255,255,255,.14) 0 6px,transparent 6px 14px)}
+.itm.mono span{position:relative;font-size:2rem;font-weight:800;letter-spacing:1px}
+.itm .gk{top:8px;inset-inline-start:8px;background:rgba(255,255,255,.94);box-shadow:0 2px 8px rgba(0,0,0,.18);border-radius:9px}
+.itm .cn{position:absolute;bottom:7px;inset-inline-end:7px;max-width:calc(100% - 14px);direction:ltr;font-size:.72rem;font-weight:800;padding:2px 9px;border-radius:99px;background:rgba(66,27,36,.82);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;backdrop-filter:blur(4px)}
+.itb{padding:10px 10px 6px;flex:1}
+.itb b{display:block;font-size:1rem;line-height:1.35;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.7em}
+.itb small{display:block;margin-top:2px;color:var(--ink2);font-weight:600;font-size:.74rem}
+.ita{display:flex;gap:6px;padding:6px 8px 8px;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.ita button{flex:1;min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:5px;border-radius:11px;border:1px solid var(--line);background:color-mix(in srgb,var(--bg) 55%,var(--card));color:var(--ink);font:inherit;font-weight:700;font-size:.8rem;cursor:pointer;padding:0 6px}
+.ita button:active{background:color-mix(in srgb,var(--gold) 28%,transparent)}
+.ita button.dang{flex:none;width:42px;color:var(--bad);border-color:color-mix(in srgb,var(--bad) 35%,transparent)}
+.ita button.ds{flex:none;color:var(--pri-d)}
+.ita .ui{width:17px;height:17px}
+.cstat{display:flex;gap:8px;margin:0 0 10px;overflow-x:auto;scrollbar-width:none}
+.cstat::-webkit-scrollbar{display:none}
+.cstat span{flex:none;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;font-size:.8rem;font-weight:700;color:var(--ink);background:color-mix(in srgb,var(--pri) 7%,var(--card));border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line))}
+.cstat b{color:var(--pri-d)}
+.cent .cthumb.mono{background:linear-gradient(145deg,hsl(var(--h) 42% 90%),hsl(var(--h) 38% 80%));color:hsl(var(--h) 50% 28%);border-color:hsl(var(--h) 35% 72%);font-weight:800;font-size:1.05rem}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .itm.mono,:root:not([data-theme=light]) .cent .cthumb.mono{background:linear-gradient(145deg,hsl(var(--h) 25% 24%),hsl(var(--h) 25% 17%));color:hsl(var(--h) 60% 80%)}}
+:root[data-theme=dark] .itm.mono,:root[data-theme=dark] .cent .cthumb.mono{background:linear-gradient(145deg,hsl(var(--h) 25% 24%),hsl(var(--h) 25% 17%));color:hsl(var(--h) 60% 80%)}
+
+.spo-i small.cc{flex:none;direction:ltr;font-size:.74rem;font-weight:700;padding:1px 9px;border-radius:99px;background:color-mix(in srgb,var(--ink2) 13%,transparent);color:var(--ink2)}
+.cbw>input[inputmode=none]{cursor:pointer;caret-color:transparent}
+
+@media print{.chart2 .bars .b .st i{-webkit-print-color-adjust:exact;print-color-adjust:exact}.chart2 .cinfo.on{break-inside:avoid}.spb .ch{display:none}}
+
+/* =====================================================================
+   v4.1.4 — PDF بهوية البراند
+   ===================================================================== */
+@media print{
+  /* الترويسة: شريط عنابي بالشعار الكامل + خط ذهبي + رقم المستند */
+  .pl-top{background:linear-gradient(100deg,#642631 0%,#4a1b25 100%)!important;border-bottom:0!important;border-radius:14px 14px 0 0!important;padding:10px 16px!important;gap:16px!important;position:relative;box-shadow:inset 0 -4px 0 #D7B96F}
+  .pl-top img.pl{height:62px!important;width:auto!important;border-radius:10px!important;padding:0!important;background:none!important;box-shadow:0 0 0 1.5px #D7B96F!important}
+  .pl-org{display:flex;flex-direction:column;gap:2px;padding-bottom:4px}
+  .pl-org b{font-size:17pt!important;color:#fff!important;font-weight:800;line-height:1.2}
+  .pl-org small{font-size:8.5pt;font-weight:700;color:#E8D49B;letter-spacing:.3px}
+  .pl-meta{padding-bottom:4px;line-height:1.55!important;color:#E8D49B!important;font-size:8.5pt!important}
+  .pl-ref{display:block;direction:ltr;font-family:Consolas,monospace;font-size:8pt;font-weight:700;letter-spacing:.8px;color:#fff;background:rgba(215,185,111,.28);border:1px solid rgba(215,185,111,.7);border-radius:99px;padding:1px 9px;margin-bottom:3px;text-align:center}
+  .print-head h2{background:linear-gradient(90deg,#F3EAEC,#FBF7EE)!important;border-inline-start:7px solid #D7B96F!important;border-radius:0 0 12px 12px!important;letter-spacing:.2px}
+  /* الجداول: ترويسة عنابية بحد ذهبي وأرقام متناسقة */
+  th{background:linear-gradient(180deg,#722c39,#5a2230)!important;font-size:9pt!important;letter-spacing:.2px}
+  th:first-child{border-top-right-radius:8px}th:last-child{border-top-left-radius:8px}
+  tbody tr:nth-child(even) td{background:#FCF8F0!important}
+  td b{color:#421B24}
+  tfoot th,tfoot td{background:linear-gradient(90deg,#F3EAEC,#FBF7EE)!important}
+  /* كروت الأرقام */
+  .kpi{border-top:4px solid #D7B96F!important;position:relative}
+  .kpi:before{content:"";position:absolute;inset-inline:0;top:-4px;height:4px;background:linear-gradient(90deg,#642631,#D7B96F)!important}
+  .kpi small{color:#6b5a3a!important;font-weight:700!important}
+  .card h3{border-bottom:1.5px solid #E8DCC0;padding-bottom:5px;margin-bottom:8px!important}
+  .card h3:before{content:"";display:inline-block;width:8px;height:8px;margin-inline-end:7px;background:#D7B96F;transform:rotate(45deg);vertical-align:1px}
+  /* التوقيعات */
+  .print-sign{margin-top:30px!important;padding-top:10px;border-top:1px solid #E3D8C4}
+  .print-sign span{border-bottom:1.5px solid #B9984C!important}
+  .print-foot{border-top:2px solid #D7B96F!important;color:#6b5a3a!important;font-weight:600}
+}
+
+/* ===== PDF كتالوج الأصناف / الرسمات ===== */
+@media print{
+  #pdfroot .pdfcover{display:flex;align-items:stretch;gap:16px;margin:0 0 14px;padding:0;border-radius:16px;overflow:hidden;background:linear-gradient(100deg,#642631,#421B24)!important;box-shadow:inset 0 -5px 0 #D7B96F;break-after:avoid}
+  #pdfroot .pdfcover img{width:150px;height:auto;flex:none;display:block;object-fit:cover}
+  #pdfroot .pdft{flex:1;padding:14px 18px 18px;display:flex;flex-direction:column;justify-content:center;gap:3px;color:#fff}
+  #pdfroot .pdft small{color:#E8D49B;font-weight:700;font-size:10px;letter-spacing:.6px}
+  #pdfroot .pdft h2{color:#fff!important;font-size:25px!important;line-height:1.25;margin:0}
+  #pdfroot .pdft p{color:#F3E6C0;font-size:13px;margin:2px 0 0}
+  #pdfroot .pdfm{display:flex;gap:8px;margin-top:8px}
+  #pdfroot .pdfm span{font-size:10.5px;font-weight:700;color:#421B24;background:#E8D49B;border-radius:99px;padding:2px 11px}
+  #pdfroot .pdfpg{gap:12px}
+  #pdfroot .pdfpc{border:1px solid #E3D8C4;border-top:3px solid #D7B96F;border-radius:12px;padding:7px 7px 8px;background:#fff;box-shadow:0 1px 0 #EFE7D6}
+  #pdfroot .pdfpi{position:relative;background:linear-gradient(145deg,#FBF7EE,#F1E8D4);border-radius:9px;display:grid;place-items:center}
+  #pdfroot .pdfmono{font-size:34px;font-weight:800;color:#8a6d3b;opacity:.75}
+  #pdfroot .pdfn{position:absolute;top:5px;inset-inline-start:5px;font-style:normal;font-size:9.5px;font-weight:800;color:#fff;background:rgba(66,27,36,.85);border-radius:99px;min-width:20px;padding:1px 6px;text-align:center}
+  #pdfroot .pdfpc b{font-size:14.5px;margin-top:6px;line-height:1.3}
+  #pdfroot .pdfpc small{display:inline-block;margin-top:3px;direction:ltr;font-weight:700;color:#6b5a3a;background:#FBF7EE;border:1px solid #E8DCC0;border-radius:99px;padding:0 9px;font-size:10px}
+  #pdfroot .pdfend{display:flex;align-items:center;gap:12px;margin-top:16px;color:#8a6d3b;font-size:11px;break-inside:avoid}
+  #pdfroot .pdfend span{flex:1;height:1.5px;background:linear-gradient(90deg,transparent,#D7B96F)}
+  #pdfroot .pdfend span:last-child{background:linear-gradient(270deg,transparent,#D7B96F)}
+  body.pdfmode>#pf{display:block!important}
+}

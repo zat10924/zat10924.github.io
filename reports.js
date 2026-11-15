@@ -259,7 +259,14 @@ function workerStats(rows){
   return[...m.values()].sort((a,b)=>b.q-a.q);
 }
 
-/* ---------- الرسم البياني (أعمدة متراصة) ---------- */
+/* ---------- الرسم البياني (أعمدة متراصة + شبكة + متوسط + تفاصيل) ---------- */
+function niceTop(max){ // أقرب سقف «مدوّر» يتقسم على 4 خطوط شبكة
+  if(max<=4)return 4;
+  const raw=max/4,pw=Math.pow(10,Math.floor(Math.log10(raw)));
+  const st=[1,1.2,1.5,2,2.5,3,4,5,6,8,10].map(m=>m*pw).find(v=>v>=raw)||10*pw;
+  return st*4;
+}
+const kfmt=v=>v>=10000?(Math.round(v/100)/10)+"k":nf(v);
 function drawChart(el,{f,t,series}){
   if(!f||!t){
     const ds=series.flatMap(s=>s.rows.map(r=>r.d)).sort();
@@ -270,20 +277,29 @@ function drawChart(el,{f,t,series}){
   const sums=series.map(s=>{const o={};s.rows.forEach(r=>{if(r.d>=f&&r.d<=t){const k=keyOf(r.d,m);o[k]=(o[k]||0)+r.qty}});return o});
   const tot=bl.map(k=>sums.reduce((a,o)=>a+(o[k]||0),0));
   if(!tot.some(Boolean)){el.innerHTML='<div class="empty">مفيش بيانات في الفترة دي</div>';return}
-  const max=Math.max(...tot),step=Math.ceil(bl.length/10),few=bl.length<=12,mi=tot.indexOf(max);
-  const unit=m==="day"?"يوم":m==="week"?"أسبوع":"شهر";
-  el.innerHTML=`<div class="chart"><div class="bars">${bl.map((k,i)=>{
-      const h=tot[i]/max*100;
-      return `<div class="b ${tot[i]?"":"zero"}" data-i="${i}"><div class="st" data-h="${h}" style="height:0">${series.map((s,si)=>sums[si][k]?`<i style="flex:${sums[si][k]};background:${s.color}"></i>`:"").join("")}</div>${tot[i]&&(few||i===mi)?`<span class="bv" style="bottom:calc(${h}% + 2px)">${nf(tot[i])}</span>`:""}</div>`}).join("")}</div>
+  const max=Math.max(...tot),top=niceTop(max),step=Math.ceil(bl.length/8),few=bl.length<=12,mi=tot.indexOf(max);
+  const unit=m==="day"?"يوم":m==="week"?"أسبوع":"شهر",sum=tot.reduce((a,v)=>a+v,0),act=tot.filter(Boolean).length,avg=Math.round(sum/act),ap=avg/top*100;
+  const ticks=[4,3,2,1,0].map(i=>top/4*i);
+  el.innerHTML=`<div class="chart2">
+    <div class="cst"><div><small>الإجمالي</small><b>${nf(sum)}</b></div><div><small>متوسط ${unit} عمل</small><b>${nf(avg)}</b></div><div><small>الأعلى</small><b>${nf(max)}</b></div></div>
+    <div class="cplot"><div class="cy">${ticks.map(v=>`<span>${kfmt(v)}</span>`).join("")}</div>
+      <div class="cw"><div class="cgrid">${ticks.map(()=>"<i></i>").join("")}</div>
+        <div class="cavg" style="bottom:${ap}%"><span>متوسط ${nf(avg)}</span></div>
+        <div class="bars">${bl.map((k,i)=>{
+          const h=tot[i]/top*100;
+          return `<div class="b ${tot[i]?"":"zero"} ${i===mi?"peak":""}" data-i="${i}"><div class="st" data-h="${h}" style="height:0">${series.map((s,si)=>sums[si][k]?`<i style="flex:${sums[si][k]};background:${s.color}"></i>`:"").join("")}</div>${tot[i]&&(few||i===mi)?`<span class="bv" style="bottom:calc(${h}% + 3px)">${nf(tot[i])}</span>`:""}</div>`}).join("")}</div></div></div>
     <div class="axis">${bl.map((k,i)=>`<span>${i%step===0?shortL(k,m):""}</span>`).join("")}</div>
     <div class="cinfo">كل عمود = ${unit} · اضغط على عمود للتفاصيل</div></div>
     ${series.length>1?`<div class="legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${s.name}</span>`).join("")}</div>`:""}`;
   requestAnimationFrame(()=>requestAnimationFrame(()=>el.querySelectorAll(".st").forEach(s=>s.style.height=s.dataset.h+"%")));
-  el.querySelector(".bars").onclick=e=>{
-    const b=e.target.closest(".b");if(!b)return;const i=+b.dataset.i;
-    el.querySelectorAll(".b").forEach(x=>x.classList.toggle("sel",x===b));
-    const parts=series.length>1?"<br>"+series.map((s,si)=>`${s.name}: <b>${nf(sums[si][bl[i]]||0)}</b>`).join(" · "):"";
-    el.querySelector(".cinfo").innerHTML=`${longL(bl[i],m)} — <b>${nf(tot[i])}</b>${parts}`;
+  const bars=el.querySelector(".bars"),info=el.querySelector(".cinfo");
+  bars.onclick=e=>{
+    const b=e.target.closest(".b");if(!b)return;const i=+b.dataset.i,was=b.classList.contains("sel");
+    el.querySelectorAll(".b").forEach(x=>x.classList.toggle("sel",!was&&x===b));bars.classList.toggle("hasSel",!was);
+    if(was){info.classList.remove("on");info.textContent="كل عمود = "+unit+" · اضغط على عمود للتفاصيل";return}
+    const vs=avg?Math.round((tot[i]-avg)/avg*100):0,cmp=tot[i]?`<span class="cmp ${vs>=0?"up":"dn"}">${vs>=0?"▲":"▼"} ${nf(Math.abs(vs))}% عن المتوسط</span>`:"";
+    const parts=series.length>1?'<div class="cparts">'+series.map((s,si)=>`<span><i style="background:${s.color}"></i>${s.name}: <b>${nf(sums[si][bl[i]]||0)}</b></span>`).join("")+"</div>":"";
+    info.classList.add("on");info.innerHTML=`<div class="chd"><span>${longL(bl[i],m)}</span><b>${nf(tot[i])}</b></div>${cmp}${parts}`;
   };
 }
 

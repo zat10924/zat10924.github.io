@@ -28,8 +28,8 @@
   <div class="row noprint" style="margin-bottom:12px"><button class="btn" id="add" style="flex:1">+ تسجيل إنتاج</button><button class="btn ghost" id="addw" style="flex:1">+ تسجيل هالك</button></div>
   <div class="card noprint">
     <div class="two"><div><label>من</label><input type="date" id="f-from"></div><div><label>إلى</label><input type="date" id="f-to"></div></div>
-    <div class="two"><div><label>الصنف</label><select id="f-item"><option value="">الكل</option></select></div><div><label>العامل</label><select id="f-wk"><option value="">الكل</option></select></div></div>
-    <div class="two"><div><label>الوردية</label><select id="f-sh"><option value="">الكل</option><option>صباحي</option><option>مسائي</option><option>ليلي</option></select></div><div><label>النوع</label><select id="f-ty"><option value="">الكل</option><option value="order">بطلبية</option><option value="free">بدون طلبية</option></select></div></div>
+    <div class="two"><div><label>الصنف</label><select data-sp="1" id="f-item"><option value="">الكل</option></select></div><div><label>العامل</label><select data-sp="1" id="f-wk"><option value="">الكل</option></select></div></div>
+    <div class="two"><div><label>الوردية</label><select data-sp="1" id="f-sh"><option value="">الكل</option><option>صباحي</option><option>مسائي</option><option>ليلي</option></select></div><div><label>النوع</label><select data-sp="1" id="f-ty"><option value="">الكل</option><option value="order">بطلبية</option><option value="free">بدون طلبية</option></select></div></div>
     <div class="row"><button class="btn" id="f-go">عرض</button><button class="btn ghost" id="f-csv">تصدير Excel</button><button class="btn ghost" onclick="window.print()">طباعة</button></div>
   </div>
   <div class="total" id="total"></div>

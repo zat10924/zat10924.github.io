@@ -365,15 +365,17 @@ window.addEventListener("beforeprint",()=>{
   heads.forEach(h=>{
     if(h.querySelector(".pl-top"))return;
     const top=document.createElement("div");top.className="pl-top";
-    top.innerHTML=(SET.get("plogo",true)?'<img class="pl" src="icon.svg" alt="">':"")+'<div class="pl-org">'+esc(org)+'</div><div class="pl-meta">'+esc(by)+'<br>'+esc(when)+'</div>';
+    const _d=new Date(),_p=n=>String(n).padStart(2,"0"),ref="MAS-"+String(_d.getFullYear()).slice(2)+_p(_d.getMonth()+1)+_p(_d.getDate())+"-"+_p(_d.getHours())+_p(_d.getMinutes());
+    top.innerHTML=(SET.get("plogo",true)?'<img class="pl" src="logo-full.png" alt="">':"")+'<div class="pl-org"><b>'+esc(org)+'</b><small>الماس للخزف والصيني · MAS PORCELAIN</small></div><div class="pl-meta"><span class="pl-ref">'+ref+'</span>'+esc(by)+'<br>'+esc(when)+'</div>';
     h.prepend(top);
     const h2=h.querySelector("h2");
     if(h2&&h2.textContent.includes(" — ")){h2.dataset.o=h2.textContent;h2.textContent=h2.textContent.split(" — ").slice(1).join(" — ")}
   });
   const fam=FONTS[SET.get("font","tajawal")]?FONTS[SET.get("font","tajawal")][0]:"Tajawal";
-  let css="@page{size:"+paper+" "+orient+";margin:16mm 14mm "+(mb?"18mm":"16mm")+"}";
+  let css="@page{size:"+paper+" "+orient+";margin:"+(mb?"20mm":"16mm")+" 14mm "+(mb?"18mm":"16mm")+"}";
   if(mb){
-    const box=(pos,txt)=>"@page{@"+pos+'{content:"'+_cssStr(txt)+'";font-family:"'+fam+'",sans-serif;font-size:8.5pt;color:#666}}';
+    const box=(pos,txt)=>"@page{@"+pos+'{content:"'+_cssStr(txt)+'";font-family:"'+fam+'",sans-serif;font-size:8.5pt;color:#6b5a3a}}';
+    css+='@page{@top-right{content:"MAS  |  الماس للخزف والصيني";font-family:"'+fam+'",sans-serif;font-size:9pt;font-weight:800;color:#642631;border-bottom:1.5pt solid #D7B96F;padding-bottom:3pt;vertical-align:bottom;width:100%}@top-left{content:"'+_cssStr(org)+'";font-family:"'+fam+'",sans-serif;font-size:8.5pt;color:#8a6d3b;border-bottom:1.5pt solid #D7B96F;padding-bottom:3pt;vertical-align:bottom;width:100%}}@page:first{@top-right{content:none;border:0}@top-left{content:none;border:0}}';
     css+=box("bottom-right",org+" · "+by+" · "+when);
     if(SET.get("pnums",true))css+="@page{@bottom-left{content:\"صفحة \" counter(page) \" من \" counter(pages);font-family:\""+fam+"\",sans-serif;font-size:8.5pt;color:#666}}";
     if(note)css+=box("bottom-center",note);
@@ -875,7 +877,7 @@ document.addEventListener("input",e=>{const x=e.target;if(!x||x.id!=="m-wx")retu
 (()=>{const d=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value");if(!d||!d.set)return;
   Object.defineProperty(HTMLSelectElement.prototype,"value",{configurable:true,get(){return d.get.call(this)},set(v){
     if(this.id==="m-w"&&v&&![...this.options].some(o=>o.value===v)){const o=document.createElement("option");o.value=v;o.textContent=v;this.appendChild(o)}
-    d.set.call(this,v)}});})();
+    d.set.call(this,v);if(this._spr)this._spr()}});})();
 const XW=(deco)=>'<label>'+(deco?'اسم العامل':'اسم العامل (اختياري)')+'</label><select id="m-w">'+wkOpts()+'</select><input id="m-wx" maxlength="60" placeholder="اكتب اسم العامل" autocomplete="off" style="display:none;margin-top:6px">';
 // الزخرفة: اسم العامل بيظهر في أول الشاشة (XT)، وباقي الحقول في آخرها (XF)
 const XT=(deco)=>{if(!deco)return "";wkLoad();return XW(true).replace("<label>اسم العامل</label>","<label>اسم العامل (اختياري)</label>")};
@@ -1046,6 +1048,10 @@ function cbPlace(){
   if(below<170&&above>below){p.style.top="auto";p.style.bottom=(innerHeight-r.top+4)+"px"}
   else{p.style.bottom="auto";p.style.top=(r.bottom+4)+"px"}
 }
+function hlText(t,raw){
+  t=String(t);const i=raw?t.toLowerCase().indexOf(raw.toLowerCase()):-1;
+  return i<0?esc(t):esc(t.slice(0,i))+"<mark>"+esc(t.slice(i,i+raw.length))+"</mark>"+esc(t.slice(i+raw.length));
+}
 function cbShow(inp,all){
   const p=cbEnsure();CBX.inp=inp;CBX.act=-1;
   const q=all?"":norm(inp.value);
@@ -1055,7 +1061,7 @@ function cbShow(inp,all){
     if(!all&&q){cbHide();return}
     p.innerHTML='<div class="cbe">'+(total?"مفيش نتائج":"القائمة فاضية — اكتب الاسم وهيتضاف")+"</div>";
   }else{
-    p.innerHTML=opts.slice(0,100).map(o=>`<button type="button" class="cbo" role="option" data-v="${esc(o[0])}"><span>${esc(o[0])}</span>${o[1]?`<small>${esc(o[1])}</small>`:""}</button>`).join("")+(opts.length>100?`<div class="cbe">و ${opts.length-100} كمان… اكتب للتصفية</div>`:"");
+    p.innerHTML=opts.slice(0,100).map(o=>`<button type="button" class="cbo" role="option" data-v="${esc(o[0])}"><span>${hlText(o[0],q?inp.value.trim():"")}</span>${o[1]?`<small>${esc(o[1])}</small>`:""}</button>`).join("")+(opts.length>100?`<div class="cbe">و ${opts.length-100} كمان… اكتب للتصفية</div>`:"");
   }
   p.hidden=false;cbPlace();
   inp.closest(".cbw")?.classList.add("open");
@@ -1091,6 +1097,35 @@ async function cbPreview(inp){
     box.hidden=false;
   }catch(e){}
 }
+const cbSheetMode=()=>matchMedia("(pointer:coarse)").matches||innerWidth<700;
+function cbSheet(inp){
+  if(!inp||!inp.isConnected||inp.readOnly||inp.disabled||document.getElementById("spo"))return;
+  const k=inp.dataset.cb,wrap=inp.closest(".cbw"),lbEl=(wrap?wrap:inp).previousElementSibling,
+    lb=(lbEl&&lbEl.tagName==="LABEL"?lbEl.textContent:(inp.placeholder||"اختيار")).replace(/\(اختياري\)|—.*$/g,"").trim()||"اختيار";
+  const free=!(["item","color","code"].includes(k)&&itemsLocked()&&k==="item"); // مسجّل الإنتاج: الصنف من القائمة بس
+  const o=document.createElement("div");o.className="spo";o.id="spo";
+  o.innerHTML=`<div class="sps" role="dialog" aria-modal="true"><div class="hd"><h4>${esc(lb)}</h4></div><div class="sq"><input type="search" id="spq" placeholder="اكتب للبحث…" autocomplete="off" enterkeyhint="done"></div><div class="ls" id="spl"></div><div class="ft" id="spf"></div></div>`;
+  document.body.appendChild(o);
+  const L=o.querySelector("#spl"),F=o.querySelector("#spf"),Q=o.querySelector("#spq");
+  Q.value=inp.value&&cbOpts(inp).some(x=>x[0]===inp.value.trim())?"":inp.value;
+  const close=()=>{o.remove();document.removeEventListener("keydown",kd,true)};
+  const kd=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};document.addEventListener("keydown",kd,true);
+  const pick=v=>{close();cbPick(inp,v)};
+  const render=()=>{
+    const raw=Q.value.trim(),q=norm(raw),cur=inp.value.trim();let opts=cbOpts(inp);const total=opts.length;
+    if(q)opts=opts.filter(x=>norm(x[0]).includes(q)||(x[1]&&norm(x[1]).includes(q))).sort((a,b)=>(norm(a[0]).startsWith(q)?0:1)-(norm(b[0]).startsWith(q)?0:1));
+    let h=(cur&&!q?`<button type="button" class="spo-i none" data-v=""><span class="tx"><span>مسح الاختيار</span></span></button>`:"")+opts.slice(0,100).map(x=>`<button type="button" class="spo-i ${x[0]===cur?"on":""}" data-v="${esc(x[0])}">${spAv(x[0])}<span class="tx"><span>${hlText(x[0],raw)}</span></span>${x[1]?`<small class="cc">${esc(x[1])}</small>`:""}<span class="ck">${SP_CK}</span></button>`).join("");
+    if(opts.length>100)h+=`<div class="em">و ${nf(opts.length-100)} كمان… اكتب للتصفية</div>`;
+    const exact=raw&&cbOpts(inp).some(x=>norm(x[0])===q);
+    if(raw&&!exact&&free)h+=`<button type="button" class="spo-i other" data-v="${esc(raw)}"><span class="tx"><span>＋ استخدام «${esc(raw)}» كاسم جديد</span></span></button>`;
+    if(!opts.length&&!(raw&&free))h=`<div class="em">${total?"مفيش نتائج — كلّم المدير يضيف الاسم":"القائمة فاضية"}</div>`;
+    L.innerHTML=h;F.textContent=total>6?(q?nf(opts.length)+" من "+nf(total):nf(total)+" اختيار"):"";
+  };
+  render();Q.oninput=render;
+  Q.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const b=L.querySelector(".spo-i");if(b)pick(b.dataset.v)}};
+  o.addEventListener("click",e=>{if(e.target===o)return close();const b=e.target.closest(".spo-i");if(b&&b.dataset.v!=null)pick(b.dataset.v)});
+  if(cbOpts(inp).length>8||!cbOpts(inp).length)Q.focus();
+}
 function enhanceCombo(inp){
   if(!inp||inp.dataset.cb||inp.tagName!=="INPUT"||inp.type==="hidden")return;
   inp.dataset.cb=cbKind(inp);
@@ -1102,14 +1137,17 @@ function enhanceCombo(inp){
   b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';w.appendChild(b);
   b.addEventListener("pointerdown",e=>e.preventDefault());
   b.addEventListener("click",()=>{
+    if(inp.readOnly||inp.disabled)return;if(cbSheetMode()){catReady().then(()=>cbSheet(inp));return}
     if(CBX.inp===inp&&CBX.p&&!CBX.p.hidden){cbHide();return}
     catReady().then(()=>cbShow(inp,true));
   });
+  if(cbSheetMode()){inp.setAttribute("inputmode","none");inp.addEventListener("pointerdown",e=>{if(inp.readOnly||inp.disabled)return;e.preventDefault();inp.blur();catReady().then(()=>cbSheet(inp))})}
   inp.addEventListener("focus",()=>{
+    if(cbSheetMode())return;
     const v=inp.value.trim();
     catReady().then(()=>{if(document.activeElement!==inp)return;const ex=cbOpts(inp).some(o=>o[0]===v);cbShow(inp,!v||ex)});
   });
-  inp.addEventListener("input",()=>{if(inp._setting)return;catReady().then(()=>cbShow(inp,false))});
+  inp.addEventListener("input",()=>{if(inp._setting||cbSheetMode())return;catReady().then(()=>cbShow(inp,false))});
   if(inp.dataset.cb==="item"||inp.dataset.cb==="code"){
     let _pt;const pv=()=>{clearTimeout(_pt);_pt=setTimeout(()=>catReady().then(()=>cbPreview(inp)),200)};
     inp.addEventListener("input",pv);inp.addEventListener("change",pv);
@@ -1131,6 +1169,100 @@ function enhanceAll(root){
   if(!root||!root.querySelectorAll)return;
   root.querySelectorAll(COMBO_SEL).forEach(el=>{if(el.type!=="hidden")enhanceCombo(el)});
 }
+/* ===== قوائم ذكية بدل القوائم العادية (select): شاشة اختيار من تحت + بحث + أفاتار للعمال + الأخيرون ===== */
+const SP_SEL="#ov select,select[data-sp]";
+const SP_HUES=[345,18,38,150,200,265,300,320];
+const spHue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%997;return SP_HUES[h%SP_HUES.length]};
+const spInit=s=>String(s).replace(/[^\p{L}\p{N}\s]/gu,"").trim().split(/\s+/).slice(0,2).map(w=>[...w][0]||"").join("")||"؟";
+const SP_CH='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',SP_CK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const spAv=n=>`<span class="spav" style="--h:${spHue(n)}">${esc(spInit(n))}</span>`;
+const spClean=t=>String(t).replace(/^[\s—–-]+|[\s—–-]+$/g,"").trim();
+function spOpts(sel){
+  const out=[];
+  [...sel.children].forEach(ch=>{
+    if(ch.tagName==="OPTGROUP")[...ch.children].forEach(o=>out.push([o,ch.label]));
+    else if(ch.tagName==="OPTION")out.push([ch,""]);
+  });
+  return out.map(([o,g])=>({i:o.index,v:o.value,t:o.textContent.trim(),g,other:o.id==="m-w-other",dis:o.disabled}));
+}
+const spRecent=()=>{try{return JSON.parse(localStorage.getItem("recent_workers")||"[]")}catch(e){return[]}};
+const spSave=n=>{try{localStorage.setItem("recent_workers",JSON.stringify([n,...spRecent().filter(x=>x!==n)].slice(0,6)))}catch(e){}};
+function spSub(name){
+  try{const w=WKA.find(x=>x.name===name);if(!w)return"";
+    const ks=[w.section,...(Array.isArray(w.sections)?w.sections:[])].filter((k,i,a)=>k&&a.indexOf(k)===i);
+    return ks.map(k=>SEC_AR[k]||k).join(" · ")}catch(e){return""}
+}
+function spOpen(sel){
+  if(!sel||sel.disabled||document.getElementById("spo"))return;
+  const worker=sel.id==="m-w",wrap=sel.closest(".spw"),lb=wrap&&wrap.previousElementSibling&&wrap.previousElementSibling.tagName==="LABEL"?wrap.previousElementSibling.textContent.trim():"اختيار";
+  const o=document.createElement("div");o.className="spo";o.id="spo";
+  const total=spOpts(sel).length,srch=total>6;
+  o.innerHTML=`<div class="sps" role="dialog" aria-modal="true"><div class="hd"><h4>${esc(lb)}</h4></div>${srch?'<div class="sq"><input type="search" id="spq" placeholder="'+(worker?"ابحث عن عامل…":"ابحث…")+'" autocomplete="off"></div>':""}<div class="ls" id="spl"></div><div class="ft" id="spf"></div></div>`;
+  document.body.appendChild(o);
+  const L=o.querySelector("#spl"),F=o.querySelector("#spf"),Q=o.querySelector("#spq");
+  const close=()=>{o.remove();sel._spLive=null;document.removeEventListener("keydown",esc_,true)};
+  const esc_=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};
+  document.addEventListener("keydown",esc_,true);
+  const row=(x,q,cls="")=>{
+    const sub=worker&&x.v&&!x.other?spSub(x.v):"",on=x.i===sel.selectedIndex;
+    if(!x.v&&!x.other)return `<button type="button" class="spo-i none ${on?"on":""}" data-i="${x.i}"><span class="tx"><span>${esc(spClean(x.t)||"بدون اختيار")}</span></span><span class="ck">${SP_CK}</span></button>`;
+    return `<button type="button" class="spo-i ${x.other?"other":""} ${on?"on":""} ${cls}" data-i="${x.i}"${x.dis?" disabled":""}>${worker&&!x.other?spAv(x.v||x.t):""}<span class="tx"><span>${hlText(x.t,q)}</span>${sub?`<small>${esc(sub)}</small>`:""}</span><span class="ck">${SP_CK}</span></button>`};
+  const render=()=>{
+    const raw=Q?Q.value.trim():"",q=norm(raw),all=spOpts(sel);
+    const none=all.filter(x=>!x.v&&!x.other),other=all.filter(x=>x.other),real=all.filter(x=>x.v&&!x.other);
+    const hit_=real.filter(x=>!q||norm(x.t).includes(q)||(worker&&norm(spSub(x.v)).includes(q)));
+    let h="";
+    if(!q)h+=none.map(x=>row(x,"")).join("");
+    if(worker&&!q){const rc=spRecent().map(n=>real.find(x=>x.v===n)).filter(Boolean).slice(0,4);
+      if(rc.length>1||(rc.length&&real.length>rc.length))h+=`<div class="gh">آخر من اخترتهم</div>`+rc.map(x=>row(x,"")).join("")}
+    const gs=[...new Set(hit_.map(x=>x.g))];
+    gs.forEach(g=>{h+=(g?`<div class="gh">${esc(g)}</div>`:(gs.length>1?'<div class="gh">أخرى</div>':""))+hit_.filter(x=>x.g===g).map(x=>row(x,raw)).join("")});
+    if(!hit_.length&&real.length)h+=`<div class="em">مفيش نتائج لـ «${esc(raw)}»</div>`;
+    if(!real.length&&!other.length)h+=`<div class="em">القائمة فاضية</div>`;
+    if(!q)h+=other.map(x=>row(x,"")).join("");
+    L.innerHTML=h;
+    F.textContent=real.length>6?(q?nf(hit_.length)+" من "+nf(real.length):nf(real.length)+(worker?" عامل":" اختيار")):"";
+    const cur=L.querySelector(".spo-i.on");if(cur&&!q)cur.scrollIntoView({block:"center"});
+  };
+  sel._spLive=render;render();
+  if(Q){Q.oninput=render;if(!matchMedia("(pointer:coarse)").matches)Q.focus()}
+  o.addEventListener("click",e=>{
+    if(e.target===o)return close();
+    const b=e.target.closest(".spo-i");if(!b||b.disabled)return;
+    const i=+b.dataset.i;sel.selectedIndex=i;
+    const op=sel.options[i];if(worker&&op&&op.value&&op.id!=="m-w-other")spSave(op.value);
+    sel.dispatchEvent(new Event("input",{bubbles:true}));sel.dispatchEvent(new Event("change",{bubbles:true}));
+    if(sel._spr)sel._spr();close();try{Snd&&Snd.play("tap")}catch(x){}
+  });
+}
+function spEnhance(sel){
+  if(!sel||sel.tagName!=="SELECT"||sel.dataset.sp||sel.multiple||sel.size>1)return;
+  sel.dataset.sp="1";
+  const w=document.createElement("span");w.className="spw";sel.parentNode.insertBefore(w,sel);w.appendChild(sel);
+  const b=document.createElement("button");b.type="button";b.className="spb";w.appendChild(b);
+  const upd=()=>{
+    const op=sel.options[sel.selectedIndex],has=!!(op&&(op.value||op.id==="m-w-other")),txt=op?(has?op.textContent.trim():spClean(op.textContent)):"";
+    b.innerHTML=(sel.id==="m-w"&&has&&op.id!=="m-w-other"?spAv(op.value):"")+`<span class="t ${has?"":"ph"}">${esc(txt||"اختر…")}</span><span class="ch">${SP_CH}</span>`;
+    b.disabled=sel.disabled;
+  };
+  sel._spr=upd;sel._spOpen=()=>spOpen(sel);
+  b.addEventListener("click",()=>spOpen(sel));
+  sel.addEventListener("change",upd);
+  new MutationObserver(()=>{upd();if(sel._spLive)sel._spLive()}).observe(sel,{childList:true,subtree:true,attributes:true,attributeFilter:["disabled"]});
+  upd();
+}
+// فتح قائمة العمال تلقائيًا (الزخرفة): اسم العامل هو أول حاجة بتتسأل عنها
+function spOpenWorker(){
+  let n=0;const go=()=>{const s=document.querySelector("#ov #m-w");if(!s||!s._spOpen||s.value)return;
+    if(s.options.length>1){s._spOpen();return}
+    if(++n<14)setTimeout(go,150)};
+  setTimeout(go,140);
+}
+(()=>{
+  const scan=r=>{if(r.matches&&r.matches(SP_SEL))spEnhance(r);if(r.querySelectorAll)r.querySelectorAll(SP_SEL).forEach(spEnhance)};
+  const init=()=>{scan(document);new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)scan(n)}))).observe(document.body,{childList:true,subtree:true})};
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+})();
 addEventListener("scroll",e=>{if(CBX.p&&!CBX.p.hidden&&!CBX.p.contains(e.target))cbPlace()},true);
 addEventListener("resize",cbPlace);
 if(window.visualViewport)visualViewport.addEventListener("resize",cbPlace);
@@ -1277,7 +1409,8 @@ function freeProduction(sec,done){
     draft.rows.forEach((r,n)=>{if(n>0||!box.querySelector(".mrow"))add(false);const el=box.lastElementChild;el.querySelector(".it").value=r.i;el.querySelector(".sb").value=r.s;el.querySelector(".mq2").value=r.q;if(spr&&r.c)el.querySelector(".msc").value=r.c});
     if(draft.x)for(const k in XID){const e=document.getElementById(XID[k]);if(e&&draft.x[k])e.value=draft.x[k]}
     toast("رجّعنا آخر مسودة اتكتبت");const cb=document.getElementById("mclr");if(cb){cb.hidden=false;cb.onclick=()=>{try{localStorage.removeItem(DK)}catch(e){}box.innerHTML="";add(true);cb.hidden=true;toast("اتمسحت المسودة")}}
-  }else add(true);
+  }else add(!deco);
+  if(deco)spOpenWorker();
   modal.addEventListener("input",saveDraft);modal.addEventListener("click",e=>{if(e.target.closest(".rmi"))setTimeout(saveDraft,0)});
   window._clearFreeDraft=()=>{try{localStorage.removeItem(DK)}catch(e){}};window._saveFreeDraft=saveDraft;
   document.getElementById("madd").onclick=()=>add(true);

@@ -167,6 +167,7 @@ function produce(lineId){
     const done=await syncStatus(x.order_id);await load();
     if(q>rem)overToast(1,q-rem);else toast(done?"اكتملت الطلبية":"تم التسجيل");
   });
+  spOpenWorker();
 }
 
 async function lineDetails(lineId){
