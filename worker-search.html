@@ -23,7 +23,7 @@
 <div class="wrap">
   <h1>بحث عن عامل</h1>
   <div class="card noprint">
-    <label>اسم العامل</label><input id="w_name" list="w_list" placeholder="اكتب أو اختار اسم العامل" autocomplete="off"><datalist id="w_list"></datalist>
+    <label>اسم العامل</label><select id="w_name"><option value="">— اختار العامل —</option></select>
     <label>القسم</label><select id="w_sec"><option value="">كل الأقسام</option><option value="glaze">جليز</option><option value="deco">زخرفة</option><option value="spray">رش</option><option value="casting">الصب اليدوي</option><option value="repair">التصليح</option></select>
     <div class="two"><div><label>من</label><input type="date" id="w_from"></div><div><label>إلى</label><input type="date" id="w_to"></div></div>
     <div class="row"><button class="btn" id="w_go">ابحث</button><button class="btn ghost" onclick="window.print()">طباعة</button></div>
@@ -43,7 +43,7 @@ const esc2=s=>esc(String(s==null?"":s));
 async function pull(tb,dcol,name,from,to,sec){
   const out=[];
   for(let f=0;;f+=1000){
-    let q=db.from(tb).select("*").ilike("worker","%"+name.replace(/[%_\\]/g," ")+"%");
+    let q=db.from(tb).select("*").ilike("worker",name.replace(/[%_\\]/g," "));
     if(from)q=q.gte(dcol,from);if(to)q=q.lte(dcol,to);
     if(tb==="free_production"&&sec)q=q.eq("section",sec);
     const{data,error}=await q.order("id").range(f,f+999);
@@ -95,11 +95,20 @@ function show(){
 }
 w_names.onclick=e=>{const b=e.target.closest("[data-n]");if(!b)return;PICK=PICK===b.dataset.n?"":b.dataset.n;w_names.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c.dataset.n===PICK));show()};
 w_go.onclick=go;
-w_name.addEventListener("keydown",e=>{if(e.key==="Enter")go()});
+w_name.onchange=()=>{PICK=""};
 async function load(){
-  try{const{data}=await db.from("workers").select("name,daily_target,active").order("name");
-    WTARGET=new Map((data||[]).map(x=>[x.name,x.daily_target]));
-    w_list.innerHTML=(data||[]).map(x=>`<option value="${esc2(x.name)}">`).join("")}catch(e){}
+  try{
+    let r=await db.from("workers").select("name,section,sections,daily_target,active").order("name");
+    if(r.error)r=await db.from("workers").select("name,section,daily_target,active").order("name");
+    const data=r.data||[];
+    WTARGET=new Map(data.map(x=>[x.name,x.daily_target]));
+    const cur=w_name.value,opt=x=>`<option value="${esc2(x.name)}">${esc2(x.name)}${x.active===false?" (موقوف)":""}</option>`;
+    const keys=Object.keys(SEC_AR);
+    const groups=keys.map(k=>[k,data.filter(x=>x.section===k||(!x.section&&false))]).filter(g=>g[1].length);
+    const none=data.filter(x=>!x.section||!SEC_AR[x.section]);
+    w_name.innerHTML='<option value="">— اختار العامل —</option>'+groups.map(([k,l])=>`<optgroup label="${esc2(SEC_AR[k])}">${l.map(opt).join("")}</optgroup>`).join("")+(none.length?`<optgroup label="بدون قسم">${none.map(opt).join("")}</optgroup>`:"");
+    if(cur)w_name.value=cur;
+  }catch(e){}
   if(LAST.length||PICK)go();
 }
 (async()=>{if(await requireAuth("worker-search.html")){renderNav("worker-search.html");dateChips("w_from","w_to",()=>{});load().finally(settle)}})();
