@@ -33,7 +33,7 @@
   </div>
   <div class="total" id="total"></div>
   <div class="nums" id="brk" style="margin-bottom:10px"></div>
-  <div class="scroll" id="tbl"><table><thead><tr><th>التاريخ</th><th>الصنف</th><th>الكمية</th><th class="noprint"></th></tr></thead><tbody id="body"></tbody></table></div>
+  <div class="scroll" id="tbl"><table><thead><tr><th>التاريخ</th><th>الصنف</th><th>العامل</th><th>الكمية</th><th class="noprint"></th></tr></thead><tbody id="body"></tbody></table></div>
   </div>
   <div id="prodRep" style="display:none"></div>
 </div>
@@ -48,7 +48,7 @@ const NONE="بدون صنف";
 async function load(){
   const{data,error}=await db.from("repair_log").select("*").order("repair_date",{ascending:false}).order("id",{ascending:false});
   if(error){fail("body",load);return}
-  rows=data.map(r=>({id:r.id,d:r.repair_date,item:r.item||"",qty:r.qty}));
+  rows=data.map(r=>({id:r.id,d:r.repair_date,item:r.item||"",qty:r.qty,w:r.worker||""}));
   const s=document.getElementById("f-item"),cur=s.value;
   s.innerHTML='<option value="">الكل</option><option value="__none">'+NONE+'</option>'+[...new Set(rows.map(r=>r.item).filter(Boolean))].map(v=>`<option>${esc(v)}</option>`).join("");
   s.value=cur;draw();drawStats();
@@ -67,26 +67,29 @@ function setTab(){
 }
 function filtered(){
   const f=document.getElementById("f-from").value,t=document.getElementById("f-to").value,i=document.getElementById("f-item").value;
-  return rows.filter(r=>(!f||r.d>=f)&&(!t||r.d<=t)&&(!i||(i==="__none"?!r.item:r.item===i))&&hit(Q,r.item));
+  return rows.filter(r=>(!f||r.d>=f)&&(!t||r.d<=t)&&(!i||(i==="__none"?!r.item:r.item===i))&&hit(Q,r.item,r.w));
 }
 function draw(){
   const rs=filtered(),sum=rs.reduce((a,r)=>a+r.qty,0);
   document.getElementById("total").textContent="إجمالي التصليح: "+sum;
   const by={};rs.forEach(r=>{const k=r.item||NONE;by[k]=(by[k]||0)+r.qty});
   document.getElementById("brk").textContent=Object.keys(by).length>1?Object.entries(by).map(([k,v])=>k+": "+v).join(" · "):"";
-  document.getElementById("body").innerHTML=rs.length?rs.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${r.item?esc(r.item):'<span class="nums">'+NONE+'</span>'}</td><td><b>${r.qty}</b></td><td class="noprint" style="white-space:nowrap"><button class="btn ghost sm" onclick="form(${r.id})">تعديل</button> <button class="btn ghost sm" onclick="del(${r.id})">حذف</button></td></tr>`).join(""):'<tr><td colspan="4" class="empty">مفيش تصليح مسجل</td></tr>';
+  document.getElementById("body").innerHTML=rs.length?rs.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${r.item?esc(r.item):'<span class="nums">'+NONE+'</span>'}</td><td>${r.w?esc(r.w):'<span class="nums">—</span>'}</td><td><b>${r.qty}</b></td><td class="noprint" style="white-space:nowrap"><button class="btn ghost sm" onclick="repForm(${r.id})">تعديل</button> <button class="btn ghost sm" onclick="del(${r.id})">حذف</button></td></tr>`).join(""):'<tr><td colspan="5" class="empty">مفيش تصليح مسجل</td></tr>';
 }
-function form(id){
+function repForm(id){
   const rec=id?rows.find(r=>r.id===id):null;
   const items=[...new Set(rows.map(r=>r.item).filter(Boolean))];
+  wkLoad();
   openModal(rec?"تعديل تصليح":"تسجيل تصليح",`<label>التاريخ</label><input type="date" id="m-d" value="${rec?rec.d:today()}">
     <label>الصنف (اختياري)</label><input id="m-item" list="m-items" value="${rec?esc(rec.item):""}"><datalist id="m-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
+    ${XW(false)}
     <label>الكمية</label><input type="number" id="m-q" min="1" inputmode="numeric" value="${rec?rec.qty:""}">`,async()=>{
     const q=parseInt(document.getElementById("m-q").value);
     if(!q||q<1){toast("اكتب كمية صحيحة");return false}
-    const row={repair_date:document.getElementById("m-d").value||today(),item:document.getElementById("m-item").value.trim()||null,qty:q};
-    if(!await reviewSave({title:"راجع التصليح قبل الحفظ",meta:[["التاريخ",fmtD(row.repair_date)]],items:[{title:row.item||"بدون صنف",rows:[["الكمية",nf(q)]]}]}))return false;
-    const{error}=rec?await db.from("repair_log").update(row).eq("id",id):await db.from("repair_log").insert(row);
+    const row={repair_date:document.getElementById("m-d").value||today(),item:document.getElementById("m-item").value.trim()||null,qty:q,worker:xfRead().worker||null};
+    if(!await reviewSave({title:"راجع التصليح قبل الحفظ",meta:[["التاريخ",fmtD(row.repair_date)],...(row.worker?[["العامل",row.worker]]:[])],items:[{title:row.item||"بدون صنف",rows:[["الكمية",nf(q)]]}]}))return false;
+    let{error}=rec?await db.from("repair_log").update(row).eq("id",id):await db.from("repair_log").insert(row);
+    if(error&&/worker/.test(error.message||"")){toast("شغّل ملف setup_repair_worker.sql في Supabase الأول");return false}
     if(error){toast("خطأ: "+error.message);return false}
     await load();toast(rec?"تم التعديل":"تم التسجيل");
   });
@@ -99,15 +102,15 @@ async function del(id){
 }
 function exportCsv(){
   const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
-  const csv="\uFEFF"+["التاريخ,الصنف,الكمية",...filtered().map(r=>[r.d,r.item||NONE,r.qty].map(q).join(","))].join("\n");
+  const csv="\uFEFF"+["التاريخ,الصنف,العامل,الكمية",...filtered().map(r=>[r.d,r.item||NONE,r.w,r.qty].map(q).join(","))].join("\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="تصليح.csv";a.click();
 }
-document.getElementById("add").onclick=()=>form(0);
+document.getElementById("add").onclick=()=>repForm(0);
 document.getElementById("f-go").onclick=draw;
 document.getElementById("f-csv").onclick=exportCsv;
 document.getElementById("t-log").onclick=()=>{tab="log";setTab()};
 document.getElementById("t-prod").onclick=()=>{tab="prod";setTab()};
-(async()=>{if(await requireAuth("repair.html")){renderNav("repair.html");searchBox("tbl",q=>{Q=q;draw()},"بحث بالصنف…");dateChips("f-from","f-to",draw);skel("body",4);if(tab==="prod")setTab();load().finally(settle)}})();
+(async()=>{if(await requireAuth("repair.html")){renderNav("repair.html");searchBox("tbl",q=>{Q=q;draw()},"بحث بالصنف أو العامل…");dateChips("f-from","f-to",draw);skel("body",4);if(tab==="prod")setTab();load().finally(settle)}})();
 </script>
 <script src="install.js" defer></script>
 </body>

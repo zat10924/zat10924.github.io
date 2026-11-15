@@ -34,6 +34,7 @@
 <script src="config.js"></script>
 <script src="common.js"></script>
 <script>
+const wsecs=x=>[...new Set([x.section,...(Array.isArray(x.sections)?x.sections:[])].filter(k=>SECN[k]))];
 let sec="",all=[],Q="",prodToday=new Map();
 const SECN={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي"};
 const secOpts=v=>'<option value="">كل الأقسام</option>'+Object.entries(SECN).map(([k,n])=>`<option value="${k}" ${k===v?"selected":""}>${n}</option>`).join("");
@@ -63,21 +64,22 @@ function tgt(x){
 function draw(){
   const act=all.filter(x=>x.active).length;
   kpis("stats",[["إجمالي العمال",all.length],["نشطين",act,"var(--ok)"],["إنتاج اليوم (بالأسماء)",[...prodToday.values()].reduce((a,b)=>a+b,0)]]);
-  const rs=all.filter(x=>(!sec||x.section===sec)&&hit(norm(Q),x.name,x.phone||""));
-  document.getElementById("list").innerHTML=rs.length?`<div class="card">${rs.map(x=>`<div class="line ${x.active?"":"full"}" style="${x.active?"":"opacity:.6"}"><div class="r"><b>${esc(x.name)}</b><span>${x.section?`<span class="tag">${SECN[x.section]||esc(x.section)}</span> `:""}${x.active?"":'<span class="tag late">موقوف</span>'}</span></div>
+  const rs=all.filter(x=>(!sec||wsecs(x).includes(sec))&&hit(norm(Q),x.name,x.phone||""));
+  document.getElementById("list").innerHTML=rs.length?`<div class="card">${rs.map(x=>`<div class="line ${x.active?"":"full"}" style="${x.active?"":"opacity:.6"}"><div class="r"><b>${esc(x.name)}</b><span>${wsecs(x).map(k=>`<span class="tag">${SECN[k]}</span> `).join("")}${x.active?"":'<span class="tag late">موقوف</span>'}</span></div>
     <div class="nums">${x.phone?ui("phone")+" "+esc(x.phone)+" · ":""}${prodToday.get(x.name)?"إنتاج النهارده: <b>"+nf(prodToday.get(x.name))+"</b>":"لسه مفيش إنتاج النهارده"}</div>${tgt(x)}
     <div class="row" style="margin-top:4px"><button class="btn ghost sm" data-e="${x.id}">تعديل</button><button class="btn ghost sm" data-t="${x.id}">${x.active?"إيقاف":"تفعيل"}</button><button class="btn ghost sm" data-d="${x.id}">حذف</button></div></div>`).join("")}</div>`:`<div class="empty">${Q?"مفيش نتائج":"مفيش عمال. اضغط «إضافة عامل»."}</div>`;
 }
 function form(x){
   x=x||{};
-  return `<label>اسم العامل</label><input id="m-wn" value="${esc(x.name||"")}" maxlength="60"><label>القسم (اختياري)</label><select id="m-ws">${secOpts(x.section||"")}</select><label>المعدل المطلوب يوميًا (اختياري)</label><input id="m-wt" type="number" min="0" inputmode="numeric" value="${x.daily_target||""}" placeholder="أقل إنتاج مطلوب منه في اليوم"><div class="hint" style="margin:2px 0 0">بيتقارن بإنتاجه كل يوم عشان تقيس مستواه.</div><label>رقم الموبايل (اختياري)</label><input id="m-wp" type="tel" inputmode="tel" value="${esc(x.phone||"")}" maxlength="20">`;
+  return `<label>اسم العامل</label><input id="m-wn" value="${esc(x.name||"")}" maxlength="60"><label>الأقسام (اختياري — ممكن أكتر من قسم)</label><div class="secpick" id="m-ws">${Object.entries(SECN).map(([k,n])=>`<label><input type="checkbox" data-s="${k}" ${wsecs(x).includes(k)?"checked":""}> ${n}</label>`).join("")}</div><div class="hint" style="margin:2px 0 0">العامل بيظهر في اقتراحات كل قسم بتحدده. القسم الأساسي بيفضل زي ما هو لو لسه متحدد.</div><label>المعدل المطلوب يوميًا (اختياري)</label><input id="m-wt" type="number" min="0" inputmode="numeric" value="${x.daily_target||""}" placeholder="أقل إنتاج مطلوب منه في اليوم"><div class="hint" style="margin:2px 0 0">بيتقارن بإنتاجه كل يوم عشان تقيس مستواه.</div><label>رقم الموبايل (اختياري)</label><input id="m-wp" type="tel" inputmode="tel" value="${esc(x.phone||"")}" maxlength="20">`;
 }
-function read(){return{name:document.getElementById("m-wn").value.trim(),section:document.getElementById("m-ws").value||null,phone:document.getElementById("m-wp").value.trim()||null,daily_target:parseInt(document.getElementById("m-wt").value)||null}}
+const rd=()=>[...document.querySelectorAll("#m-ws [data-s]:checked")].map(c=>c.dataset.s);
+function read(){return{name:document.getElementById("m-wn").value.trim(),section:rd()[0]||null,sections:rd(),phone:document.getElementById("m-wp").value.trim()||null,daily_target:parseInt(document.getElementById("m-wt").value)||null}}
 function addW(){
   openModal("إضافة عامل",form(),async()=>{
     const r=read();if(!r.name){toast("اكتب اسم العامل");return false}
     if(all.some(w=>norm(w.name)===norm(r.name))){toast("العامل ده موجود قبل كده");return false}
-    let{error}=await db.from("workers").insert(r);if(error&&/daily_target/.test(error.message)){toast("شغّل ملف setup_v2.sql الأول عشان المعدل اليومي");return false}
+    let{error}=await db.from("workers").insert(r);if(error&&/sections/.test(error.message)){toast("شغّل ملف setup_worker_sections.sql في Supabase الأول");return false}if(error&&/daily_target/.test(error.message)){toast("شغّل ملف setup_v2.sql الأول عشان المعدل اليومي");return false}
     if(error){toast("خطأ: "+error.message);return false}
     wkReset();await load();toast("تمت إضافة العامل");
   });
@@ -86,8 +88,9 @@ function editW(id){
   const x=all.find(w=>w.id===id);
   openModal("تعديل العامل",form(x),async()=>{
     const r=read();if(!r.name){toast("اكتب اسم العامل");return false}
+    if(x&&r.sections.includes(x.section))r.section=x.section;
     if(all.some(w=>w.id!==id&&norm(w.name)===norm(r.name))){toast("الاسم ده موجود لعامل تاني");return false}
-    let{error}=await db.from("workers").update(r).eq("id",id);if(error&&/daily_target/.test(error.message)){toast("شغّل ملف setup_v2.sql الأول عشان المعدل اليومي");return false}
+    let{error}=await db.from("workers").update(r).eq("id",id);if(error&&/sections/.test(error.message)){toast("شغّل ملف setup_worker_sections.sql في Supabase الأول");return false}if(error&&/daily_target/.test(error.message)){toast("شغّل ملف setup_v2.sql الأول عشان المعدل اليومي");return false}
     if(error){toast("خطأ: "+error.message);return false}
     wkReset();await load();toast("تم التعديل");
   });

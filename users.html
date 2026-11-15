@@ -55,7 +55,7 @@ function render(){
   const act=ROWS.filter(r=>r.active!==false).length;
   const adm=ROWS.filter(r=>r.role==="admin"&&r.active!==false).length;
   kpis("u_kpi",[["مستخدم",ROWS.length],["نشط",act,"var(--ok)"],["مدير",adm,"var(--pri)"]]);
-  u_chips.innerHTML=[["","الكل"],["admin","مدير"],["manager","مسؤول قسم"],["worker","مسجّل إنتاج"],["none","بدون صلاحية"]].map(c=>`<button type="button" class="chip ${fRole===c[0]?"on":""}" data-r="${c[0]}">${c[1]}</button>`).join("");
+  u_chips.innerHTML=[["","الكل"],["admin","مدير"],["owner","صاحب المصنع"],["manager","مسؤول قسم"],["worker","مسجّل إنتاج"],["none","بدون صلاحية"]].map(c=>`<button type="button" class="chip ${fRole===c[0]?"on":""}" data-r="${c[0]}">${c[1]}</button>`).join("");
   const list=ROWS.filter(r=>(!fRole||(fRole==="none"?!r.role:r.role===fRole))&&hit(q,r.full_name,realEmail(r.email),secNames(secList(r)),r.phone||""));
   u_list.removeAttribute("aria-busy");
   u_list.innerHTML=list.length?list.map(r=>{
@@ -63,27 +63,27 @@ function render(){
     return `<div class="card ${off?"off":""}"><div class="urow">
       <span ${avAttr(r.avatar,"avatar big")}>${avText(r.avatar,(r.full_name||realEmail(r.email)||"?").trim().charAt(0).toUpperCase())}</span>
       <div class="ut"><b>${esc(r.full_name||"بدون اسم")}${me?' <span class="tag">أنت</span>':""}</b><small>${esc(realEmail(r.email)||"بدون إيميل — دخول بالاسم")}</small>${r.last_seen?`<small style="display:block">آخر ظهور: ${ageTxt(r.last_seen)}</small>`:""}
-        <div class="utags"><span class="tag ${r.role==="admin"?"role-admin":""}">${ROLE_AR[r.role]||"بدون صلاحية"}</span>${r.role&&r.role!=="admin"?(ss.length?ss.map(k=>`<span class="tag">${SEC_AR[k]}</span>`).join(""):'<span class="tag">بدون قسم</span>'):""}${off?'<span class="tag bad">موقوف</span>':""}${locked?'<span class="tag lock" title="حسابات المديرين بتتعدّل من Supabase بس">'+ui("lock")+'محمي</span>':""}</div>
+        <div class="utags"><span class="tag ${r.role==="admin"?"role-admin":""}">${ROLE_AR[r.role]||"بدون صلاحية"}</span>${r.role&&r.role!=="admin"&&r.role!=="owner"?(ss.length?ss.map(k=>`<span class="tag">${SEC_AR[k]}</span>`).join(""):'<span class="tag">بدون قسم</span>'):""}${off?'<span class="tag bad">موقوف</span>':""}${locked?'<span class="tag lock" title="حسابات المديرين بتتعدّل من Supabase بس">'+ui("lock")+'محمي</span>':""}</div>
         ${r.phone||r.whatsapp?`<div class="cline">${contactBtns(r)}</div>`:""}</div>
       ${locked?"":`<button class="btn ghost sm" data-e="${r.id}">تعديل</button>`}</div></div>`}).join("")
     :'<div class="empty">مفيش مستخدمين مطابقين</div>';
 }
 u_chips.onclick=e=>{const b=e.target.closest(".chip");if(!b)return;fRole=b.dataset.r;render()};
 u_list.onclick=e=>{const b=e.target.closest("[data-e]");if(b)editUser(ROWS.find(r=>r.id===b.dataset.e))};
-const PROT_MSG="حسابات المديرين محمية: بتتعدّل من Supabase بس";
+const PROT_MSG="حسابات المديرين محمية: بتتعدّل من Supabase بس. ولإضافة مدير أو صاحب مصنع شغّل setup_roles_v2.sql مرة واحدة";
 const errTxt=m=>/protected admin/i.test(m||"")?PROT_MSG:/phone|whatsapp|sections|column/i.test(m||"")?"لازم تشغّل ملف setup_v2.sql في Supabase الأول":"خطأ: "+m;
 
-const roleBox=(v)=>`<label>الصلاحية</label><div class="rolebox">${["manager","worker"].map(k=>`<label><input type="radio" name="m-rl" value="${k}" ${v===k?"checked":""}><span><b>${ROLE_AR[k]}</b><small>${ROLE_DESC[k]}</small></span></label>`).join("")}</div>
+const roleBox=(v)=>`<label>الصلاحية</label><div class="rolebox">${["admin","owner","manager","worker"].map(k=>`<label><input type="radio" name="m-rl" value="${k}" ${v===k?"checked":""}><span><b>${ROLE_AR[k]}</b><small>${ROLE_DESC[k]}</small></span></label>`).join("")}</div>
   <div id="m_secw"><label>الأقسام التابع لها (تقدر تختار أكتر من قسم)</label><div class="secpick" id="m_secs">${Object.entries(SEC_AR).map(([k,n])=>`<label><input type="checkbox" data-s="${k}"> ${n}</label>`).join("")}</div></div>
   <div id="m_permw">${HAS_PERMS?`<label>الصلاحيات التفصيلية</label><div class="permtools"><button type="button" class="btn ghost sm" id="m_only">إنتاج فقط (إلغاء كل الصلاحيات)</button><button type="button" class="btn ghost sm" id="m_all">تحديد الكل</button></div><div class="permlist">${Object.entries(PERM_LBL).map(([k,l])=>`<label><input type="checkbox" data-p="${k}"><span><b>${l[0]}</b><small>${l[1]}</small></span></label>`).join("")}</div><div class="hint">بتتظبط تلقائي حسب الدور، وتقدر تغيّرها لكل مستخدم. «إنتاج فقط» بيسيب له تسجيل الإنتاج في قسمه من غير ما يشوف الطلبيات أو يعدّل أو يحذف.</div>`:'<div class="hint">لتفعيل الصلاحيات التفصيلية شغّل setup_perms.sql في Supabase.</div>'}</div>`;
 function setPerms(root,role,perms){
   root.querySelectorAll("[data-p]").forEach(c=>{const v=(perms||{})[c.dataset.p];c.checked=typeof v==="boolean"?v:!!(PERM_DEF[role]||{})[c.dataset.p]});
 }
 function wireRole(root,secVals,perms){
-  const w=root.querySelector("#m_secw"),pw=root.querySelector("#m_permw");
+  const w=root.querySelector("#m_secw"),pw=root.querySelector("#m_permw"),full=r=>r==="admin"||r==="owner";
   (secVals||[]).forEach(k=>{const c=root.querySelector(`[data-s="${k}"]`);if(c)c.checked=true});
   const cur=()=>{const r=root.querySelector("input[name=m-rl]:checked");return r?r.value:""};
-  const upd=()=>{const r=cur();w.hidden=!r;pw.hidden=!r};
+  const upd=()=>{const r=cur();w.hidden=!r||full(r);pw.hidden=!r||full(r)};
   root.querySelectorAll("input[name=m-rl]").forEach(i=>i.onchange=()=>{upd();setPerms(root,cur(),null)});
   setPerms(root,cur(),perms);upd();
   const only=root.querySelector("#m_only"),all=root.querySelector("#m_all");
@@ -94,6 +94,7 @@ function readRole(){
   const r=document.querySelector("input[name=m-rl]:checked"),role=r?r.value:"";
   const sections=[...document.querySelectorAll("#m_secs [data-s]:checked")].map(c=>c.dataset.s),section=sections[0]||null;
   if(!role){toast("اختار الصلاحية");return null}
+  if(role==="admin"||role==="owner")return{role,section:null,sections:[],perms:{}};
   if(!section){toast("اختار قسم واحد على الأقل");return null}
   const out={role,section,sections};
   if(HAS_PERMS){out.perms={};if(role!=="admin")document.querySelectorAll("[data-p]").forEach(c=>out.perms[c.dataset.p]=c.checked)}

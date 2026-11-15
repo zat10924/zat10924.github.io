@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#642631">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="الأقسام">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>بحث عن عامل</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div id="splash"><svg class="gears" viewBox="0 0 120 80" aria-hidden="true"><path class="g1" fill-rule="evenodd" fill="#D7B96F" d="M56.5,42.0 L63.4,44.7 L62.8,48.1 L55.4,48.3 L54.0,51.2 L58.6,57.0 L56.4,59.7 L49.9,56.1 L47.2,58.0 L48.4,65.3 L45.1,66.5 L41.3,60.2 L38.0,60.5 L35.3,67.4 L31.9,66.8 L31.7,59.4 L28.8,58.0 L23.0,62.6 L20.3,60.4 L23.9,53.9 L22.0,51.2 L14.7,52.4 L13.5,49.1 L19.8,45.3 L19.5,42.0 L12.6,39.3 L13.2,35.9 L20.6,35.7 L22.0,32.8 L17.4,27.0 L19.6,24.3 L26.1,27.9 L28.8,26.0 L27.6,18.7 L30.9,17.5 L34.7,23.8 L38.0,23.5 L40.7,16.6 L44.1,17.2 L44.3,24.6 L47.2,26.0 L53.0,21.4 L55.7,23.6 L52.1,30.1 L54.0,32.8 L61.3,31.6 L62.5,34.9 L56.2,38.7Z M45,42 a7,7 0 1,0 -14,0 a7,7 0 1,0 14,0Z"/><path class="g2" fill-rule="evenodd" fill="#E8D49B" d="M85.6,30.0 L90.2,32.7 L89.3,36.2 L83.9,36.2 L81.9,38.9 L83.2,44.1 L80.2,45.9 L76.3,42.2 L73.0,42.6 L70.3,47.2 L66.8,46.3 L66.8,40.9 L64.1,38.9 L58.9,40.2 L57.1,37.2 L60.8,33.3 L60.4,30.0 L55.8,27.3 L56.7,23.8 L62.1,23.8 L64.1,21.1 L62.8,15.9 L65.8,14.1 L69.7,17.8 L73.0,17.4 L75.7,12.8 L79.2,13.7 L79.2,19.1 L81.9,21.1 L87.1,19.8 L88.9,22.8 L85.2,26.7Z M78,30 a5,5 0 1,0 -10,0 a5,5 0 1,0 10,0Z"/><path class="g3" fill-rule="evenodd" fill="#B9984C" d="M95.2,52.5 L98.6,54.8 L97.7,57.6 L93.7,57.7 L91.8,59.7 L92.0,63.7 L89.3,64.8 L86.7,61.7 L83.9,61.5 L81.0,64.2 L78.4,62.8 L79.3,58.8 L77.7,56.5 L73.7,55.9 L73.2,53.0 L76.9,51.2 L77.7,48.5 L75.7,45.0 L77.7,42.8 L81.3,44.5 L83.9,43.5 L85.4,39.8 L88.4,40.0 L89.3,43.9 L91.8,45.3 L95.6,44.1 L97.3,46.6 L94.8,49.7Z M90,52.5 a4,4 0 1,0 -8,0 a4,4 0 1,0 8,0Z"/></svg><img src="icon.svg" alt=""><b>إدارة الأقسام</b><div class="ld"><i></i></div><small class="ldt">جاري التحميل…</small></div>
+<script>try{var n=performance.getEntriesByType("navigation")[0];if(sessionStorage.getItem("sp")&&!(n&&n.type==="reload"))document.getElementById("splash").remove()}catch(e){}</script>
+<div class="wrap">
+  <h1>بحث عن عامل</h1>
+  <div class="card noprint">
+    <label>اسم العامل</label><input id="w_name" list="w_list" placeholder="اكتب أو اختار اسم العامل" autocomplete="off"><datalist id="w_list"></datalist>
+    <label>القسم</label><select id="w_sec"><option value="">كل الأقسام</option><option value="glaze">جليز</option><option value="deco">زخرفة</option><option value="spray">رش</option><option value="casting">الصب اليدوي</option><option value="repair">التصليح</option></select>
+    <div class="two"><div><label>من</label><input type="date" id="w_from"></div><div><label>إلى</label><input type="date" id="w_to"></div></div>
+    <div class="row"><button class="btn" id="w_go">ابحث</button><button class="btn ghost" onclick="window.print()">طباعة</button></div>
+  </div>
+  <div id="w_names" class="chips noprint"></div>
+  <div id="w_kpi" class="kpis three"></div>
+  <div id="w_out"><div class="empty">اكتب اسم العامل واختار الفترة وبعدين اضغط «ابحث»</div></div>
+</div>
+<div id="toast"></div><div id="offline">لا يوجد اتصال بالإنترنت</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+const SRC=[["glaze_production","glaze","prod_date"],["deco_production","deco","prod_date"],["spray_production","spray","prod_date"],["free_production",null,"prod_date"],["casting_log","casting","casting_date"],["repair_log","repair","repair_date"]];
+let WTARGET=new Map(),LAST=[],PICK="";
+const esc2=s=>esc(String(s==null?"":s));
+async function pull(tb,dcol,name,from,to,sec){
+  const out=[];
+  for(let f=0;;f+=1000){
+    let q=db.from(tb).select("*").ilike("worker","%"+name.replace(/[%_\\]/g," ")+"%");
+    if(from)q=q.gte(dcol,from);if(to)q=q.lte(dcol,to);
+    if(tb==="free_production"&&sec)q=q.eq("section",sec);
+    const{data,error}=await q.order("id").range(f,f+999);
+    if(error)return out; // جدول أو عمود غير موجود: نتخطاه
+    out.push(...data);if(data.length<1000)break;
+  }
+  return out;
+}
+async function go(){
+  const name=w_name.value.trim(),sec=w_sec.value,from=w_from.value,to=w_to.value;
+  if(name.length<2){toast("اكتب اسم العامل");return}
+  if(from&&to&&from>to){toast("تاريخ البداية بعد النهاية","warn");return}
+  skel("w_out",2);w_kpi.innerHTML="";
+  const srcs=SRC.filter(s=>!sec||s[1]===sec||(s[1]===null&&sec!=="casting"));
+  const res=await Promise.all(srcs.map(async s=>(await pull(s[0],s[2],name,from,to,sec)).map(r=>({
+    d:String(r[s[2]]||"").slice(0,10),sec:s[1]||r.section||"",w:(r.worker||"").trim(),
+    item:r.item||r.color||r.code||r.sub||"",qty:+r.qty||0,sc:s[0]==="casting_log"?(+r.scrap||0):0}))));
+  LAST=res.flat().filter(r=>r.d);
+  const names=[...new Set(LAST.map(r=>r.w))].sort((a,b)=>a.localeCompare(b,"ar"));
+  w_names.innerHTML=names.length>1?names.map(n=>`<button type="button" class="chip ${PICK===n?"on":""}" data-n="${esc2(n)}">${esc2(n)}</button>`).join(""):"";
+  if(names.length<=1)PICK="";
+  show();
+}
+function show(){
+  const rows=LAST.filter(r=>!PICK||r.w===PICK);
+  w_out.removeAttribute("aria-busy");
+  if(!rows.length){w_kpi.innerHTML="";w_out.innerHTML='<div class="empty">مفيش إنتاج مسجّل للعامل ده في الفترة دي</div>';return}
+  const tot=rows.reduce((a,r)=>a+r.qty,0),scrap=rows.reduce((a,r)=>a+r.sc,0);
+  const byD=new Map();rows.forEach(r=>byD.set(r.d,(byD.get(r.d)||0)+r.qty));
+  const days=[...byD.keys()].sort(),avg=Math.round(tot/days.length);
+  const nm=PICK||w_name.value.trim(),tg=[...WTARGET].find(([k])=>k===nm);
+  const target=tg?+tg[1]||0:0,hit=target?days.filter(d=>byD.get(d)>=target).length:0;
+  const half=Math.floor(days.length/2),a1=days.slice(0,half),a2=days.slice(half);
+  const m=a=>a.length?a.reduce((x,d)=>x+byD.get(d),0)/a.length:0;
+  let trend="";
+  if(days.length>=4){const x=m(a1),y=m(a2),ch=x?Math.round((y-x)/x*100):0;trend=Math.abs(ch)<5?"ثابت تقريبًا":ch>0?"في تحسّن (+"+ch+"%)":"في تراجع ("+ch+"%)"}
+  kpis("w_kpi",[["إجمالي القطع",tot,"var(--ok)"],["أيام العمل",days.length],["متوسط يومي",avg]]);
+  const bySec=new Map();rows.forEach(r=>bySec.set(r.sec,(bySec.get(r.sec)||0)+r.qty));
+  const mx=Math.max(...byD.values());
+  let lvl="";
+  if(target){const pc=Math.round(avg/target*100);lvl=`<div>المعدل المطلوب يوميًا: <b>${nf(target)}</b> · متوسطه الفعلي ${pc}% · حقق المعدل في ${hit} من ${days.length} يوم — المستوى: <b>${pc>=100?"ممتاز":pc>=70?"جيد":"محتاج متابعة"}</b></div>`}
+  const last=days.slice(-60).reverse();
+  w_out.innerHTML=`<div class="card"><b>${esc2(nm)}</b>
+    <div class="nums" style="margin-top:6px">من ${fmtD(days[0])} إلى ${fmtD(days[days.length-1])}</div>
+    ${lvl}${trend?`<div>الاتجاه: <b>${trend}</b></div>`:""}
+    ${scrap?`<div>هالك الجودة (الصب اليدوي): <b>${nf(scrap)}</b></div>`:""}</div>
+    <div class="card"><b>حسب القسم</b>${[...bySec].sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:4px 0"><span>${esc2(SEC_AR[k]||k||"—")}</span><b class="nums">${nf(v)}</b></div>`).join("")}</div>
+    <div class="card"><b>الإنتاج اليومي${days.length>60?" (آخر 60 يوم)":""}</b>${last.map(d=>`<div style="margin:6px 0"><div style="display:flex;justify-content:space-between"><span class="nums">${fmtD(d)}</span><b class="nums">${nf(byD.get(d))}${target&&byD.get(d)>=target?" ✓":""}</b></div><div style="height:7px;border-radius:6px;background:var(--line);overflow:hidden"><i style="display:block;height:100%;width:${Math.round(byD.get(d)/mx*100)}%;background:var(--ok);border-radius:6px"></i></div></div>`).join("")}</div>`;
+}
+w_names.onclick=e=>{const b=e.target.closest("[data-n]");if(!b)return;PICK=PICK===b.dataset.n?"":b.dataset.n;w_names.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c.dataset.n===PICK));show()};
+w_go.onclick=go;
+w_name.addEventListener("keydown",e=>{if(e.key==="Enter")go()});
+async function load(){
+  try{const{data}=await db.from("workers").select("name,daily_target,active").order("name");
+    WTARGET=new Map((data||[]).map(x=>[x.name,x.daily_target]));
+    w_list.innerHTML=(data||[]).map(x=>`<option value="${esc2(x.name)}">`).join("")}catch(e){}
+  if(LAST.length||PICK)go();
+}
+(async()=>{if(await requireAuth("worker-search.html")){renderNav("worker-search.html");dateChips("w_from","w_to",()=>{});load().finally(settle)}})();
+</script>
+<script src="install.js" defer></script>
+</body>
+</html>

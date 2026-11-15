@@ -71,10 +71,10 @@
 <script src="common.js"></script>
 <script>
 function fill(){
-  const secTxt=ME.role==="admin"?"كل الأقسام":(secNames(mySecs())||"غير محدد");
+  const secTxt=seesAll()?"كل الأقسام":(secNames(mySecs())||"غير محدد");
   for(const el of [p_av,p_av2]){el.className="avatar big"+(ME.avatar?" has":"");el.style.backgroundImage=ME.avatar?`url('${ME.avatar}')`:"";el.textContent=ME.avatar?"":initialOf()}
   p_name.textContent=ME.name||"بدون اسم";p_mail.textContent=realEmail(ME.email)||"بدون إيميل — دخول بالاسم";
-  p_tags.innerHTML=`<span class="tag ${ME.role==="admin"?"role-admin":""}">${ROLE_AR[ME.role]||""}</span>`+(ME.role!=="admin"?mySecs().map(k=>`<span class="tag">${SEC_AR[k]}</span>`).join(""):"");
+  p_tags.innerHTML=`<span class="tag ${ME.role==="admin"?"role-admin":""}">${ROLE_AR[ME.role]||""}</span>`+(!seesAll()?mySecs().map(k=>`<span class="tag">${SEC_AR[k]}</span>`).join(""):"");
   p_ph_n.value=ME.phone||"";p_wa_n.value=ME.whatsapp||"";p_same.checked=!!ME.phone&&ME.phone===ME.whatsapp;syncSame();links();
   p_fn.value=ME.name||"";p_em.value=realEmail(ME.email)||"— بدون إيميل —";
   p_role.textContent=ROLE_AR[ME.role]||"—";p_sec.textContent=secTxt;p_desc.textContent=ROLE_DESC[ME.role]||"";

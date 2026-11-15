@@ -130,19 +130,20 @@ const REPORTS=["reports.html","التقارير","chart","#2a7f9e"];
 const ORDERS=["orders.html","الطلبيات","checksq","#7a4f9e"];
 const CATALOG=["catalog.html","الأصناف والأكواد","pkg","#8a6d3b"];
 const SEARCH=["search.html","بحث شامل","search","#3b6fd0"];
-const WORKERS=["workers.html","العمال","hat","#c76a2b"];
+const WORKERS=["workers.html","العمال","hat","#c76a2b"];const WSEARCH=["worker-search.html","بحث عن عامل","search","#c76a2b"];
 const ACTIVITY=["activity.html","سجل النشاط والنسخ","pulse","#5b6b8c"];
 const PROFILE=["profile.html","ملفي الشخصي","user","#642631"];
 const SETTINGS=["settings.html","الإعدادات","cog","#5b6b8c"];
 const USERS=["users.html","المستخدمين والصلاحيات","shield","#7a5ea8"];
 const SEC_AR={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي"};
-const ROLE_DESC={admin:"صلاحية كاملة: كل الأقسام والتقارير والمستخدمين",manager:"مسؤول عن قسم أو أكتر: يشوف ويدير أقسامه بس",worker:"يسجّل الإنتاج في قسمه بس"};
+const ROLE_DESC={admin:"صلاحية كاملة: كل الأقسام والتقارير والمستخدمين",owner:"صاحب المصنع: يشوف كل الأقسام والطلبيات والتقارير (عرض فقط، من غير إدارة المستخدمين)",manager:"مسؤول عن قسم أو أكتر: يشوف ويدير أقسامه بس",worker:"يسجّل الإنتاج في قسمه بس"};
 // صلاحيات تفصيلية: الافتراضي حسب الدور، والمدير يقدر يخصصها لكل مستخدم
 const PERM_LBL={view:["عرض صفحة القسم والطلبيات","فتح صفحة القسم ومشاهدة الطلبيات. لو مقفولة يقدر يسجّل إنتاج بس من صفحة «تسجيل الإنتاج»"],edit:["تعديل الطلبيات والسجلات","تعديل بيانات الطلبية واللون والهالك والتصليح"],delete:["الحذف","حذف الطلبيات والألوان وسجلات الإنتاج والهالك"],increase:["زيادة وتأجيل الطلبيات","زيادة الكمية وتأجيل تاريخ التسليم"],reports:["تقارير القسم","فتح تبويب التقارير داخل القسم"],editown:["تعديل إنتاجه في نفس اليوم","يعدّل تسجيلات الإنتاج اللي سجّلها هو بس، وما دام اليوم لسه ما خلصش. بعد انتهاء اليوم التعديل بيتقفل"]};
-const PERM_DEF={manager:{view:true,edit:true,delete:false,increase:true,reports:true,editown:true},worker:{view:true,edit:false,delete:false,increase:false,reports:false,editown:true}};
+const PERM_DEF={owner:{view:true,edit:false,delete:false,increase:false,reports:true,editown:false},manager:{view:true,edit:true,delete:false,increase:true,reports:true,editown:true},worker:{view:true,edit:false,delete:false,increase:false,reports:false,editown:true}};
 const can=k=>{if(!ME||!ME.role)return false;if(ME.role==="admin")return true;const v=(ME.perms||{})[k];return typeof v==="boolean"?v:!!(PERM_DEF[ME.role]||{})[k]};
 // مسجّل الإنتاج (مش مدير ومعاه صلاحية التعديل مقفولة) ما بيشوفش الطلبيات المكتملة
-const hideDone=()=>!!ME&&ME.role!=="admin"&&!can("edit");
+const seesAll=()=>!!ME&&(ME.role==="admin"||ME.role==="owner");
+const hideDone=()=>!!ME&&!seesAll()&&!can("edit");
 const subsOf=f=>(SUBS[f]||[]).filter(x=>(x[1]!=="prod"||can("reports"))&&(x[1]!=="done"||!hideDone()));
 // ===== تعديل الإنتاج في نفس اليوم فقط =====
 // اليوم بيعتبر منتهي لو تاريخ التسجيل أقدم من تاريخ السيرفر أو من تاريخ الجهاز (الأحدث فيهم) — عشان لو الصفحة فضلت مفتوحة بعد نص الليل.
@@ -186,7 +187,7 @@ function photoToData(file,size=320,q=.82){return new Promise((res,rej)=>{
 /* ===== الجلسة والتنقل ===== */
 const KEY={"glaze.html":"glaze","decoration.html":"deco","spray.html":"spray","repair.html":"repair","casting.html":"casting"};
 let ME=null,_today=null;
-// يجيب دور المستخدم وقسمه + تاريخ السيرفر. لو جدول profiles لسه مش متعمل (قبل تشغيل setup_roles.sql) بيشتغل كمدير عشان البرنامج ما يقفش.
+// يجيب دور المستخدم وقسمه + تاريخ السيرفر. لو جدول profiles لسه مش متعمل (قبل تشغيل setup_roles_v2.sql) بيشتغل كمدير عشان البرنامج ما يقفش.
 // جلسة الدخول: لو مفيش نت والتوكن منتهي نكمل بآخر جلسة محفوظة بدل ما نرجّع المستخدم لصفحة الدخول
 async function getSess(){
   let s=null;try{s=(await db.auth.getSession()).data.session}catch(e){}
@@ -220,11 +221,11 @@ async function loadMe(){
 }
 // كل الأقسام اللي المستخدم متابعها (القسم الأساسي + الأقسام الإضافية)
 const secList=r=>{const a=[];if(r&&Array.isArray(r.sections))r.sections.forEach(x=>{if(SEC_AR[x]&&!a.includes(x))a.push(x)});if(r&&r.section&&SEC_AR[r.section]&&!a.includes(r.section))a.unshift(r.section);return a};
-const mySecs=()=>ME?(ME.role==="admin"?Object.keys(SEC_AR):secList(ME)):[];
+const mySecs=()=>ME?(seesAll()?Object.keys(SEC_AR):secList(ME)):[];
 const secNames=l=>(l||[]).map(k=>SEC_AR[k]).filter(Boolean).join("، ");
-const canSee=f=>!!ME&&!!ME.role&&(f==="index.html"||f==="production.html"||f==="profile.html"||f==="settings.html"||ME.role==="admin"||(KEY[f]&&mySecs().includes(KEY[f])&&(f==="repair.html"||(can("view")&&!(f==="casting.html"&&ME.role==="worker")))));
+const canSee=f=>!!ME&&!!ME.role&&(f==="index.html"||f==="production.html"||f==="profile.html"||f==="settings.html"||ME.role==="admin"||(ME.role==="owner"&&f!=="users.html")||(KEY[f]&&mySecs().includes(KEY[f])&&(f==="repair.html"||(can("view")&&!(f==="casting.html"&&ME.role==="worker")))));
 const visibleSections=()=>SECTIONS.filter(s=>canSee(s[0]));
-const canReports=()=>!!ME&&ME.role==="admin";
+const canReports=()=>seesAll();
 function noAccess(){
   const off=ME&&ME.active===false;
   document.body.innerHTML='<div class="wrap"><div class="card empty" style="margin-top:40px">'+(off?'حسابك موقوف.<br>كلّم المدير لو محتاج تفعّله تاني.':'حسابك لسه مش متفعّل على قسم.<br>كلّم المدير عشان يدّيك صلاحية.')+'<br><button class="btn" id="o" style="margin-top:14px">خروج</button></div></div>';
@@ -235,7 +236,7 @@ async function requireAuth(file){
   if(!session){location.href="index.html";return null}
   await loadMe();
   if(!ME.role||ME.active===false){noAccess();return null}
-  if(file&&file!=="index.html"&&!((file==="reports.html"||file==="search.html"||file==="orders.html")?canReports():canSee(file))){location.replace("index.html");return null}
+  if(file&&file!=="index.html"&&!((file==="reports.html"||file==="search.html"||file==="orders.html"||file==="worker-search.html")?canReports():canSee(file))){location.replace("index.html");return null}
   if(hideDone()){ // إخفاء تبويبات «المكتملة» عن مسجّل الإنتاج
     ["t-done","o-closed"].forEach(i=>{const b=document.getElementById(i);if(b)b.style.display="none"});
     if(location.hash==="#done")history.replaceState(null,"",location.pathname+location.search);
@@ -250,12 +251,12 @@ const SUBS={
  "casting.html":[["سجل الصب","log"],["تقارير القسم","prod"]],
  "orders.html":[["الطلبيات المفتوحة","open"],["الطلبيات المكتملة","done"]],
  "reports.html":[["التقرير اليومي","daily"],["تقرير الطلبيات","orders"],["التقارير العامة","general"]]};
-const ROLE_AR={admin:"مدير",manager:"مسؤول قسم",worker:"مسجّل إنتاج"};
+const ROLE_AR={admin:"مدير",owner:"صاحب المصنع",manager:"مسؤول قسم",worker:"مسجّل إنتاج"};
 const initialOf=()=>((ME&&(ME.name||ME.email))||"?").trim().charAt(0).toUpperCase();
 const MENU='<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
 function renderNav(active){
   if(active===""||active==="index.html")setTimeout(()=>{try{showWhatsNew()}catch(e){}},1200);
-  const cur=SECTIONS.find(s=>s[0]===active)||(active===ORDERS[0]?ORDERS:active===REPORTS[0]?REPORTS:active===PROD[0]?PROD:active===ACTIVITY[0]?ACTIVITY:active===CATALOG[0]?CATALOG:active===WORKERS[0]?WORKERS:active===SEARCH[0]?SEARCH:active===PROFILE[0]?PROFILE:active===USERS[0]?USERS:active===SETTINGS[0]?SETTINGS:null),acc=cur?cur[3]:"var(--pri)";
+  const cur=SECTIONS.find(s=>s[0]===active)||(active===ORDERS[0]?ORDERS:active===REPORTS[0]?REPORTS:active===PROD[0]?PROD:active===ACTIVITY[0]?ACTIVITY:active===CATALOG[0]?CATALOG:active===WORKERS[0]?WORKERS:active===SEARCH[0]?SEARCH:active===WSEARCH[0]?WSEARCH:active===PROFILE[0]?PROFILE:active===USERS[0]?USERS:active===SETTINGS[0]?SETTINGS:null),acc=cur?cur[3]:"var(--pri)";
   document.body.classList.add("hasside");document.body.style.setProperty("--acc",acc);
   const app=typeof APP!=="undefined"?APP:"إدارة الأقسام";
   const h=document.createElement("header");h.className="topbar";
@@ -279,9 +280,9 @@ function renderNav(active){
   ${grp("الإنتاج",[sg(PROD)])}
   ${grp("الطلبيات",canReports()?[sg(ORDERS)]:[])}
   ${grp("الأقسام",[...visibleSections().map(sg),...soonSections().map(x=>`<div class="sg soon" style="--c:${x[2]}"><div class="sh soonitem" aria-disabled="true">${ico(x[1])}<span>${x[0]}<small class="soonn">سوف تُنشأ قريبًا</small></span></div></div>`)])}
-  ${grp("التقارير والبحث",canReports()?[sg(REPORTS).replace(">"+REPORTS[1]+"<",">التقارير العامة<"),sg(SEARCH)]:[])}
+  ${grp("التقارير والبحث",canReports()?[sg(REPORTS).replace(">"+REPORTS[1]+"<",">التقارير العامة<"),sg(SEARCH),sg(WSEARCH)]:[])}
   ${grp("البيانات الأساسية",canReports()?[sg(CATALOG),sg(WORKERS)]:[])}
-  ${grp("إدارة النظام",canReports()?[sg(USERS),sg(ACTIVITY)]:[])}</nav>
+  ${grp("إدارة النظام",canReports()?[...(ME.role==="admin"?[sg(USERS)]:[]),sg(ACTIVITY)]:[])}</nav>
   <div class="side-foot"><a class="sh ${active===PROFILE[0]?"on":""}" href="profile.html" style="--c:var(--pri)">${ico("user")}<span>ملفي الشخصي</span></a><a class="sh ${active===SETTINGS[0]?"on":""}" href="settings.html" style="--c:var(--pri)">${ico("cog")}<span>الإعدادات</span></a><button class="sh" id="th"></button><button class="sh" id="out">${ico("out")}<span>تسجيل الخروج</span></button><div class="ver" title="تاريخ الإصدار ${APP_BUILD}">الإصدار ${APP_VERSION}</div></div>`;
   const scrim=document.createElement("div");scrim.className="scrim";scrim.id="scrim";
   document.body.prepend(h);document.body.appendChild(side);document.body.appendChild(scrim);
@@ -300,16 +301,16 @@ function renderNav(active){
     const g=b.parentElement,shut=g.classList.toggle("shut");b.setAttribute("aria-expanded",String(!shut));
     NAVG[g.dataset.g]=!shut;try{localStorage.setItem("navg",JSON.stringify(NAVG))}catch(e){}
   });
-  h.querySelector("#rf").onclick=async e=>{const b=e.currentTarget;if(b.dataset.busy)return;b.dataset.busy="1";b.classList.add("spin");try{await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));if(typeof load==="function")await Promise.race([load(),new Promise(r=>setTimeout(r,12000))])}catch(x){}finally{delete b.dataset.busy;setTimeout(()=>b.classList.remove("spin"),400)}};
+  h.querySelector("#rf").onclick=async e=>{const b=e.currentTarget;if(b.dataset.busy)return;b.dataset.busy="1";b.classList.add("spin");try{await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));const fn=typeof window.__masRefresh==="function"?window.__masRefresh:(typeof load==="function"?load:null);if(fn){await Promise.race([Promise.resolve(fn()),new Promise(r=>setTimeout(r,12000))]);if(typeof toast==="function")toast("تم التحديث","ok")}else{location.reload();return}}catch(x){if(typeof toast==="function")toast("تعذّر التحديث — جرّب تاني","warn")}finally{delete b.dataset.busy;setTimeout(()=>b.classList.remove("spin"),400)}};
   side.querySelector("#th").onclick=toggleTheme;syncThemeIcon();
   side.querySelector("#th").insertAdjacentHTML("beforeend","<span>الوضع الليلي / النهاري</span>");
   side.querySelector("#out").onclick=async()=>{Snd.play("logout");await db.auth.signOut();location.href="index.html"};
   // قائمة الحساب (الصورة الرمزية في الشريط العلوي)
   const um=document.createElement("div");um.className="umenu";um.id="um";um.hidden=true;
   um.innerHTML=`<div class="uhead"><span ${avAttr(ME.avatar,"avatar big")}>${avText(ME.avatar,initialOf())}</span><div><b>${esc(ME.name||"بدون اسم")}</b><small>${esc(realEmail(ME.email))}</small>
-    <div class="utags"><span class="tag">${ROLE_AR[ME.role]||""}</span>${ME.role!=="admin"?mySecs().map(k=>`<span class="tag">${SEC_AR[k]}</span>`).join(""):""}</div></div></div>
+    <div class="utags"><span class="tag">${ROLE_AR[ME.role]||""}</span>${!seesAll()?mySecs().map(k=>`<span class="tag">${SEC_AR[k]}</span>`).join(""):""}</div></div></div>
     <a href="profile.html">${ico("user")}<span>ملفي الشخصي</span></a>
-    ${canReports()?`<a href="users.html">${ico("users")}<span>المستخدمين والصلاحيات</span></a>`:""}
+    ${ME.role==="admin"?`<a href="users.html">${ico("users")}<span>المستخدمين والصلاحيات</span></a>`:""}
     <a href="settings.html">${ico("cog")}<span>الإعدادات</span></a>
     <button id="umout">${ico("out")}<span>تسجيل الخروج</span></button>`;
   document.body.appendChild(um);
@@ -826,23 +827,58 @@ const noCid=({client_id,...r})=>r;
 let WK=null;
 async function wkLoad(){
   if(WK)return;WK=[];
-  try{const{data}=await db.from("workers").select("name,section").eq("active",true).order("name");WKA=data||[]}catch(e){}
-  const l=document.getElementById("wk-list");if(l)l.innerHTML=wkSel().map(n=>`<option value="${esc(n)}">`).join("")
+  try{
+    let r=await db.from("workers").select("name,section,sections").eq("active",true).order("name");
+    if(r.error)r=await db.from("workers").select("name,section").eq("active",true).order("name");
+    WKA=r.data||[];
+  }catch(e){}
+  const sl=document.getElementById("m-w");if(sl&&sl.tagName==="SELECT"){const cur=sl.value;sl.innerHTML=wkOpts();if(cur)sl.value=cur}
 }
-// المدير يشوف كل العمال، وغيره يشوف عمال قسمه بس (والقسم الشغال حاليًا في صفحة الإنتاج)
+// العامل ممكن يتبع أكتر من قسم: القسم الأساسي (section) + أقسام إضافية (sections)
 let WKA=[];
-function wkSel(){
-  // الصب اليدوي: العمال المقترحين هم اللي قسمهم «الصب اليدوي» في صفحة العمال (للمدير وغيره)
+const wkIn=(x,k)=>!!k&&(x.section===k||(Array.isArray(x.sections)&&x.sections.includes(k)));
+// القسم الحالي للصفحة (لو معروف)
+function wkCur(){
   let cs="";try{if(typeof sec==="string")cs=sec}catch(e){}
-  if(/casting\.html/.test(location.pathname)||cs==="casting")return WKA.filter(x=>x.section==="casting").map(x=>x.name);
-  if(!ME||ME.role==="admin")return WKA.map(x=>x.name);
-  let ok=mySecs();
-  try{if(typeof sec==="string"&&sec&&ok.includes(sec))ok=[sec]}catch(e){}
-  return WKA.filter(x=>x.section&&ok.includes(x.section)).map(x=>x.name)
+  if(/casting\.html/.test(location.pathname))return "casting";
+  if(/repair\.html/.test(location.pathname))return "repair";
+  if(cs&&SEC_AR[cs])return cs;
+  return KEY[location.pathname.split("/").pop()]||"";
 }
-const XW=(deco)=>'<label>'+(deco?'اسم العامل':'اسم العامل (اختياري)')+'</label><input id="m-w" list="wk-list" placeholder="اختار من العمال أو اكتب اسم"><datalist id="wk-list">'+wkSel().map(n=>`<option value="${esc(n)}">`).join("")+'</datalist>';
+// عمال القسم الحالي فقط (للفلاتر والتقارير)
+function wkSel(){
+  const cs=wkCur();
+  if(cs)return WKA.filter(x=>wkIn(x,cs)).map(x=>x.name);
+  if(!ME||seesAll())return WKA.map(x=>x.name);
+  const ok=mySecs();
+  return WKA.filter(x=>ok.some(k=>wkIn(x,k))).map(x=>x.name)
+}
+// اقتراحات خانة «اسم العامل»: عمال القسم الأول، وبعدهم باقي العمال (لو اشتغل يوم في قسم تاني)
+function wkOpts(){
+  const cs=wkCur(),o=x=>`<option value="${esc(x.name||x)}">${esc(x.name||x)}</option>`,base='<option value="">— اختار العامل —</option>';
+  const all=!ME||seesAll();
+  // المدير وصاحب المصنع: عمال القسم ثم باقي العمال. مسؤول القسم والمسجّل: عمال قسمهم بس + خيار كتابة اسم عامل اتنقل لقسمهم
+  const other=all?"":'<option value="" id="m-w-other">✎ عامل تاني (اكتب الاسم)</option>';
+  if(!all)return base+wkSel().map(o).join("")+other;
+  if(!cs)return base+wkSel().map(o).join("");
+  const mine=WKA.filter(x=>wkIn(x,cs)),others=WKA.filter(x=>!wkIn(x,cs));
+  return base+(mine.length?`<optgroup label="عمال ${esc(SEC_AR[cs]||"القسم")}">${mine.map(o).join("")}</optgroup>`:"")+(others.length?`<optgroup label="عمال أقسام أخرى">${others.map(o).join("")}</optgroup>`:"");
+}
+// خيار «عامل تاني»: بيظهر خانة كتابة، والاسم المكتوب بيبقى هو قيمة القائمة (فباقي الكود بيقراه عادي)
+document.addEventListener("change",e=>{const s=e.target;if(!s||s.id!=="m-w"||s.tagName!=="SELECT")return;
+  const x=document.getElementById("m-wx");if(!x)return;
+  const on=!!(s.selectedOptions[0]&&s.selectedOptions[0].id==="m-w-other");
+  x.style.display=on?"block":"none";if(on)x.focus();else x.value=""});
+document.addEventListener("input",e=>{const x=e.target;if(!x||x.id!=="m-wx")return;
+  const op=document.getElementById("m-w-other");if(op)op.value=x.value.trim()});
+// لو اتحط اسم عامل مش في القائمة (تسجيل قديم أو عامل اتحذف) بنضيفه للقائمة عشان يفضل ظاهر عند التعديل
+(()=>{const d=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value");if(!d||!d.set)return;
+  Object.defineProperty(HTMLSelectElement.prototype,"value",{configurable:true,get(){return d.get.call(this)},set(v){
+    if(this.id==="m-w"&&v&&![...this.options].some(o=>o.value===v)){const o=document.createElement("option");o.value=v;o.textContent=v;this.appendChild(o)}
+    d.set.call(this,v)}});})();
+const XW=(deco)=>'<label>'+(deco?'اسم العامل':'اسم العامل (اختياري)')+'</label><select id="m-w">'+wkOpts()+'</select><input id="m-wx" maxlength="60" placeholder="اكتب اسم العامل" autocomplete="off" style="display:none;margin-top:6px">';
 // الزخرفة: اسم العامل بيظهر في أول الشاشة (XT)، وباقي الحقول في آخرها (XF)
-const XT=(deco)=>{if(!deco)return "";wkLoad();return XW(true)};
+const XT=(deco)=>{if(!deco)return "";wkLoad();return XW(true).replace("<label>اسم العامل</label>","<label>اسم العامل (اختياري)</label>")};
 const XF=(deco)=>{wkLoad();return (deco?'<label>الرسمة — كود أو وصف (اختياري)</label><input id="m-ds" placeholder="مثال: كود 125 أو وردة بحواف ذهبي" maxlength="120">':XW(false))+'<label>ملاحظة (اختياري)</label><input id="m-n" placeholder="أي تعليق على الشغل">'};
 // لون الرش: خانة منسدلة من قائمة الألوان، بتتملّى مسبقًا بلون الطلبية (تقدر تغيّره لو اترشّ بلون تاني)
 const XS=(def,id="m-sc")=>'<label>لون الرش</label><input id="'+id+'" data-kind="color" value="'+esc(def||"")+'" placeholder="لون الرش" autocomplete="off" maxlength="60">';
@@ -971,7 +1007,7 @@ db.auth.onAuthStateChange(ev=>{
 /* ===== قوائم منسدلة (سهم ▾) لكل خانات الاختيار: صنف / لون / كود / عامل / سبب ===== */
 const HIST_SEL="#m-r,#m-pr,#m-n,#m-nt,#m-dn";
 // كل الخانات اللي تتحول لقائمة منسدلة (أي خانة عليها data-kind بتتفعّل تلقائيًا، وده بيشمل البحث الشامل)
-const COMBO_SEL=NAME_SEL+",#m-w,#m-gt,#m-rn,#m-ph,"+HIST_SEL+",#m-tsc,#m-nwc,input[data-kind]";
+const COMBO_SEL=NAME_SEL+",#m-gt,#m-rn,#m-ph,"+HIST_SEL+",#m-tsc,#m-nwc,input[data-kind]";
 const CBX={p:null,inp:null,act:-1};
 const cbKind=el=>el.id==="m-w"?"worker":(el.id==="m-gt"||el.id==="m-rn")?"cust":el.id==="m-ph"?"cphone":el.matches(HIST_SEL)?"hist:"+el.id:kindOf(el);
 function cbHist(k){try{return JSON.parse(localStorage.getItem("hist_"+k.slice(5))||"[]")}catch(e){return[]}}

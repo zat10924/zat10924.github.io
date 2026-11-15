@@ -172,7 +172,7 @@ s_tests.onclick=e=>{const b=e.target.closest("[data-t]");if(!b)return;if(!SET.ge
 function drawHero(){
   const nm=(ME&&(ME.name||ME.email))||"—";
   s_nm.textContent=nm;s_av.textContent=initialOf();
-  const sn=ME&&ME.role!=="admin"?secNames(mySecs()):"";
+  const sn=ME&&!seesAll()?secNames(mySecs()):"";
   s_rl.textContent=(ROLE_AR[ME&&ME.role]||"")+(sn?" · "+(mySecs().length>1?"أقسام ":"قسم ")+sn:"");
   s_em.textContent=ME&&ME.name&&ME.email?ME.email:"";
 }

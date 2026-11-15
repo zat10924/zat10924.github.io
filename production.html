@@ -322,7 +322,7 @@ function castForm(rec,presetOid,waste){
     const item=document.getElementById("m-item").value.trim();
     if(!item){toast("اكتب اسم الصنف");return false}
     const sh=document.getElementById("m-sh").value,x=xfRead();
-    if(!x.worker){toast(waste?"اكتب اسم العامل اللي طلع منه الهالك":"اكتب اسم العامل");return false}
+    if(!x.worker){toast(waste?"اختار العامل اللي طلع منه الهالك":"اختار اسم العامل");return false}
     let extra=[];
     if(!waste&&!rec&&mx){
       for(const e of mx.read()){
