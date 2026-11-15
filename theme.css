@@ -1332,3 +1332,26 @@ body:not(.sideopen) .side{will-change:auto}
   #pdfroot .pdfend span:last-child{background:linear-gradient(270deg,transparent,#D7B96F)}
   body.pdfmode>#pf{display:block!important}
 }
+
+/* ===== إعدادات v2: ترتيب وتنظيم الصفحة (بدل الـ inline styles) ===== */
+.gdesc{font-size:.86rem;color:var(--mute);margin:0 4px 2px}
+.sgrp .card>*+.sgl{margin-top:16px}
+.sgl{font-size:.78rem;font-weight:700;color:var(--mute);margin:14px 0 6px;letter-spacing:.02em}
+.sgl:first-of-type{margin-top:4px}
+.sgl b{color:var(--ink);font-weight:700}
+.sw.tap{cursor:pointer}
+.sgrp .card .row{margin-top:10px}
+.sgrp .card .row>.btn:not(.sm){flex:1;min-width:0}
+.sgrp .card .row>.grow2{flex:1.4}
+.btn.full{width:100%;margin-top:12px}
+.btn.ghost.bad{color:var(--bad)}
+.sgrp .card textarea,.sgrp .card input:not([type=checkbox]):not([type=range]){margin-top:4px}
+.sgrp .card #s_pb{margin-top:6px}
+.sgrp .card .alist{margin:10px 0 0}
+.sgrp .card .kv2+.alist{margin-top:12px}
+.sgrp .card input[type=range]{width:100%}
+.sgrp .card .hint{margin:8px 0 0}
+.card.dz{border-color:color-mix(in srgb,var(--bad) 35%,var(--line))}
+.card.dz .sethead h3{color:var(--bad)}
+.stabs button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media print{.gdesc{display:none!important}}

@@ -93,12 +93,14 @@ begin
           jsonb_build_object('sub', v_id::text, 'email', v_email, 'email_verified', true),
           'email', now(), now(), now());
 
-  insert into public.profiles (id, full_name, email, role, section, active, perms)
+  insert into public.profiles (id, full_name, email, role, section, sections, active, perms)
   values (v_id, v_name, v_email, p_role,
-          case when p_role in ('admin', 'owner') then null else p_section end, true, coalesce(p_perms, '{}'::jsonb))
+          case when p_role in ('admin', 'owner') then null else p_section end,
+          case when p_role in ('admin', 'owner') or p_section is null then '{}'::text[] else array[p_section] end,
+          true, coalesce(p_perms, '{}'::jsonb))
   on conflict (id) do update set
     full_name = excluded.full_name, email = excluded.email, role = excluded.role,
-    section = excluded.section, active = true, perms = excluded.perms;
+    section = excluded.section, sections = excluded.sections, active = true, perms = excluded.perms;
 
   return v_id;
 end;

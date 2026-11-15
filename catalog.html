@@ -232,7 +232,7 @@ document.getElementById("pdf").onclick=()=>{
   const dt={item:"كتالوج الأصناف",color:"ألوان",code:"كتالوج الرسومات"}[kind];
   openModal("PDF للعميل · "+nf(use.length)+" عنصر",`<label>عنوان الملف</label><input id="p-t" maxlength="80" value="${esc(dt)}">
     <label>ملاحظة تحت العنوان (اختياري، زي رقم التواصل)</label><input id="p-n" maxlength="120" autocomplete="off">
-    <label>عدد الصور في الصف</label><select id="p-c"><option value="2">2 (كبيرة)</option><option value="3" selected>3</option><option value="4">4 (صغيرة)</option></select>
+    <label>عدد الصور في الصف</label><select data-sp="1" id="p-c"><option value="2">2 (كبيرة)</option><option value="3" selected>3</option><option value="4">4 (صغيرة)</option></select>
     <div class="hint">هيفتح شاشة الطباعة، اختار منها «حفظ كـ PDF» وبعدها شاركه للعميل.</div>`,async()=>{
     const o={title:document.getElementById("p-t").value.trim()||dt,note:document.getElementById("p-n").value.trim(),cols:+document.getElementById("p-c").value};
     closeModal();await buildPdf(use,o);return false;

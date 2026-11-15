@@ -1123,7 +1123,7 @@ function cbSheet(inp){
   };
   render();Q.oninput=render;
   Q.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const b=L.querySelector(".spo-i");if(b)pick(b.dataset.v)}};
-  o.addEventListener("click",e=>{if(e.target===o)return close();const b=e.target.closest(".spo-i");if(b&&b.dataset.v!=null)pick(b.dataset.v)});
+  const t0=Date.now();o.addEventListener("click",e=>{if(Date.now()-t0<450){e.stopPropagation();return} /* نفس الضغطة اللي فتحت القائمة ما تقفلهاش ولا تختار منها */ if(e.target===o)return close();const b=e.target.closest(".spo-i");if(b&&b.dataset.v!=null)pick(b.dataset.v)});
   if(cbOpts(inp).length>8||!cbOpts(inp).length)Q.focus();
 }
 function enhanceCombo(inp){
@@ -1141,7 +1141,10 @@ function enhanceCombo(inp){
     if(CBX.inp===inp&&CBX.p&&!CBX.p.hidden){cbHide();return}
     catReady().then(()=>cbShow(inp,true));
   });
-  if(cbSheetMode()){inp.setAttribute("inputmode","none");inp.addEventListener("pointerdown",e=>{if(inp.readOnly||inp.disabled)return;e.preventDefault();inp.blur();catReady().then(()=>cbSheet(inp))})}
+  if(cbSheetMode()){inp.setAttribute("inputmode","none");
+    inp.addEventListener("pointerdown",e=>{if(!inp.readOnly&&!inp.disabled)e.preventDefault()}); // يمنع الكيبورد والتركيز بس
+    inp.addEventListener("click",e=>{if(inp.readOnly||inp.disabled)return;e.preventDefault();inp.blur();catReady().then(()=>cbSheet(inp))}); // نفس طريقة السهم (click) عشان تشتغل من أي مكان في الخانة
+    inp.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&!inp.readOnly&&!inp.disabled){e.preventDefault();catReady().then(()=>cbSheet(inp))}})}
   inp.addEventListener("focus",()=>{
     if(cbSheetMode())return;
     const v=inp.value.trim();
@@ -1226,7 +1229,9 @@ function spOpen(sel){
   };
   sel._spLive=render;render();
   if(Q){Q.oninput=render;if(!matchMedia("(pointer:coarse)").matches)Q.focus()}
+  const t0=Date.now();
   o.addEventListener("click",e=>{
+    if(Date.now()-t0<450){e.stopPropagation();return} // نفس الضغطة اللي فتحت القائمة ما تقفلهاش
     if(e.target===o)return close();
     const b=e.target.closest(".spo-i");if(!b||b.disabled)return;
     const i=+b.dataset.i;sel.selectedIndex=i;
@@ -1236,8 +1241,8 @@ function spOpen(sel){
   });
 }
 function spEnhance(sel){
-  if(!sel||sel.tagName!=="SELECT"||sel.dataset.sp||sel.multiple||sel.size>1)return;
-  sel.dataset.sp="1";
+  if(!sel||sel.tagName!=="SELECT"||sel._spd||sel.multiple||sel.size>1)return; // (data-sp في الـ HTML معناه «حوّلها»، مش «اتحوّلت»)
+  sel._spd=1;sel.dataset.sp="1";
   const w=document.createElement("span");w.className="spw";sel.parentNode.insertBefore(w,sel);w.appendChild(sel);
   const b=document.createElement("button");b.type="button";b.className="spb";w.appendChild(b);
   const upd=()=>{
