@@ -93,25 +93,28 @@ const SRC={
     async fetch(){
       const r=await all("repair_log","id,repair_date,item,qty");
       return{prod:r.map(x=>({d:D(x.repair_date),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0})),ord:null};
-    }},
-  casting:{name:"الصب اليدوي",page:"casting.html",icon:"casting",color:"#8A5A3C",noun:"الصب",sub:"",
+    }}
+};
+const isCast=k=>k==="casting"||k==="brush";
+const mkCast=P=>({name:P.name,page:P.page,icon:P.key,color:P.color,noun:P.noun,sub:"",
     async fetch(){
-      const[r,o,g]=await Promise.all([all("casting_log","*").catch(()=>[]),all("casting_orders","*").catch(()=>[]),all("order_groups","id,title,order_no").catch(()=>[])]);
+      const[r,o,g]=await Promise.all([all(P.l,"*").catch(()=>[]),all(P.o,"*").catch(()=>[]),all("order_groups","id,title,order_no").catch(()=>[])]);
       const GM=new Map(g.map(x=>[x.id,x])),dn=new Map();
       r.forEach(x=>{if(x.order_id)dn.set(x.order_id,(dn.get(x.order_id)||0)+(+x.qty||0))});
       const gl=x=>{const q=GM.get(x.group_id);return q?((q.order_no?"#"+q.order_no+" · ":"")+((q.title||"").trim()||"طلبية")):""};
       // هالك الجودة: كل تسجيل بيدخل بالسليم (good) والهالك (qty) عشان نسبة الهالك تتحسب صح
       return{
-        prod:r.map(x=>({d:D(x.casting_date),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0,sc:+x.scrap||0,w:x.worker||"",
+        prod:r.map(x=>({d:D(x[P.d]),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0,sc:+x.scrap||0,w:x.worker||"",
           n:[x.shift,(+x.scrap>0?"هالك "+x.scrap:""),(x.order_id?"":"بدون طلبية"),x.note].filter(Boolean).join(" · "),
-          id:x.id,tb:"casting_log",raw:x,oid:x.order_id||null})),
+          id:x.id,tb:P.l,raw:x,oid:x.order_id||null})),
         ord:o.map(x=>{const req=+x.qty_required||0,d=dn.get(x.id)||0;
           return{id:x.id,gid:x.group_id||null,item:x.item,sub:gl(x),date:D(x.order_date),due:D(x.due_date),pc:0,
             status:(x.status==="done"||d>=req)?"done":"open",req,done:Math.min(d,req),over:Math.max(d-req,0)}}),
-        waste:r.map(x=>({d:D(x.casting_date),item:x.item||"بدون صنف",good:+x.qty||0,qty:+x.scrap||0}))
+        waste:r.map(x=>({d:D(x[P.d]),item:x.item||"بدون صنف",good:+x.qty||0,qty:+x.scrap||0}))
       };
-    }}
-};
+    }});
+SRC.casting=mkCast({key:"casting",name:"الصب اليدوي",page:"casting.html",color:"#8A5A3C",noun:"الصب",l:"casting_log",o:"casting_orders",d:"casting_date"});
+SRC.brush=mkCast({key:"brush",name:"البرشر",page:"brush.html",color:"#A0522D",noun:"البرشر",l:"brush_log",o:"brush_orders",d:"brush_date"});
 const KEYS=Object.keys(SRC);
 const cache={};
 const inflight={};
@@ -344,13 +347,13 @@ function editEntry(row,key,done){
   openModal("تعديل تسجيل الإنتاج",
     XT(deco)+(free?`<label>الصنف</label><input id="m-item" autocomplete="off"><label>${lab} (اختياري)</label><input id="${sid}" autocomplete="off">`
          :`<div class="nums"><b>${esc(entryTxt(row))}</b></div>`)+
-    `<label>الكمية</label><input type="number" id="m-q" min="${key==="casting"?0:1}" inputmode="numeric" value="${row.qty}">`+
+    `<label>الكمية</label><input type="number" id="m-q" min="${isCast(key)?0:1}" inputmode="numeric" value="${row.qty}">`+
     (row.max?`<div class="hint" style="margin:0">المتاح للبند ده: ${nf(row.max)} (لو زدت عنه هيتسجل مع تنبيه في التقارير)</div>`:"")+
     `<label>التاريخ</label><input type="date" id="m-d" value="${esc(row.d||today())}">${spray?XS(raw.spray_color||""):""}${XF(deco)}`,async()=>{
-    const q=parseInt(document.getElementById("m-q").value),cast=key==="casting";
+    const q=parseInt(document.getElementById("m-q").value),cast=isCast(key);
     if(cast?(isNaN(q)||q<0||q+(+raw.scrap||0)<1):(!q||q<1)){toast("اكتب كمية صحيحة");return false}
     const v=id=>((document.getElementById(id)||{}).value||"").trim();
-    const patch={qty:q,[cast?"casting_date":"prod_date"]:v("m-d")||row.d||today(),worker:v("m-w")||null,note:v("m-n")||null};
+    const patch={qty:q,[cast?(key==="brush"?"brush_date":"casting_date"):"prod_date"]:v("m-d")||row.d||today(),worker:v("m-w")||null,note:v("m-n")||null};
     if(deco)patch.design=v("m-ds")||null;
     if(spray){if(!v("m-sc")){toast("اكتب لون الرش");return false}patch.spray_color=v("m-sc")}
     if(free){const item=v("m-item");if(!item){toast("اكتب الصنف");return false}patch.item=item;patch.sub=v(sid)||null}
@@ -505,7 +508,7 @@ function mount(rootId,key){
     }
     // أداء العمال
     const ws=workerStats(rows);
-    const cw=key==="casting",pcs=o=>o.q+o.sc?(Math.round(o.sc/(o.q+o.sc)*1000)/10)+"%":"0%";
+    const cw=isCast(key),pcs=o=>o.q+o.sc?(Math.round(o.sc/(o.q+o.sc)*1000)/10)+"%":"0%";
     $(".rwk").innerHTML=ws.length?`<table><thead><tr><th>العامل</th><th>${cw?"السليم":"الكمية"}</th>${cw?"<th>الهالك</th><th>نسبة الهالك</th>":""}<th>أيام</th><th>متوسط/يوم</th><th>أصناف</th></tr></thead><tbody>${ws.map(o=>`<tr><td><b>${esc(o.w)}</b></td><td><b>${nf(o.q)}</b></td>${cw?`<td>${o.sc?'<b style="color:var(--bad,#c0392b)">'+nf(o.sc)+"</b>":"—"}</td><td>${pcs(o)}</td>`:""}<td>${o.days.size}</td><td>${o.days.size?nf(Math.round(o.q/o.days.size)):"—"}</td><td>${o.items.size}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">مفيش أسماء عمال مسجلة في الفترة دي</div>';
     $('[data-ps="workers"]').toggleAttribute("data-empty",!ws.length);
     // سجل التفاصيل
@@ -838,7 +841,7 @@ function dashboard(rootId){
   };
   $(".rbk").onclick=async e=>{
     const b=e.currentTarget;b.disabled=true;b.classList.add("loading");
-    const TABLES=["free_production","glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log","casting_log","casting_orders"];
+    const TABLES=["free_production","glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log","casting_log","casting_orders","brush_log","brush_orders"];
     try{
       const out={exported_at:new Date().toISOString(),tables:{},errors:{}};
       for(const tb of TABLES){try{out.tables[tb]=await all(tb,"*")}catch(er){out.errors[tb]=er.message||String(er)}}

@@ -75,11 +75,12 @@ const SUMMARY={
   "decoration.html":async()=>{const[o,a,b]=await Promise.all([openCount("deco_orders"),todayQty("deco_production","prod_date"),freeTodayQty("deco")]);return[o,"طلبية مفتوحة",a+b]},
   "spray.html":async()=>{const[o,a,b]=await Promise.all([openCount("spray_status"),todayQty("spray_production","prod_date"),freeTodayQty("spray")]);return[o,"طلبية مفتوحة",a+b]},
   "repair.html":async()=>{const q=await todayQty("repair_log","repair_date");return[q,"تصليح النهارده",q,true]},
-  "casting.html":async()=>{const q=await todayQty("casting_log","casting_date");try{const o=await openCount("casting_orders");return[o,"طلبية مفتوحة",q]}catch(e){return[q,"صب النهارده",q,true]}}
+  "casting.html":async()=>{const q=await todayQty("casting_log","casting_date");try{const o=await openCount("casting_orders");return[o,"طلبية مفتوحة",q]}catch(e){return[q,"صب النهارده",q,true]}},
+"brush.html":async()=>{const q=await todayQty("brush_log","brush_date");try{const o=await openCount("brush_orders");return[o,"طلبية مفتوحة",q]}catch(e){return[q,"برشر النهارده",q,true]}}
 };
 // تنبيه الطلبيات المتأخرة (حسب تاريخ التسليم، أو أكتر من 14 يوم من غير تسليم)
 async function lateAlert(){
-  const SRC={"glaze.html":"glaze_orders","decoration.html":"deco_orders","spray.html":"spray_orders","casting.html":"casting_orders"};
+  const SRC={"glaze.html":"glaze_orders","decoration.html":"deco_orders","spray.html":"spray_orders","casting.html":"casting_orders","brush.html":"brush_orders"};
   const vs=visibleSections().filter(s=>SRC[s[0]]);
   const R=await Promise.all(vs.map(s=>db.from(SRC[s[0]]).select("id,item,order_date,due_date,status").eq("status","open").then(r=>({s,rows:r.data||[]}))));
   const late=[];
@@ -94,7 +95,8 @@ async function riskAlert(){
   const CFG={"glaze.html":["glaze_orders","glaze_lines_status","order_id","total_required","produced","glaze_production","prod_date"],
     "decoration.html":["deco_orders","deco_lines_status","order_id","total_required","produced","deco_production","prod_date"],
     "spray.html":["spray_orders","spray_status","id","qty_required","produced","spray_production","prod_date"],
-    "casting.html":["casting_orders","casting_status","id","qty_required","produced","casting_log","casting_date"]};
+    "casting.html":["casting_orders","casting_status","id","qty_required","produced","casting_log","casting_date"],
+"brush.html":["brush_orders","brush_status","id","qty_required","produced","brush_log","brush_date"]};
   const vs=visibleSections().filter(s=>CFG[s[0]]);
   const from=new Date(Date.now()-14*864e5).toISOString().slice(0,10);
   const risk=[];
@@ -122,7 +124,7 @@ async function riskAlert(){
   document.getElementById("tiles").insertAdjacentHTML("beforebegin",`<div class="card" id="riskcard" style="border-color:var(--warn);margin-top:14px"><div class="top"><b class="ibt">${ui("hourglass")}معرّضة للتأخير (${risk.length})</b></div>${risk.slice(0,5).map(x=>`<a class="line" href="${x.s[0]}#open" style="display:flex;justify-content:space-between;gap:8px;text-decoration:none;color:var(--ink)"><span>${esc(x.o.item)} <span class="nums">· ${x.s[1]}</span></span><span class="tag late">باقي ${x.left} يوم وتحتاج ~${x.eta}</span></a>`).join("")}<div class="nums" style="margin-top:6px">تقدير مبني على معدل إنتاج آخر 14 يوم</div></div>`);
 }
 // ===== لوحة الإنتاج: آخر 7 أيام مقارنةً بالأسبوع اللي قبله =====
-const DSRC={"glaze.html":["glaze_production","prod_date"],"decoration.html":["deco_production","prod_date"],"spray.html":["spray_production","prod_date"],"repair.html":["repair_log","repair_date"],"casting.html":["casting_log","casting_date"]};
+const DSRC={"glaze.html":["glaze_production","prod_date"],"decoration.html":["deco_production","prod_date"],"spray.html":["spray_production","prod_date"],"repair.html":["repair_log","repair_date"],"casting.html":["casting_log","casting_date"],"brush.html":["brush_log","brush_date"]};
 async function prodRows(t,col,from){
   const out=[];
   for(let f=0;;f+=1000){

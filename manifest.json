@@ -98,6 +98,16 @@
           "sizes": "192x192"
         }
       ]
+    },
+    {
+      "name": "البرشر",
+      "url": "brush.html",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ],
   "id": "./index.html",

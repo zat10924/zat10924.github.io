@@ -170,7 +170,7 @@ function castForm(id,presetOid,waste){
     const used=new Map();
     if(!await reviewSave({title:waste?"راجع الهالك قبل الحفظ":"راجع الإنتاج قبل الحفظ",meta:[["التاريخ",fmtD(cd)],["الوردية",sh],...rvFields(x)],
       items:(ents||[{item,qty:waste?sc:q,order_id:oid}]).map(e=>{const o=e.order_id?ordOf(e.order_id):null;
-        const rows=[[waste?"عدد القطع الهالكة":"عدد القطع",nf(e.qty)],["الطلبية",o?oLab(o):"بدون طلبية"]];let warn="";
+        const rows=[[waste?"عدد القطع الهالكة":"عدد القطع",nf(waste?sc:e.qty)],["الطلبية",o?oLab(o):"بدون طلبية"]];let warn="";
         if(o){const base=orderProg(o).rem+(rec&&rec.oid===o.id?rec.qty:0),u=(used.get(o.id)||0)+e.qty;used.set(o.id,u);rows.push(["المتبقي بعد التسجيل",remAfter(base,u)]);warn=overWarn(base,u)}
         return{title:e.item,rows,warn}})}))return false;
     const row={casting_date:cd,item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};

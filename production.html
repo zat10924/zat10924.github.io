@@ -39,7 +39,9 @@ const SEC={
  glaze:{name:"جليز",color:"#2E6F80",o:"glaze_orders",l:"glaze_lines_status",p:"glaze_production",lab:x=>x.color},
  deco:{name:"زخرفة",color:"#5E5A8C",o:"deco_orders",l:"deco_lines_status",p:"deco_production",lab:x=>"كود "+x.code},
  spray:{name:"رش",color:"#B8862B"},
- casting:{name:"الصب اليدوي",color:"#8A5A3C"}};
+ casting:{name:"الصب اليدوي",color:"#8A5A3C"},brush:{name:"البرشر",color:"#A0522D"}};
+// أقسام الصب والبرشر: نفس النموذج (طلبيات بالكمية + وردية + هالك جودة) بجداول مختلفة
+const CAST={casting:{o:"casting_orders",l:"casting_log",d:"casting_date"},brush:{o:"brush_orders",l:"brush_log",d:"brush_date"}};
 /* صور أكواد الرسمات (زخرفة) */
 let CIMG=new Map(),cimgAt=0;
 async function loadCodeImgs(){
@@ -63,10 +65,11 @@ async function load(){
   if(sec==="deco")await loadCodeImgs();
   const c=SEC[sec],t=D;
   try{
-    if(sec==="casting"){
-      const[o,l,p,g]=await Promise.all([db.from("casting_orders").select("*"),
-        db.from("casting_log").select("order_id,qty").not("order_id","is",null),
-        db.from("casting_log").select("*").eq("casting_date",t).order("id",{ascending:false}),
+    if(CAST[sec]){
+      const CT=CAST[sec];
+      const[o,l,p,g]=await Promise.all([db.from(CT.o).select("*"),
+        db.from(CT.l).select("order_id,qty").not("order_id","is",null),
+        db.from(CT.l).select("*").eq(CT.d,t).order("id",{ascending:false}),
         db.from("order_groups").select("id,title,order_no")]);
       if(p.error)throw new Error("load");
       const GM=new Map(((g&&g.data)||[]).map(x=>[x.id,x])),dn=new Map();
@@ -75,7 +78,7 @@ async function load(){
       (o.error?[]:o.data||[]).forEach(x=>{const gg=GM.get(x.group_id);CO.set(x.id,{id:x.id,item:x.item,req:+x.qty_required||0,done:dn.get(x.id)||0,st:x.status,date:x.order_date,due:x.due_date,
         sub:gg?((gg.order_no?"#"+gg.order_no+" · ":"")+((gg.title||"").trim()||"طلبية")):"طلبية #"+x.id})});
       rows=[...CO.values()].filter(x=>x.st==="open"&&x.req-x.done>0).map(x=>({id:x.id,oid:x.id,title:x.item,sub:x.sub,req:x.req,done:x.done,date:x.date,due:x.due}));
-      tod=(p.data||[]).map(e=>({k:"cast",tb:"casting_log",id:e.id,qty:e.qty,date:e.casting_date,by:e.created_by||null,worker:e.worker||"",note:e.note||"",item:e.item||"",sh:e.shift||"",scrap:e.scrap||0,oid:e.order_id||null,isw:!(+e.qty>0)&&+e.scrap>0,
+      tod=(p.data||[]).map(e=>({k:"cast",tb:CT.l,id:e.id,qty:e.qty,date:e[CT.d],by:e.created_by||null,worker:e.worker||"",note:e.note||"",item:e.item||"",sh:e.shift||"",scrap:e.scrap||0,oid:e.order_id||null,isw:!(+e.qty>0)&&+e.scrap>0,
         txt:(!(+e.qty>0)&&+e.scrap>0?"هالك جودة · ":"")+(e.item||"—")+(e.shift?" · "+e.shift:"")+(+e.qty>0&&e.scrap?" · هالك "+e.scrap:"")+(!(+e.qty>0)&&+e.scrap>0?"":(e.order_id?"":" · بدون طلبية"))}));
     }else if(c.o){
       const[o,l,p]=await Promise.all([db.from(c.o).select("*"),db.from(c.l).select("*").order("id"),
@@ -93,7 +96,7 @@ async function load(){
       tod=(p.data||[]).map(e=>{const x=om.get(e.order_id),sc=e.spray_color||"";return{k:"line",tb:"spray_production",id:e.id,qty:e.qty,date:e.prod_date,by:e.created_by||null,worker:e.worker||"",note:e.note||"",design:"",sc,txt:x?x.item+" · "+x.color+(sc?" · لون الرش: "+sc:""):"—",max:x?x.qty_required-x.produced+e.qty:0,sync:x?{sv:"spray_status",o:"spray_orders",oid:x.id}:null}});
     }
     // الإنتاج بدون طلبية (لو الجدول موجود)
-    if(sec!=="casting")try{
+    if(!CAST[sec])try{
       const f=await db.from("free_production").select("*").eq("section",sec).eq("prod_date",t).order("id",{ascending:false});
       if(!f.error)tod.unshift(...(f.data||[]).map(e=>({k:"free",tb:"free_production",id:e.id,qty:e.qty,date:e.prod_date,by:e.created_by||null,item:e.item,sub:e.sub||"",sc:e.spray_color||"",worker:e.worker||"",note:e.note||"",design:e.design||"",txt:e.item+(e.sub?" · "+e.sub:"")+(e.spray_color?" · لون الرش: "+e.spray_color:"")+" · بدون طلبية"})));
     }catch(e){}
@@ -112,7 +115,7 @@ async function load(){
     rows=ch.rows;tod=D===today()?ch.tod:[];stale=ch.at;
   }
   // التسجيلات اللي لسه ما اتبعتتش بتتحسب في الأرقام
-  Q_.get().filter(i=>i.sec===sec).forEach(i=>{const r=rows.find(x=>x.id===i.rid);if(r)r.done+=i.qty;if((i.row&&(i.row.prod_date||i.row.casting_date)||today())===D)tod.unshift({qty:i.qty,txt:i.txt+" ⏳",pend:1})});
+  Q_.get().filter(i=>i.sec===sec).forEach(i=>{const r=rows.find(x=>x.id===i.rid);if(r)r.done+=i.qty;if((i.row&&(i.row.prod_date||i.row.casting_date||i.row.brush_date)||today())===D)tod.unshift({qty:i.qty,txt:i.txt+" ⏳",pend:1})});
   draw();
 }
 function draw(){
@@ -126,7 +129,7 @@ function draw(){
       <div class="bar"><i style="width:${p}%"></i></div><div class="nums">تم <b>${nf(r.done)}</b> من <b>${nf(r.req)}</b> · متبقي <b>${nf(rem)}</b></div>${r.tsc?`<div class="nums">لون الرش المطلوب: <b>${esc(r.tsc)}</b></div>`:""}</div>`}).join(""):`<div class="empty">${q?"مفيش نتائج":"مفيش بنود مفتوحة"}</div>`;
   document.querySelectorAll(".pr").forEach(e=>e.onclick=()=>pickRow(rows.find(r=>String(r.id)===e.dataset.id),e));
   updBar();
-  wasteBtn.hidden=sec!=="glaze"&&sec!=="casting";mbtn.parentElement.hidden=sec==="casting";
+  wasteBtn.hidden=sec!=="glaze"&&!CAST[sec];mbtn.parentElement.hidden=!!CAST[sec];
   if(stale)document.getElementById("list").insertAdjacentHTML("afterbegin",`<div class="card" style="border-color:var(--warn)"><b class="ibt">${ui("wifioff")}لا يوجد اتصال</b><div class="nums">بيانات محفوظة من آخر اتصال (${new Date(stale).toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"})}). تسجيلاتك هتتحفظ وتتبعت لما النت يرجع.</div></div>`);
   const ce=!stale,cd=can("delete")&&!stale,lockedNote=!stale&&!can("edit")&&can("editown")&&dayClosed(D);
   document.getElementById("logh").textContent=D===today()?"تسجيلات النهارده":"تسجيلات يوم "+fmtD(D);
@@ -187,8 +190,8 @@ function multiModal(){
   },"تسجيل الكل");
 }
 mbtn.onclick=()=>{multi=!multi;sel.clear();draw()};
-freeBtn.onclick=()=>sec==="casting"?castForm(null,null):freeProduction(sec,load);
-wasteBtn.onclick=()=>sec==="casting"?castForm(null,null,true):quickWaste(load);
+freeBtn.onclick=()=>CAST[sec]?castForm(null,null):freeProduction(sec,load);
+wasteBtn.onclick=()=>CAST[sec]?castForm(null,null,true):quickWaste(load);
 // ===== تعديل / حذف تسجيل إنتاج اتسجّل بالغلط =====
 async function resync(e){
   const x=e.sync;if(!x)return;
@@ -260,7 +263,7 @@ mgo.onclick=multiModal;
 logd.onchange=()=>{D=logd.value||today();skel("today",1);load()};
 function quick(r){
   if(r&&typeof r!=="object")r=rows.find(x=>String(x.id)===String(r));
-  if(sec==="casting"&&r)return castForm(null,r.id);
+  if(CAST[sec]&&r)return castForm(null,r.id);
   if(!r||!(r.req>=0)||typeof r.sub==="function"){toast("البند ده مش متحمّل صح — دوس «تحديث» وجرّب تاني","warn");return}
   const rem=r.req-r.done;
   if(rem<=0){toast("البند ده مكتمل بالفعل","warn");return}
@@ -289,9 +292,12 @@ function quick(r){
     await load();if(q>rem)overToast(1,q-rem);else toast(done?"اكتملت الطلبية":"تم التسجيل");
   });
 }
-/* ===== الصب اليدوي: تسجيل بطلبية أو بدون طلبية + وردية + هالك جودة ===== */
+/* ===== الصب اليدوي والبرشر: تسجيل بطلبية أو بدون طلبية + وردية + هالك جودة ===== */
 const SHIFTS=["صباحي","مسائي","ليلي"],cLab=o=>o?(o.sub+" — "+o.item):"";
-const castOpen=()=>[...CO.values()].filter(o=>o.st==="open").map(o=>({id:o.id,item:o.item,rem:o.req-o.done,due:o.due,date:o.date}));
+// المتحفظ على الجهاز بدون نت (لسه ما اتبعتش) بيتحسب من المتبقي عشان الربط التلقائي ما يزوّدش على طلبية اتملّت
+const castSql=()=>sec==="casting"?"setup_casting_v2.sql":"setup_"+sec+".sql";
+const pendQ=id=>Q_.get().filter(i=>i.sec===sec&&i.rid===id).reduce((a,i)=>a+(+i.qty||0),0);
+const castOpen=()=>[...CO.values()].filter(o=>o.st==="open").map(o=>({id:o.id,item:o.item,rem:o.req-o.done-pendQ(o.id),due:o.due,date:o.date}));
 function castForm(rec,presetOid,waste){
   if(rec&&!canEditEntry(rec)){toast(dayClosed(rec.date)?"التعديل مقفول — اليوم ده خلص":"تقدر تعدّل تسجيلاتك انت بس","warn");return}
   wkLoad();
@@ -303,7 +309,8 @@ function castForm(rec,presetOid,waste){
   const shDef=rec?rec.sh:ls,lockDate=!can("edit");
   const items=[...new Set([...[...CO.values()].map(o=>o.item),...tod.map(e=>e.item).filter(Boolean)])];
   let mx=null;
-  openModal(waste?(rec?"تعديل هالك جودة · صب":"تسجيل هالك جودة · صب"):(rec?"تعديل تسجيل الصب":"تسجيل صب يدوي"),
+  const SN=SEC[sec].name;
+  openModal(waste?(rec?"تعديل هالك جودة · ":"تسجيل هالك جودة · ")+SN:(rec?"تعديل تسجيل ":"تسجيل ")+SN,
    `${waste?"":`<label>نوع التسجيل</label><select id="m-mode">${rec?"":`<option value="auto" ${isO?"":"selected"}>تلقائي (يرتبط بالطلبيات حسب الصنف)</option>`}<option value="order" ${isO?"selected":""}>بطلبية</option><option value="free" ${isO||!rec?"":"selected"}>بدون طلبية</option></select><div class="nums" id="m-ah" style="margin:4px 0 0"></div>
     <div id="m-ow" style="display:${isO?"block":"none"}"><label>الطلبية</label><select id="m-o"><option value="">— اختار الطلبية —</option>${ords.map(o=>`<option value="${o.id}" ${o.id===(rec?rec.oid:presetOid)?"selected":""}>${esc(cLab(o))}</option>`).join("")}</select><div class="nums" id="m-hint" style="margin:4px 0 0"></div></div>`}
     <label>التاريخ</label><input type="date" id="m-d" value="${rec?rec.date:today()}" ${lockDate?"disabled":""}>
@@ -337,27 +344,27 @@ function castForm(rec,presetOid,waste){
     const used=new Map();
     if(!await reviewSave({title:waste?"راجع الهالك قبل الحفظ":"راجع الإنتاج قبل الحفظ",meta:[["التاريخ",fmtD(cd)],["الوردية",sh],...rvFields(x)],
       items:(ents||[{item,qty:waste?sc:q,order_id:oid}]).map(e=>{const o=e.order_id?CO.get(e.order_id):null;
-        const rows=[[waste?"عدد القطع الهالكة":"عدد القطع",nf(e.qty)],["الطلبية",o?cLab(o):"بدون طلبية"]];let warn="";
-        if(o){const base=Math.max(o.req-o.done,0)+(rec&&rec.oid===o.id?rec.qty:0),u=(used.get(o.id)||0)+e.qty;used.set(o.id,u);rows.push(["المتبقي بعد التسجيل",remAfter(base,u)]);warn=overWarn(base,u)}
+        const rows=[[waste?"عدد القطع الهالكة":"عدد القطع",nf(waste?sc:e.qty)],["الطلبية",o?cLab(o):"بدون طلبية"]];let warn="";
+        if(o){const base=Math.max(o.req-o.done-pendQ(o.id),0)+(rec&&rec.oid===o.id?rec.qty:0),u=(used.get(o.id)||0)+e.qty;used.set(o.id,u);rows.push(["المتبقي بعد التسجيل",remAfter(base,u)]);warn=overWarn(base,u)}
         return{title:e.item,rows,warn}})}))return false;
-    const row={casting_date:cd,item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
+    const row={[CAST[sec].d]:cd,item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
     if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
     if(!rec){
       const linked=ents.filter(e=>e.order_id).length;
       let ok=0,qd=0,err=null;
-      for(const en of ents){const rr=await castInsert({...row,...en});if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
+      for(const en of ents){const rr=await castInsert({...row,...en},CAST[sec].l,sec);if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
       try{localStorage.setItem("cast_shift",sh)}catch(e){}
       if(err){
-        const m=/shift|scrap|order_id/.test(err.message||"")?"شغّل ملف setup_casting_v2.sql من Supabase الأول":"خطأ: "+err.message;
+        const m=/shift|scrap|order_id/.test(err.message||"")?"شغّل ملف "+castSql()+" من Supabase الأول":"خطأ: "+err.message;
         if(!ok&&!qd){toast(m,"bad");return false}
         await load();toast("اتسجّل "+(ok+qd)+" من "+ents.length+" أصناف — "+m,"bad");return;
       }
       await load();
       toast(qd?"مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع":(auto?(linked?"تم التسجيل وربطه تلقائيًا بالطلبية":"تم التسجيل (مفيش طلبية مفتوحة للصنف ده)"):(ok>1?"تم تسجيل "+ok+" أصناف":"تم التسجيل")),qd?"warn":undefined);return;
     }
-    let r=rec?await db.from("casting_log").update(row).eq("id",rec.id).select():await castInsert(row);
+    let r=rec?await db.from(CAST[sec].l).update(row).eq("id",rec.id).select():await castInsert(row,CAST[sec].l,sec);
     if(r.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}await load();toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
-    if(r.error){toast(isNet(r.error)?"التعديل محتاج اتصال بالإنترنت":(/shift|scrap|order_id/.test(r.error.message||"")?"شغّل ملف setup_casting_v2.sql من Supabase الأول":"خطأ: "+r.error.message),"bad");return false}
+    if(r.error){toast(isNet(r.error)?"التعديل محتاج اتصال بالإنترنت":(/shift|scrap|order_id/.test(r.error.message||"")?"شغّل ملف "+castSql()+" من Supabase الأول":"خطأ: "+r.error.message),"bad");return false}
     if(rec&&(!r.data||!r.data.length)){toast("لم يتم التعديل، راجع الصلاحيات","bad");return false}
     try{localStorage.setItem("cast_shift",sh)}catch(e){}
     await load();toast(rec?"تم التعديل":"تم التسجيل");
@@ -397,7 +404,7 @@ function secs(){
   document.querySelectorAll("#secs button").forEach(b=>b.onclick=()=>{sec=b.dataset.s;history.replaceState(null,"","#"+sec);secs();skel("list",3);load()});
 }
 (async()=>{if(await requireAuth("production.html")){
-  allowed=ME.role==="admin"?["glaze","deco","spray","casting"]:mySecs().filter(k=>SEC[k]);
+  allowed=ME.role==="admin"?["glaze","deco","spray","casting","brush"]:mySecs().filter(k=>SEC[k]);
   renderNav("production.html");
   if(!allowed.length){document.querySelector(".prodact").hidden=true;document.getElementById("list").innerHTML='<div class="empty">تسجيل الإنتاج لقسمك من صفحة القسم نفسها (التصليح)</div>';settle();return}
   const h=location.hash.slice(1);sec=allowed.includes(h)?h:allowed[0];
