@@ -1355,3 +1355,89 @@ body:not(.sideopen) .side{will-change:auto}
 .card.dz .sethead h3{color:var(--bad)}
 .stabs button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 @media print{.gdesc{display:none!important}}
+
+/* ===== صفحة الدخول v2: موبايل + تابلت + كمبيوتر (مقيّدة بـ #login عشان تغلب الطبقات القديمة) ===== */
+#login.loginpage{position:fixed;inset:0;z-index:30;display:grid;place-items:center;align-items:safe center;overflow:auto;-webkit-overflow-scrolling:touch;
+  padding:max(18px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  background:radial-gradient(ellipse 90% 60% at 50% 0,#7c3341 0,#52202b 45%,#2c1218 100%)}
+#login.loginpage::after{display:none}
+#login .lshell{position:relative;width:100%;max-width:440px;display:block}
+#login .lbrand{display:none}
+#login .login{position:relative;width:100%;max-width:none;margin:0;padding:26px 22px 16px;text-align:center;border-radius:22px;border:1px solid rgba(255,255,255,.14);border-top:3px solid var(--gold);
+  background:var(--card);box-shadow:0 24px 60px rgba(0,0,0,.42);backdrop-filter:none;animation:rise .45s both}
+#login .login h3,#login .login .sub,#login .login label,#login .login .fld,#login .login #go,#login .login img.logo{animation:none}
+#login .logoframe{display:block;width:min(230px,70%);margin:-4px auto 14px}
+#login .login h3{font-size:1.45rem;font-weight:800;margin:0 0 4px;color:var(--pri)}
+#login .login .sub{margin:0 0 16px;font-size:.95rem;color:var(--mute)}
+#login .login label{display:block;text-align:right;margin:8px 2px 0;font-size:.9rem;font-weight:700;color:var(--ink)}
+#login .fld{position:relative}
+#login .fld input{width:100%;min-height:50px;margin:5px 0 4px;padding-inline:46px 46px;font-size:1rem;border-radius:12px;text-align:start}
+#login .fld input#pass{text-align:left}
+#login .fld>svg{inset-inline-start:14px}
+#login .fld input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(215,185,111,.28)}
+#login .eye{inset-inline-end:6px;top:8px;width:40px;height:40px}
+#login .caps{margin:2px 2px 0;justify-content:flex-start}
+#login .lrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 6px;flex-wrap:wrap}
+#login .rem{margin:0;display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:500;color:var(--mute);cursor:pointer}
+#login .rem input{width:18px;height:18px;min-height:0;margin:0;accent-color:var(--pri)}
+#login .linkbtn{margin:0;padding:8px 6px;font-size:.9rem;font-weight:700;color:var(--pri)}
+#login .err{min-height:0;margin:0;font-size:.9rem;text-align:right;color:var(--bad)}
+#login .err:not(:empty){margin:4px 0 10px;padding:9px 12px;border-radius:10px;background:color-mix(in srgb,var(--bad) 10%,transparent);border:1px solid color-mix(in srgb,var(--bad) 32%,transparent)}
+#login #go{display:block;width:100%;min-height:52px;margin-top:6px;font-size:1.08rem;font-weight:800;letter-spacing:.01em;background:linear-gradient(135deg,#7c3341,#421B24);color:#fff}
+#login #go:disabled{opacity:.65;cursor:not-allowed}
+#login .lnet{margin-top:12px;padding:8px 12px;border-radius:10px;font-size:.88rem;font-weight:700;color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent)}
+#login .lnet[hidden]{display:none}
+#login .lfoot{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:.76rem;color:var(--mute)}
+#login .lfoot #lver{margin:0;font-weight:700;letter-spacing:.03em}
+#login .login.shake{animation:shake .5s both}
+@media(max-height:560px){#login.loginpage{align-items:start}#login .logoframe{display:none}}
+@media(max-width:360px){#login .login{padding:22px 16px 14px}#login .lrow{justify-content:center}}
+
+/* تابلت */
+@media(min-width:600px) and (max-width:899px){
+  #login .lshell{max-width:500px}
+  #login .login{padding:36px 36px 20px;border-radius:26px}
+  #login .login h3{font-size:1.75rem}
+  #login .login .sub{font-size:1.02rem}
+  #login .fld input{min-height:54px;font-size:1.05rem}
+  #login #go{min-height:56px;font-size:1.12rem}
+}
+/* كمبيوتر وتابلت أفقي: لوحة تعريف + نموذج في بطاقة واحدة */
+@media(min-width:900px){
+  #login.loginpage{padding:40px}
+  #login .lshell{max-width:980px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr);min-height:600px;border-radius:28px;overflow:hidden;box-shadow:0 34px 90px rgba(0,0,0,.55);border:1px solid rgba(215,185,111,.28)}
+  #login .lbrand{position:relative;display:flex;flex-direction:column;justify-content:center;padding:56px 52px;color:#fff;text-align:start;overflow:hidden;
+    background:radial-gradient(circle at 15% 10%,rgba(215,185,111,.2),transparent 45%),linear-gradient(160deg,#7c3341 0%,#52202b 55%,#2c1218 100%)}
+  #login .lbrand::after{content:"";position:absolute;inset-inline-end:-120px;bottom:-120px;width:340px;height:340px;border-radius:50%;border:1px solid rgba(215,185,111,.22);box-shadow:0 0 0 40px rgba(215,185,111,.05),0 0 0 90px rgba(215,185,111,.03);pointer-events:none}
+  #login .lbrand img{display:block;width:clamp(96px,9vw,128px);height:auto;aspect-ratio:1;border-radius:28px;margin:0 0 22px;border:3px solid rgba(215,185,111,.7);box-shadow:0 0 0 6px rgba(215,185,111,.12),0 18px 44px rgba(0,0,0,.4)}
+  #login .lbrand h2{margin:0;font-size:clamp(2.4rem,4vw,3.2rem);font-weight:800;letter-spacing:.16em;line-height:1.1;color:#fff}
+  #login .lbrand .lb-sub{margin:6px 0 4px;font-size:1.25rem;font-weight:700;color:#E8D49B}
+  #login .lbrand .lb-tag{margin:0 0 30px;font-size:.95rem;color:rgba(255,255,255,.7)}
+  #login .lbrand ul{position:relative;z-index:1;list-style:none;margin:0;padding:0;display:grid;gap:16px}
+  #login .lbrand li{display:flex;align-items:center;gap:12px;font-size:1.02rem;line-height:1.6;color:rgba(255,255,255,.92)}
+  #login .lbrand li svg{flex:none;width:28px;height:28px;padding:5px;border-radius:50%;background:rgba(215,185,111,.2);stroke:#E8D49B;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  #login .login{display:flex;flex-direction:column;justify-content:center;max-width:none;padding:48px 46px 24px;border:0;border-radius:0;box-shadow:none}
+  #login .logoframe{display:none}
+  #login .login h3{font-size:1.9rem;margin-top:0;text-align:right}
+  #login .login .sub{font-size:1rem;text-align:right}
+  #login .fld input{min-height:52px;font-size:1.04rem}
+  #login #go{min-height:54px;font-size:1.1rem;transition:transform .12s,box-shadow .2s}
+  #login #go:hover:not(:disabled){box-shadow:0 8px 22px rgba(66,27,36,.4);transform:translateY(-1px)}
+  #login .lfoot{justify-content:space-between}
+}
+@media(min-width:900px) and (max-height:680px){#login .lshell{min-height:0}#login .lbrand{padding:36px 44px}#login .login{padding:32px 42px 18px}}
+@media(prefers-reduced-motion:reduce){#login .login{animation:none}}
+
+/* ===== صفحة الدخول: بدون أي أنيميشن (ما عدا دوّارة التحميل على زر الدخول) ===== */
+#login,#login *,#login *::before,#login *::after{animation:none!important;transition:none!important}
+#login #go.loading::after{animation:spin .8s linear infinite!important}
+
+/* ===== صفحة الدخول: أنيميشن بسيط فقط (ظهور هادي + تفاعل الخانات والزر) ===== */
+@keyframes lgFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#login .lshell{animation:lgFade .4s ease-out both!important}
+#login .err:not(:empty){animation:lgFade .25s ease-out both!important}
+#login .fld input{transition:border-color .2s,box-shadow .2s!important}
+#login .fld>svg,#login .eye,#login .linkbtn{transition:color .2s,stroke .2s,background .2s!important}
+#login #go{transition:transform .15s,box-shadow .2s,opacity .2s!important}
+#login #go:active:not(:disabled){transform:scale(.98)}
+@media(prefers-reduced-motion:reduce){#login .lshell,#login .err:not(:empty){animation:none!important}#login *{transition:none!important}}

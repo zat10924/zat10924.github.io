@@ -22,31 +22,34 @@
 <script>try{var n=performance.getEntriesByType("navigation")[0];if(sessionStorage.getItem("sp")&&!(n&&n.type==="reload"))document.getElementById("splash").remove()}catch(e){}</script>
 <div id="login" class="loginpage" style="display:none">
   <div class="lbg"><i></i><i></i><i></i><i></i></div>
-  <aside class="lbrand">
-    <img src="logo-full.png" alt="MAS الماس للخزف والصيني">
-    <h2>MAS</h2>
-    <p class="lb-sub">الماس للخزف والصيني</p>
-    <ul>
-      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>متابعة الطلبية من أول طلب العميل لحد التسليم</span></li>
-      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>توزيع الأصناف على الجليز والزخرفة والرش من مكان واحد</span></li>
-      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>تقارير يومية وتقارير طلبيات جاهزة للطباعة والمشاركة</span></li>
-    </ul>
-  </aside>
-  <form class="login card" id="lform" novalidate autocomplete="on">
-    <div class="logoframe"><img class="logo" src="logo-full.png" alt="MAS الماس للخزف والصيني"></div>
-    <h3>إدارة الأقسام</h3>
-    <div class="sub">سجّل دخولك للمتابعة</div>
-    <label for="email">الاسم</label>
-    <div class="fld"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><input id="email" name="username" type="text" inputmode="text" autocomplete="username" dir="auto" placeholder="اكتب اسمك" autocapitalize="none" spellcheck="false"></div>
-    <label for="pass">كلمة السر</label>
-    <div class="fld"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input id="pass" name="password" type="password" autocomplete="current-password" dir="ltr" placeholder="••••••••"><button type="button" class="eye" id="eye" aria-label="إظهار كلمة السر"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-    <div class="caps" id="caps" hidden><svg class="ui" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><span>زر Caps Lock مفعّل</span></div>
-    <label class="rem"><input type="checkbox" id="rem" checked><span>تذكّر الاسم على الجهاز ده</span></label>
-    <div class="err" id="err" role="alert"></div>
-    <button class="btn" id="go" type="submit" style="width:100%">دخول</button>
-    <button type="button" class="linkbtn" id="forgot">نسيت كلمة السر؟</button>
-    <div class="loginver" id="lver"></div>
-  </form>
+  <main class="lshell">
+    <aside class="lbrand" aria-label="عن البرنامج">
+      <img src="logo-full.png" alt="MAS الماس للخزف والصيني">
+      <h2>MAS</h2>
+      <p class="lb-sub">الماس للخزف والصيني</p>
+      <p class="lb-tag">نظام إدارة الإنتاج والأقسام</p>
+      <ul>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>متابعة الطلبية من أول طلب العميل لحد التسليم</span></li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>توزيع الأصناف على الجليز والزخرفة والرش من مكان واحد</span></li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>تقارير يومية وتقارير طلبيات جاهزة للطباعة والمشاركة</span></li>
+      </ul>
+    </aside>
+    <form class="login card" id="lform" novalidate autocomplete="on">
+      <div class="logoframe"><img class="logo" src="logo-full.png" alt="MAS الماس للخزف والصيني"></div>
+      <h3>تسجيل الدخول</h3>
+      <div class="sub">أهلًا بك، اكتب اسمك وكلمة السر للمتابعة</div>
+      <label for="email">الاسم</label>
+      <div class="fld"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><input id="email" name="username" type="text" inputmode="text" autocomplete="username" dir="auto" placeholder="اكتب اسمك" autocapitalize="none" spellcheck="false" enterkeyhint="next"></div>
+      <label for="pass">كلمة السر</label>
+      <div class="fld"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input id="pass" name="password" type="password" autocomplete="current-password" dir="ltr" placeholder="••••••••" enterkeyhint="go"><button type="button" class="eye" id="eye" aria-label="إظهار كلمة السر" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="caps" id="caps" hidden><svg class="ui" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><span>زر Caps Lock مفعّل</span></div>
+      <div class="lrow"><label class="rem"><input type="checkbox" id="rem" checked><span>تذكّر الاسم</span></label><button type="button" class="linkbtn" id="forgot">نسيت كلمة السر؟</button></div>
+      <div class="err" id="err" role="alert" aria-live="polite"></div>
+      <button class="btn" id="go" type="submit">دخول</button>
+      <div class="lnet" id="lnet" role="status" hidden>مفيش اتصال بالإنترنت</div>
+      <div class="lfoot"><span id="lver"></span><span>© MAS الماس للخزف والصيني</span></div>
+    </form>
+  </main>
 </div>
 <div id="wel" hidden><div class="wsp" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="wc"><svg viewBox="0 0 52 52" aria-hidden="true"><circle class="c" cx="26" cy="26" r="23"/><path class="k" d="M15 27l8 8 15-17"/></svg></div><div class="wg" id="welg">مرحبًا بك</div><b id="welt"></b><i class="wl"></i></div>
 <div class="wrap">
@@ -211,8 +214,15 @@ async function init(){
   homeReady=true;
 }
 document.getElementById("lver").textContent="الإصدار "+APP_VERSION;
+const netChip=()=>{lnet.hidden=navigator.onLine};netChip();addEventListener("online",netChip);addEventListener("offline",netChip);
+// حماية من التخمين: بعد 5 محاولات غلط الزر بيقفل 30 ثانية
+let fails=0,lockUntil=0,lockT=null;
+function lockTick(){const left=Math.ceil((lockUntil-Date.now())/1000);
+  if(left<=0){clearInterval(lockT);fails=0;go.disabled=false;go.textContent="دخول";if(/محاولات/.test(err.textContent))err.textContent="";return}
+  go.disabled=true;go.textContent="حاول بعد "+left+" ثانية"}
+function lockNow(){lockUntil=Date.now()+30000;clearInterval(lockT);lockT=setInterval(lockTick,500);lockTick();err.textContent="محاولات كتير غلط، استنى شوية وحاول تاني"}
 try{const le=localStorage.getItem("last_email");if(le)email.value=le}catch(e){}
-document.getElementById("eye").onclick=()=>{const h=pass.type==="password";pass.type=h?"text":"password";eye.classList.toggle("on",h)};
+document.getElementById("eye").onclick=()=>{const h=pass.type==="password";pass.type=h?"text":"password";eye.classList.toggle("on",h);eye.setAttribute("aria-pressed",h);eye.setAttribute("aria-label",h?"إخفاء كلمة السر":"إظهار كلمة السر")};
 const capsChk=e=>{caps.hidden=!(e.getModifierState&&e.getModifierState("CapsLock"))};
 pass.addEventListener("keydown",capsChk);pass.addEventListener("keyup",capsChk);pass.addEventListener("blur",()=>caps.hidden=true);
 function bad(m){
@@ -220,6 +230,7 @@ function bad(m){
   const f=document.getElementById("lform");f.classList.remove("shake");void f.offsetWidth;f.classList.add("shake");
 }
 function welcome(name){
+  return; // شاشة الترحيب المتحركة بعد الدخول متوقفة (لا أنيميشن في الدخول)
   if(document.documentElement.classList.contains("calm"))return;
   welg.textContent="مرحبًا بك";welt.textContent=name||"";
   const w=document.getElementById("wel");w.hidden=false;w.classList.remove("out");void w.offsetWidth;w.classList.add("in");
@@ -239,6 +250,7 @@ async function emailFor(v){
 }
 document.getElementById("lform").onsubmit=async e=>{
   e.preventDefault();err.textContent="";
+  if(Date.now()<lockUntil)return;
   const typed=email.value.trim(),pw=pass.value;
   if(!typed||!pw){bad(!typed?"اكتب الاسم":"اكتب كلمة السر");(!typed?email:pass).focus();return}
   if(!navigator.onLine){bad("مفيش اتصال بالإنترنت");return}
@@ -247,8 +259,8 @@ document.getElementById("lform").onsubmit=async e=>{
   if(em===false){go.disabled=false;go.classList.remove("loading");return}
   let error;try{({error}=await db.auth.signInWithPassword({email:em,password:pw}))}catch(x){error={message:"fetch"}}
   go.disabled=false;go.classList.remove("loading");
-  if(error){bad(/fetch|network|load failed/i.test(error.message||"")?"تعذر الاتصال بالسيرفر، حاول تاني":"الاسم أو كلمة السر غلط");pass.select();return}
-  try{rem.checked?localStorage.setItem("last_email",typed):localStorage.removeItem("last_email")}catch(x){}
+  if(error){bad(/fetch|network|load failed/i.test(error.message||"")?"تعذر الاتصال بالسيرفر، حاول تاني":"الاسم أو كلمة السر غلط");pass.select();if(!/fetch|network|load failed/i.test(error.message||"")&&++fails>=5)lockNow();return}
+  fails=0;try{rem.checked?localStorage.setItem("last_email",typed):localStorage.removeItem("last_email")}catch(x){}
   Snd.play("login");
   await init();
   if(typeof ME!=="undefined"&&ME&&ME.role)welcome(ME.name);
@@ -258,12 +270,13 @@ document.getElementById("forgot").onclick=async()=>{
   if(!typed){bad("اكتب اسمك الأول وبعدين اضغط نسيت كلمة السر");email.focus();return}
   forgot.disabled=true;
   const em=await emailFor(typed);
+  if(/@noemail\.mas\.app$/i.test(em)){forgot.disabled=false;toast("حسابك بالاسم من غير إيميل، كلّم المدير يغيّر لك كلمة السر","warn");return} // مفيش إيميل نبعتله الرابط
   if(!em||!/^\S+@\S+\.\S+$/.test(em)){forgot.disabled=false;if(em!==false)toast("لو الحساب مسجّل هيوصله رابط إعادة تعيين كلمة السر","ok");return}
   const{error}=await db.auth.resetPasswordForEmail(em,{redirectTo:location.href.replace(/[?#].*$/,"").replace(/[^/]*$/,"index.html")});
   toast(error?"تعذر الإرسال: "+error.message:"لو الإيميل مسجّل هيوصله رابط إعادة تعيين كلمة السر",error?"bad":"ok");
   setTimeout(()=>forgot.disabled=false,30000);
 };
-init();
+init().then(()=>{try{if(document.getElementById("login").style.display!=="none"&&matchMedia("(pointer:fine)").matches)(email.value?pass:email).focus()}catch(e){}});
 </script>
 <script src="install.js" defer></script>
 </body>
