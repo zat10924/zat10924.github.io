@@ -155,7 +155,7 @@ async function syncStatus(orderId){
   return done;
 }
 
-function produce(lineId){
+function produce(lineId){if(roBlock())return;
   const x=lines.find(l=>l.id===lineId),rem=x.total_required-x.produced;
   openModal(`إنتاج كود ${esc(x.code)}`,`${XT(true)}${cimg(x.code)?`<img class="dzoom" alt="" src="${cimg(x.code)}" data-zc="${esc(x.code)}">`:""}<div class="nums">المتبقي: <b>${rem}</b></div><label>الكمية اللي عملتها</label><input type="number" id="m-q" min="1" inputmode="numeric"><label>التاريخ</label><input type="date" id="m-d" value="${today()}">${XF(true)}`,async()=>{
     const q=parseInt(document.getElementById("m-q").value);

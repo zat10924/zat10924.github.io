@@ -143,6 +143,19 @@ const PERM_DEF={owner:{view:true,edit:false,delete:false,increase:false,reports:
 const can=k=>{if(!ME||!ME.role)return false;if(ME.role==="admin")return true;const v=(ME.perms||{})[k];return typeof v==="boolean"?v:!!(PERM_DEF[ME.role]||{})[k]};
 // مسجّل الإنتاج (مش مدير ومعاه صلاحية التعديل مقفولة) ما بيشوفش الطلبيات المكتملة
 const seesAll=()=>!!ME&&(ME.role==="admin"||ME.role==="owner");
+// صاحب المصنع: عرض فقط. الواجهة بتخفي أزرار التسجيل والتعديل (body.ro) وبتمنع الكتابة هنا كشبكة أمان،
+// والحماية الحقيقية في قاعدة البيانات: setup_owner_readonly.sql
+const isOwner=()=>!!ME&&ME.role==="owner";
+const roBlock=()=>{if(isOwner()){toast("صاحب المصنع: عرض فقط — التسجيل والتعديل للمدير ومسؤول القسم ومسجّل الإنتاج","warn");return true}return false};
+(()=>{
+  const from=db.from.bind(db),OK=new Set(["profiles","push_subs","push_subscriptions","activity_log"]);
+  const dead=()=>new Proxy(function(){},{get:(_,k)=>k==="then"?(a,b)=>Promise.resolve({data:null,error:{message:"صاحب المصنع: عرض فقط"}}).then(a,b):dead(),apply:()=>dead()});
+  db.from=t=>{
+    const q=from(t);if(OK.has(t))return q;
+    for(const m of["insert","update","delete","upsert"]){const o=q[m].bind(q);q[m]=(...a)=>isOwner()?dead():o(...a)}
+    return q;
+  };
+})();
 const hideDone=()=>!!ME&&!seesAll()&&!can("edit");
 const subsOf=f=>(SUBS[f]||[]).filter(x=>(x[1]!=="prod"||can("reports"))&&(x[1]!=="done"||!hideDone()));
 // ===== تعديل الإنتاج في نفس اليوم فقط =====
@@ -157,7 +170,7 @@ const canEditEntry=e=>{
   if(e.by&&ME.id&&e.by!==ME.id)return false;
   return true;
 };
-function applyPerms(){Object.keys(PERM_LBL).forEach(k=>document.body.classList.toggle("np-"+k,!can(k)))}
+function applyPerms(){Object.keys(PERM_LBL).forEach(k=>document.body.classList.toggle("np-"+k,!can(k)));document.body.classList.toggle("ro",isOwner())}
 /* أقسام لسه هتتنشأ (بتظهر للمدير ومسؤول القسم كإعلان، من غير صفحة ولا صلاحيات) */
 const SOON=[["الفنش","finish","#3E7C6B"],["الفرز","sortx","#6B5B95"],["الحريق","fire","#C0502B"]];
 const soonSections=()=>canReports()?SOON:[];
@@ -1333,6 +1346,7 @@ function decoFind(lines,item,code){
   return m[0];
 }
 function freeProduction(sec,done){
+  if(roBlock())return;
   if(!SEC_AR[sec]||sec==="repair"||sec==="casting"||sec==="brush")return;
   const deco=sec==="deco",spr=sec==="spray",lab=deco?"كود الرسمة":"اللون",kind=deco?"code":"color";
   const rowHtml=()=>`<div class="itemblk mrow"><div class="ih"><b class="mn"></b><button type="button" class="rmi" aria-label="حذف الصنف">${ib("trash","حذف")}</button></div>
@@ -1483,6 +1497,7 @@ function wireWasteGood(upd,keepFirst){
 }
 /* ===== تسجيل هالك سريع (جليز) — من غير طلبية ===== */
 function quickWaste(done){
+  if(roBlock())return;
   openModal("تسجيل هالك · جليز",
     `<label>الصنف</label><input id="m-item" list="m-items" placeholder="اسم الصنف" autocomplete="off"><datalist id="m-items"></datalist>
     <div class="two"><div><label>الكمية السليمة</label><input type="number" id="m-g" min="0" inputmode="numeric"></div><div><label>الكمية الهالكة</label><input type="number" id="m-q" min="0" inputmode="numeric"></div></div>

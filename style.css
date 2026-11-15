@@ -549,3 +549,9 @@ input[type=range]{padding:0;min-height:36px;border:0;background:none;accent-colo
 
 .ogrp{border-inline-start:4px solid var(--pri)}
 .ogrp .card{box-shadow:none;border:1px solid var(--line);margin:10px 0 0;background:color-mix(in srgb,var(--bg) 60%,var(--card))}
+
+/* صاحب المصنع: عرض فقط — إخفاء كل أزرار التسجيل والإضافة والتعديل */
+body.ro #freeBtn,body.ro #wasteBtn,body.ro #mbtn,body.ro #newOrder,body.ro #newWaste,body.ro #newG,body.ro #add,body.ro #addw,body.ro #addx,
+body.ro [onclick^="produce("],body.ro [onclick^="repForm("],body.ro [onclick^="openForm("],body.ro [onclick^="increaseG("],body.ro [onclick^="editItems("],
+body.ro [onclick^="deliverG("],body.ro [onclick^="editG("],body.ro [onclick^="delG("],body.ro [onclick^="editOrder("],body.ro [onclick^="delOrder("],
+body.ro [onclick^="edit("],body.ro [onclick^="del("],body.ro [onclick^="form("]{display:none!important}

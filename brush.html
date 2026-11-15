@@ -54,6 +54,8 @@ let rows=[],orders=[],ordersOk=false,Q="",repCtl=null,oFilter="open",
 const NONE="بدون صنف",SHIFTS=["صباحي","مسائي","ليلي"],V2_ERR=/shift|scrap|order_id|brush_orders|schema cache/i;
 const ordOf=id=>orders.find(o=>o.id===id)||null;
 const oLab=o=>o?((o.no?"#"+o.no:"")+(o.no?" · ":"")+(o.title?o.title+" — ":"")+o.item):"";
+// المتحفظ على الجهاز بدون نت (لسه ما اتبعتش) بيتحسب من المتبقي عشان الربط التلقائي ما يزوّدش على طلبية اتملّت
+const pendQ=id=>Q_.get().filter(i=>i.sec==="brush"&&i.rid===id).reduce((a,i)=>a+(+i.qty||0),0);
 const lastShift=()=>{try{return localStorage.getItem("cast_shift")||""}catch(e){return ""}};
 
 async function load(){
@@ -122,7 +124,7 @@ function orderProg(o){
   let done=0,scrap=0;rows.forEach(r=>{if(r.oid===o.id){done+=r.qty;scrap+=r.sc}});
   return{done,scrap,rem:Math.max(0,o.req-done)};
 }
-function castForm(id,presetOid,waste){
+function castForm(id,presetOid,waste){if(roBlock())return;
   const rec=id?rows.find(r=>r.id===id):null;
   if(rec&&rec.isw)waste=true; // هالك الجودة بيتسجل منفصل بعد مراجعة الجودة، مش مع الطلبيات
   const legacySc=!waste&&rec&&rec.sc>0;
@@ -166,12 +168,12 @@ function castForm(id,presetOid,waste){
       }
     }
     const cd=lockDate?(rec?rec.d:today()):(document.getElementById("m-d").value||today());
-    const ents=!rec?(auto?castAutoSplit([{item,qty:q},...extra.map(e=>({item:e.item,qty:e.qty}))],orders.filter(o=>o.st==="open").map(o=>({id:o.id,item:o.item,rem:orderProg(o).rem,due:o.due,date:o.od}))):[{item,qty:q,order_id:oid},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid}))]):null;
+    const ents=!rec?(auto?castAutoSplit([{item,qty:q},...extra.map(e=>({item:e.item,qty:e.qty}))],orders.filter(o=>o.st==="open").map(o=>({id:o.id,item:o.item,rem:orderProg(o).rem-pendQ(o.id),due:o.due,date:o.od}))):[{item,qty:q,order_id:oid},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid}))]):null;
     const used=new Map();
     if(!await reviewSave({title:waste?"راجع الهالك قبل الحفظ":"راجع الإنتاج قبل الحفظ",meta:[["التاريخ",fmtD(cd)],["الوردية",sh],...rvFields(x)],
       items:(ents||[{item,qty:waste?sc:q,order_id:oid}]).map(e=>{const o=e.order_id?ordOf(e.order_id):null;
         const rows=[[waste?"عدد القطع الهالكة":"عدد القطع",nf(waste?sc:e.qty)],["الطلبية",o?oLab(o):"بدون طلبية"]];let warn="";
-        if(o){const base=orderProg(o).rem+(rec&&rec.oid===o.id?rec.qty:0),u=(used.get(o.id)||0)+e.qty;used.set(o.id,u);rows.push(["المتبقي بعد التسجيل",remAfter(base,u)]);warn=overWarn(base,u)}
+        if(o){const base=Math.max(orderProg(o).rem-pendQ(o.id),0)+(rec&&rec.oid===o.id?rec.qty:0),u=(used.get(o.id)||0)+e.qty;used.set(o.id,u);rows.push(["المتبقي بعد التسجيل",remAfter(base,u)]);warn=overWarn(base,u)}
         return{title:e.item,rows,warn}})}))return false;
     const row={brush_date:cd,item,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:oid};
     if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
@@ -220,7 +222,7 @@ function castForm(id,presetOid,waste){
         if(mode.value!=="auto")ah.textContent="";
         else{const it=item.value.trim();
           if(!it)ah.textContent="اكتب الصنف وهيتربط لوحده بالطلبيات المفتوحة لنفس الصنف";
-          else{const qv=parseInt((document.getElementById("m-q")||{}).value)||1,sp=castAutoSplit([{item:it,qty:qv}],orders.filter(x=>x.st==="open").map(x=>({id:x.id,item:x.item,rem:orderProg(x).rem,due:x.due,date:x.od}))).filter(e=>e.order_id);
+          else{const qv=parseInt((document.getElementById("m-q")||{}).value)||1,sp=castAutoSplit([{item:it,qty:qv}],orders.filter(x=>x.st==="open").map(x=>({id:x.id,item:x.item,rem:orderProg(x).rem-pendQ(x.id),due:x.due,date:x.od}))).filter(e=>e.order_id);
             ah.textContent=sp.length?"هيتربط بـ: "+sp.map(e=>oLab(ordOf(e.order_id))).join(" + "):"مفيش طلبية مفتوحة للصنف ده — هيتسجل بدون طلبية"}}
       }
       if(mx)mx.mode();

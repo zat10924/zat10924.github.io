@@ -141,7 +141,7 @@ function draw(){
   box.innerHTML=list.length?list.map(card).join(""):`<div class="empty">${Q?"مفيش نتائج للبحث":tab==="open"?"مفيش طلبيات مفتوحة. اضغط «طلبية جديدة».":"مفيش طلبيات مكتملة."}</div>`;
 }
 function setTab(t){t=t||tab;tab=t;document.getElementById("t-open").className="btn "+(t==="open"?"on":"ghost");document.getElementById("t-done").className="btn "+(t==="done"?"on":"ghost");draw()}
-function openForm(gid){
+function openForm(gid){if(roBlock())return;
   const g=gid?G.find(x=>x.id===gid):null;
   const crow=k=>QS(k)?`<div class="nr"><input class="c" type="hidden" value="الكمية"><input placeholder="الكمية المطلوبة" class="q" type="number" min="1" inputmode="numeric"></div>`:k==="spray"?`<div class="nr"><div class="two"><input placeholder="لون الصنف" class="c" data-kind="color"><input placeholder="لون الرش المطلوب" class="msc" data-kind="color" maxlength="60"></div><input placeholder="الكمية" class="q" type="number" min="1" inputmode="numeric"></div>`:`<div class="two nr"><input placeholder="${SECK[k].lbl}" class="c" data-kind="${k==="deco"?"code":"color"}"><input placeholder="الكمية" class="q" type="number" min="1" inputmode="numeric"></div>`;
   const curK=()=>{const e=document.getElementById("m-sec");return e?e.value:"glaze"};
@@ -212,7 +212,7 @@ async function syncSec(g,closeAll){
     await db.from(SECT[k]).update({status:done?"done":"open"}).eq("id",it.ids[n]);
   }}catch(e){}
 }
-function deliverG(id){
+function deliverG(id){if(roBlock())return;
   const g=G.find(x=>x.id===id);if(!g)return;
   const sh=g.short,secOpen=g.all.some(i=>i.status==="open"),n=g.dvs.length;
   const shHtml=sh.length?`<div class="hint" style="margin:6px 0;color:var(--bad,#b3261e)">فيها عجز ${nf(g.rem)} قطعة، هيتسجّل مع التسليم وبيظهر في التقارير:</div>${sh.map(x=>`<div class="nums" style="font-size:.85rem">• ${SECK[x.k].n} · ${esc(x.item)} (${esc(x.l)}) — عجز <b>${nf(x.n)}</b></div>`).join("")}`:'<div class="hint" style="margin:6px 0">الطلبية مكتملة بالكامل.</div>';
@@ -268,7 +268,7 @@ async function reSync(gid){
   }}catch(e){}
   if(ch)await load();
 }
-async function editItems(id){
+async function editItems(id){if(roBlock())return;
   const g=G.find(x=>x.id===id);if(!g)return;
   const base=new Map();
   for(const k of ["glaze","deco"]){
@@ -345,7 +345,7 @@ async function editItems(id){
     t.textContent=on?"تراجع":(t.classList.contains("rml")?"حذف السطر":"حذف الصنف");
   });
 }
-function increaseG(id){
+function increaseG(id){if(roBlock())return;
   const g=G.find(x=>x.id===id);if(!g)return;
   const items=Object.keys(SECK).flatMap(k=>g.secs[k].map(it=>({k,it})));
   if(!items.length){openForm(id);return}
@@ -379,7 +379,7 @@ function increaseG(id){
     document.getElementById("m-nws").style.display=x.k==="spray"?"block":"none"};
   iz.onchange=fillLines;lz.onchange=showNew;fillLines();
 }
-function editG(id){
+function editG(id){if(roBlock())return;
   const g=G.find(x=>x.id===id);if(!g)return;
   openModal("تعديل بيانات الطلبية",`<label>الاسم / العميل</label><input id="m-rn" maxlength="80" value="${esc(g.title)}">${ext?`<label>موبايل العميل (اختياري)</label><input id="m-ph" type="tel" inputmode="tel" maxlength="20" dir="ltr" value="${esc(g.phone)}"><label>ملاحظات (اختياري)</label><input id="m-nt" maxlength="300" value="${esc(g.notes)}">`:""}`,async()=>{
     const row={title:document.getElementById("m-rn").value.trim()||null};
@@ -392,7 +392,7 @@ function editG(id){
     await load();toast("تم الحفظ");
   });
 }
-async function delG(id){
+async function delG(id){if(roBlock())return;
   const sg=(G.find(x=>x.id===id)||{secs:{}}).secs,hasC=sg.casting?.length>0||sg.brush?.length>0;
   if(!await ask("حذف الطلبية كلها وكل أصنافها من كل الأقسام؟"+(hasC?" تسجيلات الصب والبرشر المرتبطة بيها هتفضل في سجلاتها كإنتاج بدون طلبية.":"")))return;
   for(const t of["glaze_orders","deco_orders","spray_orders"]){
