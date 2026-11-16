@@ -122,7 +122,7 @@ function dvHtml(o){
 }
 function card(o){
   const ks=Object.keys(SECK).filter(k=>o.secs[k].length);
-  return `<div class="card ogrp"><div class="top"><b>${o.no?"#"+o.no+" · ":""}${esc(o.title||"طلبية بدون اسم")}</b><span>${o.late?'<span class="tag late">متأخرة</span> ':""}<span class="tag ${o.open?"":"ok"}">${o.deliv?"تم التسليم":o.dvs.length&&o.open?"تسليم جزئي":o.open?"مفتوحة":"مكتملة"}</span></span></div>
+  return `<div class="card ogrp oc"><div class="top ohd"><b>${o.no?"#"+o.no+" · ":""}${esc(o.title||"طلبية بدون اسم")}</b><span>${o.late?'<span class="tag late">متأخرة</span> ':""}<span class="tag ${o.open?"":"ok"}">${o.deliv?"تم التسليم":o.dvs.length&&o.open?"تسليم جزئي":o.open?"مفتوحة":"مكتملة"}</span></span></div>
     ${o.phone?`<div class="nums">الموبايل: <a href="tel:${esc(o.phone.replace(/[^\d+]/g,""))}" dir="ltr">${esc(o.phone)}</a>${waNum(o.phone)?` · <a href="https://wa.me/${waNum(o.phone)}" target="_blank" rel="noopener">واتساب</a>`:""}</div>`:""}
     ${o.notes?`<div class="hint" style="margin:2px 0 6px">${esc(o.notes)}</div>`:""}
     <div class="nums">${o.due?`التسليم: <b>${fmtD(o.due)}</b> · `:""}تاريخ الطلبية: <b>${fmtD(o.date)}</b></div>

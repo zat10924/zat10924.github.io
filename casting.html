@@ -250,11 +250,11 @@ function drawOrders(){
   const isOpen=o=>o.st==="open"&&orderProg(o).rem>0,list=orders.filter(o=>(oFilter==="open")===isOpen(o));
   el.innerHTML=list.length?list.map(o=>{
     const p=orderProg(o),pc=Math.min(100,Math.round(p.done/o.req*100));
-    return `<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(oLab(o))}</b><span class="nums">${pc}%</span></div>
-    <div style="height:8px;border-radius:6px;background:rgba(128,128,128,.25);margin:8px 0;overflow:hidden"><div style="height:100%;width:${pc}%;background:var(--ok)"></div></div>
-    <div class="nums">مطلوب ${nf(o.req)} · اتعمل ${nf(p.done)} · متبقي ${nf(p.rem)}${p.done>o.req?" · زيادة "+nf(p.done-o.req):""}${o.due?" · التسليم "+fmtD(o.due):""}</div>
-    ${o.n?`<div class="nums" style="margin-top:4px">${esc(o.n)}</div>`:""}
-    <div class="row noprint" style="margin-top:10px">${isOpen(o)?`<button class="btn sm" onclick="castForm(0,${o.id})">سجّل إنتاج</button>`:""}</div></div>`}).join("")
+    return `<div class="card oc"><div class="top ohd"><b>${esc(oLab(o))}</b><span><span class="tag ${isOpen(o)?"":"ok"}">${isOpen(o)?"مفتوحة":"مكتملة"}</span></span></div>
+    <div class="ometa">${o.due?`<div class="nums">التسليم: <b>${fmtD(o.due)}</b></div>`:""}${o.n?`<div class="nums">${esc(o.n)}</div>`:""}</div>
+    <div class="osub"><div class="line ${p.rem===0?"full":""}">${qtyBox(o.req,p.done,p.rem,p.done>o.req?["زيادة",nf(p.done-o.req)]:null)}
+    <div class="bar"><i style="width:${pc}%"></i></div>
+    <div class="row noprint" style="margin-top:4px">${isOpen(o)?`<button class="btn sm" onclick="castForm(0,${o.id})">سجّل إنتاج</button>`:""}</div></div></div></div>`}).join("")
     :'<div class="empty">'+(oFilter==="open"?"مفيش طلبيات صب مفتوحة. الطلبيات بتتوزّع على الصب من صفحة الطلبيات.":"مفيش طلبيات مكتملة")+'</div>';
 }
 function exportCsv(){

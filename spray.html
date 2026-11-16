@@ -72,19 +72,16 @@ function renderOrders(){
   if(!list.length){box.innerHTML=`<div class="empty">${Q?"مفيش نتائج للبحث":tab==="open"?"مفيش طلبيات مفتوحة. اضغط «طلبية جديدة».":"مفيش طلبيات مكتملة."}</div>`;return}
   const cardOf=o=>{
     const rem=Math.max(o.qty_required-o.produced,0),pct=Math.min(100,Math.round(o.produced/o.qty_required*100)),done=o.status==="done";
-    return `<div class="card ${done?"done":""}">
-      <div class="top"><b>${esc(o.item)} · ${esc(o.color)}</b><span>${lateOrder(o)?'<span class="tag late">متأخرة</span> ':""}<span class="tag ${done?"ok":""}">${done?"مكتملة":"مفتوحة"}</span></span></div>
-      ${o.spray_color?`<div class="nums">لون الرش المطلوب: <b>${esc(o.spray_color)}</b></div>`:""}
-      <div class="nums">${dueTag(o)}${o.postponed_count?` <span class="tag">اتأجلت ${o.postponed_count} مرة</span>`:""}</div>
-      <div class="nums">تاريخ الطلبية: <b>${fmtD(o.order_date)}</b>${done?"":` · ${ageTxt(o.order_date)}`}</div>
+    return `<div class="card oc ${done?"done":""}">
+      <div class="top ohd"><b>${esc(o.item)} · ${esc(o.color)}</b><span>${lateOrder(o)?'<span class="tag late">متأخرة</span> ':""}<span class="tag ${done?"ok":""}">${done?"مكتملة":"مفتوحة"}</span></span></div>
+      <div class="ometa"><div class="nums">تاريخ الطلبية: <b>${fmtD(o.order_date)}</b>${done?"":` · ${ageTxt(o.order_date)}`}</div><div class="nums">${dueTag(o)}${o.postponed_count?` <span class="tag">اتأجلت ${o.postponed_count} مرة</span>`:""}</div>${o.spray_color?`<div class="nums">لون الرش المطلوب: <b>${esc(o.spray_color)}</b></div>`:""}</div>
       ${done?'<div class="banner ibt">'+ui("checkc")+'<span>اكتملت الطلبية</span></div>':""}
-      <div class="nums">مطلوب <b>${o.qty_required}</b> · تم <b>${o.produced}</b> · متبقي <b>${rem}</b></div>
+      <div class="osub"><div class="line ${rem===0?"full":""}">${qtyBox(o.qty_required,o.produced,rem)}
       <div class="bar"><i style="width:${pct}%"></i></div>
       ${logHtml(o.id)}
-      <div class="row">
-        ${rem>0?`<button class="btn sm" onclick="produce(${o.id})">تسجيل إنتاج</button>`:""}
+      <div class="row" style="margin-top:4px">${rem>0?`<button class="btn sm" onclick="produce(${o.id})">تسجيل إنتاج</button>`:""}<button class="btn ghost sm" onclick="edit(${o.id})">تعديل / سجل</button></div></div></div>
+      <div class="row oact">
         <button class="btn ghost sm" onclick="increase(${o.id})">زيادة الطلبية</button>
-        <button class="btn ghost sm" onclick="edit(${o.id})">تعديل / سجل</button>
         ${done?"":`<button class="btn ghost sm" onclick="postpone(${o.id})">تأجيل</button>`}<button class="btn ghost sm" onclick="delOrder(${o.id})">حذف الطلبية</button>
       </div></div>`;
   };

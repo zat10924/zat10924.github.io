@@ -76,7 +76,8 @@ const SUMMARY={
   "spray.html":async()=>{const[o,a,b]=await Promise.all([openCount("spray_status"),todayQty("spray_production","prod_date"),freeTodayQty("spray")]);return[o,"طلبية مفتوحة",a+b]},
   "repair.html":async()=>{const q=await todayQty("repair_log","repair_date");return[q,"تصليح النهارده",q,true]},
   "casting.html":async()=>{const q=await todayQty("casting_log","casting_date");try{const o=await openCount("casting_orders");return[o,"طلبية مفتوحة",q]}catch(e){return[q,"صب النهارده",q,true]}},
-"brush.html":async()=>{const q=await todayQty("brush_log","brush_date");try{const o=await openCount("brush_orders");return[o,"طلبية مفتوحة",q]}catch(e){return[q,"برشر النهارده",q,true]}}
+"brush.html":async()=>{const q=await todayQty("brush_log","brush_date");try{const o=await openCount("brush_orders");return[o,"طلبية مفتوحة",q]}catch(e){return[q,"برشر النهارده",q,true]}},
+  "fire.html":async()=>{const r=await db.from("firing_operations").select("id",{count:"exact",head:true}).eq("status","in_kiln");if(r.error)throw r.error;return[r.count,"عربية داخل الفرن",0,true,true]}
 };
 // تنبيه الطلبيات المتأخرة (حسب تاريخ التسليم، أو أكتر من 14 يوم من غير تسليم)
 async function lateAlert(){

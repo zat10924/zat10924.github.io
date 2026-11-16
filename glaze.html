@@ -117,21 +117,19 @@ function renderOrders(){
   const cardOf=o=>{
     const ls=lines.filter(x=>x.order_id===o.id);
     const done=o.status==="done";
-    return `<div class="card ${done?"done":""}">
-      <div class="top"><b>${esc(o.item)}</b><span>${lateOrder(o)?'<span class="tag late">متأخرة</span> ':""}<span class="tag ${done?"ok":""}">${done?"مكتملة":"مفتوحة"}</span></span></div>
-      <div class="nums">${dueTag(o)}${o.postponed_count?` <span class="tag">اتأجلت ${o.postponed_count} مرة</span>`:""}</div>
-      <div class="nums">تاريخ الطلبية: <b>${fmtD(o.order_date)}</b>${done?"":` · ${ageTxt(o.order_date)}`}</div>
+    return `<div class="card oc ${done?"done":""}">
+      <div class="top ohd"><b>${esc(o.item)}</b><span>${lateOrder(o)?'<span class="tag late">متأخرة</span> ':""}<span class="tag ${done?"ok":""}">${done?"مكتملة":"مفتوحة"}</span></span></div>
+      <div class="ometa"><div class="nums">تاريخ الطلبية: <b>${fmtD(o.order_date)}</b>${done?"":` · ${ageTxt(o.order_date)}`}</div><div class="nums">${dueTag(o)}${o.postponed_count?` <span class="tag">اتأجلت ${o.postponed_count} مرة</span>`:""}</div></div>
       ${done?'<div class="banner ibt">'+ui("checkc")+'<span>اكتملت الطلبية</span></div>':""}
-      ${ls.map(x=>{
+      <div class="osub">${ls.map(x=>{
         const rem=Math.max(x.total_required-x.produced,0),pct=Math.min(100,Math.round(x.produced/x.total_required*100));
         return `<div class="line ${rem===0?"full":""}">
-          <div class="r"><b>${esc(x.color)}</b>
-          <span class="nums">مطلوب <b>${x.total_required}</b> · تم <b>${x.produced}</b> · متبقي <b>${rem}</b></span></div>
+          <div class="r"><b>${esc(x.color)}</b></div>${qtyBox(x.total_required,x.produced,rem)}
           <div class="bar"><i style="width:${pct}%"></i></div>
           ${logHtml(x.id)}
           <div class="row" style="margin-top:4px">${rem>0?`<button class="btn sm" onclick="produce(${x.id})">تسجيل إنتاج</button>`:""}<button class="btn ghost sm" onclick="lineDetails(${x.id})">تعديل / سجل</button></div>
-        </div>`}).join("")}
-      <div class="row">
+        </div>`}).join("")}</div>
+      <div class="row oact">
         <button class="btn ghost sm" onclick="increase(${o.id})">زيادة الطلبية</button>
         <button class="btn ghost sm" onclick="delOrder(${o.id})">حذف الطلبية</button><button class="btn ghost sm" onclick="editOrder(${o.id})">تعديل الطلبية</button>${done?"":`<button class="btn ghost sm" onclick="postpone(${o.id})">تأجيل</button>`}
       </div></div>`;

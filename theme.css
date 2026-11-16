@@ -1496,3 +1496,36 @@ body:not(.sideopen) .side{will-change:auto}
 .pvk{display:inline-block;width:14px!important;height:3px!important;border-radius:2px!important;background:var(--gold)!important;vertical-align:middle}
 .dinfo{margin-top:10px;padding:9px 12px;border-radius:12px;text-align:center;font-size:.82rem;color:var(--ink2);background:color-mix(in srgb,var(--pri) 5%,var(--card));border:1px dashed var(--line)}
 .dinfo.on{text-align:start;color:var(--ink);border:1.5px solid var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--card));animation:cbIn .18s var(--ease) both}
+
+/* ===== توحيد عنوان الطلبية في كل الأقسام ===== */
+.card.oc{padding:0;overflow:hidden;margin-bottom:18px;border-color:color-mix(in srgb,var(--pri) 30%,var(--line));background:var(--card)}
+.card.oc>.top.ohd{margin:0;padding:13px 14px;background:var(--g-pri);border-bottom:2px solid var(--gold);align-items:flex-start;gap:12px;flex-wrap:nowrap}
+.card.oc>.top.ohd>b{flex:1 1 auto;min-width:0;color:#fff;font-size:1.12rem;font-weight:800;line-height:1.5;overflow-wrap:anywhere;text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.card.oc>.top.ohd>span{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.card.oc>.top.ohd .tag{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.4);font-weight:800;padding:3px 12px;white-space:nowrap}
+.card.oc>.top.ohd .tag.ok{background:var(--ok);border-color:transparent}
+.card.oc>.top.ohd .tag.late{background:var(--warn);border-color:transparent}
+.card.oc>*:not(.top):not(.card):not(.osub):not(.ometa):not(.banner){margin-inline:14px}
+.card.oc>.ometa{display:flex;flex-wrap:wrap;gap:4px 16px;padding:10px 14px 2px}
+.card.oc>.ometa .nums{margin:0}
+.card.oc>.banner{margin:8px 12px}
+.card.oc>.osub{margin:10px 12px;padding:4px 12px 8px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--bg) 70%,var(--card))}
+.card.oc>.osub>.line:first-child{border-top:0}
+.card.oc>.oact{margin-top:6px;margin-bottom:12px}
+.card.oc>.osub .line .r{margin-bottom:2px}
+.card.oc>.osub .line .r b{font-size:1rem}
+.qb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:6px 0 4px}
+.qb span{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:5px 4px;text-align:center;line-height:1.3}
+.qb small{display:block;font-size:.72rem;color:var(--ink2,var(--mute))}
+.qb b{font-size:1.08rem}
+.qb .dn b{color:var(--ok)}.qb .rm b{color:var(--pri)}
+.qb .ex{grid-column:1/-1}
+.qb:has(.ex){grid-template-columns:repeat(4,minmax(0,1fr))}.qb:has(.ex) .ex{grid-column:auto}
+/* الطلبية المجمّعة: الأصناف جواها كروت فرعية بعنوان أخف عشان ما يتداخلوش مع عنوان المجموعة */
+.card.ogrp.oc>.card.oc{margin:10px 12px;border-radius:12px;box-shadow:none;animation:none}
+.card.ogrp.oc>.card.oc>.top.ohd{background:color-mix(in srgb,var(--pri) 11%,var(--card));border-bottom:1px solid var(--line)}
+.card.ogrp.oc>.card.oc>.top.ohd>b{color:var(--ink);text-shadow:none;font-size:1.02rem}
+.card.ogrp.oc>.card.oc>.top.ohd .tag{background:color-mix(in srgb,var(--ink2) 13%,var(--card));color:var(--ink2);border-color:color-mix(in srgb,var(--ink2) 22%,transparent)}
+.card.ogrp.oc>.card.oc>.top.ohd .tag.ok{background:var(--ok);color:#fff;border-color:transparent}
+.card.ogrp.oc>.card.oc>.top.ohd .tag.late{background:var(--warn);color:#fff;border-color:transparent}
+@media print{.card.oc>.top.ohd{background:#fff!important;border-bottom:2px solid #000}.card.oc>.top.ohd>b{color:#000!important;text-shadow:none}}
