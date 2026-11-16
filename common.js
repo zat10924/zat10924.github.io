@@ -1178,7 +1178,14 @@ function cbSheet(inp){
   document.body.appendChild(o);
   const L=o.querySelector("#spl"),F=o.querySelector("#spf"),Q=o.querySelector("#spq");
   Q.value=inp.value&&cbOpts(inp).some(x=>x[0]===inp.value.trim())?"":inp.value;
-  const close=()=>{o.remove();document.removeEventListener("keydown",kd,true)};
+  // الكيبورد: القائمة بتتظبط على المساحة الظاهرة فعلًا (فوق الكيبورد) عشان ما تستخباش تحته
+  const vv=window.visualViewport,S=o.querySelector(".sps");
+  const fit=()=>{if(!vv||!o.isConnected)return;
+    const kb=vv.height<Math.max(innerHeight,document.documentElement.clientHeight)*0.85;
+    o.style.inset="auto";o.style.left="0";o.style.right="0";o.style.top=vv.offsetTop+"px";o.style.height=vv.height+"px";
+    S.style.maxHeight=kb?Math.max(200,vv.height-10)+"px":"";};
+  if(vv){vv.addEventListener("resize",fit);vv.addEventListener("scroll",fit);fit();[120,300,600].forEach(t=>setTimeout(fit,t))}
+  const close=()=>{if(vv){vv.removeEventListener("resize",fit);vv.removeEventListener("scroll",fit)}o.remove();document.removeEventListener("keydown",kd,true)};
   const kd=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};document.addEventListener("keydown",kd,true);
   const pick=v=>{close();cbPick(inp,v)};
   const render=()=>{
@@ -1194,7 +1201,8 @@ function cbSheet(inp){
   render();Q.oninput=render;
   Q.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const b=L.querySelector(".spo-i");if(b)pick(b.dataset.v)}};
   const t0=Date.now();o.addEventListener("click",e=>{if(Date.now()-t0<450){e.stopPropagation();return} /* نفس الضغطة اللي فتحت القائمة ما تقفلهاش ولا تختار منها */ if(e.target===o)return close();const b=e.target.closest(".spo-i");if(b&&b.dataset.v!=null)pick(b.dataset.v)});
-  if(cbOpts(inp).length>8||!cbOpts(inp).length)Q.focus();
+  if(cbOpts(inp).length>8||!cbOpts(inp).length)Q.focus({preventScroll:true});
+  Q.addEventListener("focus",()=>{[100,300,600].forEach(t=>setTimeout(()=>{fit();window.scrollTo(window.scrollX,window.scrollY)},t))});
 }
 function enhanceCombo(inp){
   if(!inp||inp.dataset.cb||inp.tagName!=="INPUT"||inp.type==="hidden")return;
