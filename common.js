@@ -281,7 +281,7 @@ const SUBS={
  "casting.html":[["سجل الصب","log"],["تقارير القسم","prod"]],
  "brush.html":[["سجل البرشر","log"],["تقارير القسم","prod"]],
  "finish.html":[["سجل الفنش","log"],["تقارير القسم","prod"]],
- "fire.html":[["لوحة التحكم","dash"],["حريق البسكوت","bf"],["حريق الجليز","gf"],["شحن عربيات البسكوت","bl"],["شحن عربيات الجليز","gl"],["الأفران","kil"],["عمليات جارية","run"],["عمليات مكتملة","dn"],["سجل العمليات","log"],["التقارير والطباعة","prt"],["تقارير القسم","prod"],["سجل المراجعة","aud"]],
+ "fire.html":[["لوحة التحكم","dash","الرئيسية"],["حريق البسكوت","bf","الحريق"],["حريق الجليز","gf","الحريق"],["عمليات جارية","run","الحريق"],["عمليات مكتملة","dn","الحريق"],["شحن عربيات البسكوت","bl","الشحن"],["شحن عربيات الجليز","gl","الشحن"],["الأفران","kil","الأفران"],["سجل العمليات","log","السجلات"],["التقارير والطباعة","prt","السجلات"],["تقارير القسم","prod","السجلات"],["سجل المراجعة","aud","السجلات"]],
  "orders.html":[["الطلبيات المفتوحة","open"],["الطلبيات المكتملة","done"]],
  "reports.html":[["التقرير اليومي","daily"],["تقرير الطلبيات","orders"],["التقارير العامة","general"]]};
 const ROLE_AR={admin:"مدير",owner:"صاحب المصنع",manager:"مسؤول قسم",worker:"مسجّل إنتاج"};
@@ -294,7 +294,15 @@ function renderNav(active){
   const app=typeof APP!=="undefined"?APP:"إدارة الأقسام";
   const h=document.createElement("header");h.className="topbar";
   h.innerHTML=`<button class="iconbtn lbl" id="mn" aria-label="القائمة">${MENU}<span>القائمة</span></button><span class="brand"><img src="icon.svg" alt="MAS"><span class="bt"><b>MAS</b><small>الماس للخزف والصيني</small></span></span><span class="sp"></span><button class="iconbtn lbl" id="rf" aria-label="تحديث">${ico("refresh")}<span>تحديث</span></button><span class="tbw"><button ${avAttr(ME.avatar,"avatar")} id="av" aria-label="حسابي" aria-haspopup="true">${avText(ME.avatar,initialOf())}</button><small>حسابي</small></span>`;
-  const sg=s=>`<div class="sg" style="--c:${s[3]}"><a class="sh ${s[0]===active?"on":""}" href="${s[0]}">${ico(s[2])}<span>${s[1]}</span></a></div>`;
+  const ddSub=s=>{
+    const on=s[0]===active,list=subsOf(s[0]);
+    if(!list.length)return"";
+    let last="",links="";
+    list.forEach(x=>{const g=x[2]||"";if(g&&g!==last&&g!=="الرئيسية"){links+=`<div class="sgl">${g}</div>`}last=g;links+=`<a href="${s[0]}#${x[1]}" data-h="${x[1]}">${x[0]}</a>`});
+    return `<div class="sg dd${on?" cur open":""}" style="--c:${s[3]}"><button type="button" class="sh${on?" on":""} ddt" aria-expanded="${on}">${ico(s[2])}<span>${s[1]}</span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="sub">${links}</div></div>`;
+  };
+  const sg0=s=>`<div class="sg" style="--c:${s[3]}"><a class="sh ${s[0]===active?"on":""}" href="${s[0]}">${ico(s[2])}<span>${s[1]}</span></a></div>`;
+  const sg=s=>s[0]==="fire.html"&&subsOf("fire.html").length?ddSub(s):sg0(s);
   const ddOrders=()=>{
     const on=active===ORDERS[0];
     const links=SUBS["orders.html"].map(x=>`<a href="orders.html#${x[1]}" data-h="${x[1]}">${x[0]}</a>`).join("")+'<a href="reports.html#orders">تقرير الطلبيات</a>';
@@ -319,7 +327,7 @@ function renderNav(active){
   <div class="side-foot"><a class="sh ${active===PROFILE[0]?"on":""}" href="profile.html" style="--c:var(--pri)">${ico("user")}<span>ملفي الشخصي</span></a><a class="sh ${active===SETTINGS[0]?"on":""}" href="settings.html" style="--c:var(--pri)">${ico("cog")}<span>الإعدادات</span></a><button class="sh" id="th"></button><button class="sh" id="out">${ico("out")}<span>تسجيل الخروج</span></button><div class="ver" title="تاريخ الإصدار ${APP_BUILD}">الإصدار ${APP_VERSION}</div></div>`;
   const scrim=document.createElement("div");scrim.className="scrim";scrim.id="scrim";
   document.body.prepend(h);document.body.appendChild(side);document.body.appendChild(scrim);
-  const open=v=>{document.body.classList.toggle("sideopen",v);const m=h.querySelector("#mn");m&&m.setAttribute("aria-expanded",v?"true":"false")};
+  const open=v=>{document.body.classList.toggle("sideopen",v);if(v)setTimeout(()=>{try{const c=side.querySelector(".sg.cur");c&&c.scrollIntoView({block:"center"})}catch(e){}},80);const m=h.querySelector("#mn");m&&m.setAttribute("aria-expanded",v?"true":"false")};
   const mnB=h.querySelector("#mn"),wide=()=>matchMedia("(min-width:1200px)").matches;
   try{if(localStorage.getItem("navhide")==="1")document.body.classList.add("navhide")}catch(e){}
   const syncMn=()=>mnB.setAttribute("aria-expanded",String(wide()?!document.body.classList.contains("navhide"):document.body.classList.contains("sideopen")));
@@ -1886,3 +1894,16 @@ const DT=(()=>{
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start();
   return{enhance,fmt,AR,nowLocal,MON,DAYN};
 })();
+
+/* شريط سفلي مشترك: Bar.mount([{k,label,svg,on,fab,hide}], k=>{...}) */
+window.Bar={
+  cb:null,
+  mount(items,cb){
+    let el=document.getElementById("pbar");
+    if(!el){el=document.createElement("nav");el.id="pbar";el.className="noprint";el.setAttribute("aria-label","تنقل سريع");document.body.appendChild(el);
+      el.addEventListener("click",e=>{const b=e.target.closest("button[data-k]");if(b&&Bar.cb)Bar.cb(b.dataset.k)})}
+    Bar.cb=cb;const a=items.filter(x=>x&&!x.hide);
+    el.innerHTML=a.map(x=>`<button type="button" data-k="${x.k}" class="${x.fab?"fabc":""}${x.on?" on":""}" aria-label="${x.label}">${x.svg}${x.fab?"":`<span>${x.label}</span>`}</button>`).join("");
+    document.body.classList.toggle("hasbar",a.length>0);
+  }
+};

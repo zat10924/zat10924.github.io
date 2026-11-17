@@ -555,3 +555,23 @@ body.ro #freeBtn,body.ro #wasteBtn,body.ro #mbtn,body.ro #newOrder,body.ro #newW
 body.ro [onclick^="produce("],body.ro [onclick^="repForm("],body.ro [onclick^="openForm("],body.ro [onclick^="increaseG("],body.ro [onclick^="editItems("],
 body.ro [onclick^="deliverG("],body.ro [onclick^="editG("],body.ro [onclick^="delG("],body.ro [onclick^="editOrder("],body.ro [onclick^="delOrder("],
 body.ro [onclick^="edit("],body.ro [onclick^="del("],body.ro [onclick^="form("]{display:none!important}
+
+/* قائمة الحريق الجانبية: عناوين المجموعات داخل القائمة المنسدلة */
+.side .sub .sgl{padding:10px 12px 3px;font-size:.74rem;font-weight:700;color:var(--mute);opacity:.85;letter-spacing:.2px}
+.side .sub .sgl:first-child{padding-top:4px}
+
+/* ===== شريط سفلي مشترك (الحريق + تسجيل الإنتاج) بزر مركزي ===== */
+#pbar{display:none}
+@media(max-width:899px){
+ #pbar{display:flex;align-items:flex-end;justify-content:center;gap:2px;position:fixed;inset-inline:0;bottom:0;z-index:30;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line,#0002);box-shadow:0 -6px 22px rgba(0,0,0,.14)}
+ #pbar button{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:50px;margin:0;padding:5px 2px;border:0;border-radius:14px;background:transparent;color:var(--mute,#777);font:inherit;font-size:.72rem;font-weight:600;cursor:pointer;box-shadow:none}
+ #pbar button span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ #pbar button svg{width:23px;height:23px;flex:none;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+ #pbar button.on{color:var(--pri,#7a2438);font-weight:700;background:color-mix(in srgb,var(--pri,#7a2438) 12%,transparent)}
+ #pbar button.fabc{flex:0 0 62px;align-self:center;width:58px;height:58px;min-height:0;margin-top:-30px;padding:0;border-radius:50%;background:linear-gradient(135deg,var(--pri,#7a2438),#421B24);color:#fff;border:3px solid var(--card);box-shadow:0 8px 20px rgba(66,27,36,.45)}
+ #pbar button.fabc svg{width:28px;height:28px;stroke-width:2.2}
+ #pbar button.fabc:active{transform:scale(.94)}
+ body.hasbar .wrap{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+}
+@media print{#pbar{display:none!important}}
+@media(max-width:899px){body.hasbar .prodact{display:none!important}}

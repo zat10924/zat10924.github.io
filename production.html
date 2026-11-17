@@ -129,12 +129,27 @@ function draw(){
       <div class="bar"><i style="width:${p}%"></i></div><div class="nums">تم <b>${nf(r.done)}</b> من <b>${nf(r.req)}</b> · متبقي <b>${nf(rem)}</b></div>${r.tsc?`<div class="nums">لون الرش المطلوب: <b>${esc(r.tsc)}</b></div>`:""}</div>`}).join(""):`<div class="empty">${q?"مفيش نتائج":"مفيش بنود مفتوحة"}</div>`;
   document.querySelectorAll(".pr").forEach(e=>e.onclick=()=>pickRow(rows.find(r=>String(r.id)===e.dataset.id),e));
   updBar();
-  wasteBtn.hidden=sec!=="glaze"&&!CAST[sec];mbtn.parentElement.hidden=!!CAST[sec];
+  wasteBtn.hidden=sec!=="glaze"&&!CAST[sec];mbtn.parentElement.hidden=!!CAST[sec];pbar();
   if(stale)document.getElementById("list").insertAdjacentHTML("afterbegin",`<div class="card" style="border-color:var(--warn)"><b class="ibt">${ui("wifioff")}لا يوجد اتصال</b><div class="nums">بيانات محفوظة من آخر اتصال (${new Date(stale).toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"})}). تسجيلاتك هتتحفظ وتتبعت لما النت يرجع.</div></div>`);
   const ce=!stale,cd=can("delete")&&!stale,lockedNote=!stale&&!can("edit")&&can("editown")&&dayClosed(D);
   document.getElementById("logh").textContent=D===today()?"تسجيلات النهارده":"تسجيلات يوم "+fmtD(D);
   document.getElementById("logd").value=D;
   document.getElementById("today").innerHTML=(lockedNote&&tod.length?`<div class="hint" style="margin:0 0 8px">التعديل مقفول — اليوم ده خلص. تقدر تعدّل تسجيلاتك في نفس يوم التسجيل بس.</div>`:"")+(tod.length?`<div class="card">${tod.map((e,i)=>`<div class="line fe"><span>${esc(e.txt)}${e.worker?` <span class="nums">· ${esc(e.worker)}</span>`:""}</span><span style="display:flex;align-items:center;gap:6px"><b${(e.k==="waste"||e.isw)?' style="color:var(--bad,#c0392b)"':""}>${nf(e.isw?e.scrap:e.qty)}</b>${e.k&&!e.pend&&ce&&canEditEntry(e)?`<button class="btn ghost sm" type="button" onclick="editEnt(${i})">تعديل</button>`:""}${e.k&&!e.pend&&cd?`<button class="btn ghost sm" type="button" onclick="delEntry(${i})">حذف</button>`:""}</span></div>`).join("")}</div>`:`<div class="empty">${D===today()?"لسه مفيش تسجيل النهارده":"مفيش تسجيل في اليوم ده"}</div>`);
+}
+
+/* الشريط السفلي: اليوم | ➕ إنتاج بدون طلبية | هالك */
+const _S=h=>`<svg viewBox="0 0 24 24" aria-hidden="true">${h}</svg>`;
+function pbar(){
+  if(!allowed.length){Bar.mount([]);return}
+  Bar.mount([
+    {k:"today",label:"تسجيلات اليوم",svg:_S('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>')},
+    {k:"+",fab:true,label:"إنتاج بدون طلبية",svg:_S('<path d="M12 5v14M5 12h14"/>')},
+    {k:"waste",label:"تسجيل هالك",hide:wasteBtn.hidden,svg:_S('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>')}
+  ],k=>{
+    if(k==="+")return freeBtn.click();
+    if(k==="waste")return wasteBtn.click();
+    const t=document.getElementById("logh");if(t)t.scrollIntoView({behavior:"smooth",block:"start"});
+  });
 }
 // ===== تحديد متعدد: تسجيل إنتاج أكتر من بند في مرة واحدة =====
 function updBar(){

@@ -96,16 +96,13 @@
 .rpv-fr{flex:1;width:100%;border:0;background:#e9e9ec}
 
 /* ===== 4.6: تبويبات، لوحة، تقارير ===== */
-#ftabs{display:block;margin:8px 0;padding:8px;background:var(--card);border:1px solid var(--line,#0002);border-radius:14px}
-#ftabs .ftop{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-#ftabs .ftop button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:58px;padding:6px 2px;border-radius:14px;font:inherit;font-size:12.5px;font-weight:700;line-height:1.2;text-align:center;cursor:pointer;border:1px solid var(--line,#0002);background:transparent;color:var(--ink2,inherit)}
-#ftabs .ftop button .ui{width:22px;height:22px}
-#ftabs .ftop button.on{background:var(--pri,#7a2438);color:var(--on-pri,#fff);border-color:transparent}
-#ftabs .fsub{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-#ftabs .fsub button{flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 12px;border-radius:999px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;border:1px solid var(--line,#0002);background:transparent;color:var(--ink2,inherit)}
-#ftabs .fsub button .ui{width:17px;height:17px}
-#ftabs .fsub button.on{background:var(--pri,#7a2438);color:var(--on-pri,#fff);border-color:transparent}
-@media(max-width:340px){#ftabs .ftop button{font-size:11.5px}}
+#ftabs{display:block;margin:6px 0 10px;padding:0;background:none;border:0}
+#ftabs:empty{display:none}
+#ftabs .fn-sub{display:flex!important;flex-wrap:nowrap!important;gap:6px;width:100%!important;margin:0;padding:2px 0 4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#ftabs .fn-sub::-webkit-scrollbar{display:none}
+#ftabs .fn-sub>button{flex:0 0 auto!important;display:inline-flex!important;align-items:center;justify-content:center;gap:6px;width:auto!important;height:auto!important;min-height:40px;margin:0;padding:6px 14px;border-radius:999px;font:inherit;font-size:13.5px;font-weight:700;white-space:nowrap;cursor:pointer;border:1px solid var(--line,#0002);background:var(--card);color:var(--ink2,inherit);box-shadow:none}
+#ftabs .fn-sub>button .ui{width:17px;height:17px;flex:none}
+#ftabs .fn-sub>button.on{background:var(--pri,#7a2438);color:var(--on-pri,#fff);border-color:transparent}
 .kpg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px}
 .kp{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 10px;text-align:center;border-top:4px solid var(--kc,var(--pri));cursor:pointer}
 .kp b{display:block;font-size:1.8rem;line-height:1.2;color:var(--kc,var(--pri))}.kp small{display:block;color:var(--mute);font-size:.82rem;line-height:1.4;margin-top:2px}
@@ -122,6 +119,7 @@
 .fc.au-insert{--fcol:var(--ok)}.fc.au-update{--fcol:#B8862B}.fc.au-delete{--fcol:var(--bad)}
 .adt td.old{color:var(--bad)}.adt td.new{color:var(--ok);font-weight:700}
 .rpv-bar .btn{white-space:nowrap}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -183,9 +181,9 @@ function dur(ms){ms=Math.max(0,ms);const m=Math.floor(ms/60000),h=Math.floor(m/6
 function errMsg(e){
   const m=String((e&&e.message)||e||"");
   if(!navigator.onLine||/failed to fetch|networkerror|load failed|network request/i.test(m))return"مفيش إنترنت أو الاتصال ضعيف — ما اتحفظش حاجة، حاول تاني لما النت يرجع";
-  const T=[["kiln kind mismatch","نوع الفرن مش مناسب لنوع العملية — اختار فرن من نفس النوع (بسكوت أو جليز)"],["kiln kind unset","الفرن ده لسه نوعه ماتحددش — المدير لازم يحدد نوعه من «الأفران»"],["kiln kind required","اختار نوع الفرن (بسكوت أو جليز)"],["kiln has history","مينفعش تغيّر نوع فرن عليه عمليات سابقة من نوع تاني"],["load kind mismatch","الشحنة المرتبطة من نوع مختلف عن نوع الحريق"],["kiln busy","الفرن ده فيه عربية داخلة دلوقتي — اختار فرن تاني أو أنهِ الحريق الحالي الأول"],["unknown item","فيه صنف مش مسجّل في الأصناف — اختار الصنف من القائمة"],["load locked","الشحن اتعتمد ومبقاش ينفع يتعدّل أو يتحذف بالطريقة القديمة"],["load not approved","لازم تعتمد شحن العربية الأول"],["load already fired","الشحنة دي مربوطة بعملية حريق تانية"],["kiln not found","الفرن مش موجود أو موقوف"],["entered before loaded","موعد الدخول قبل موعد الشحن"],["future time","الموعد في المستقبل"],["finish before entry","موعد الإطفاء قبل موعد الدخول"],["invalid tubes","عدد الأنابيب غير صحيح"],["not entered","العربية لسه ما دخلتش الفرن"],["operation finished","الحريق خلّص — مينفعش تضيف صور جديدة"],["invalid state","حالة العملية مش بتسمح بالإجراء ده"],["owner read only","صاحب المصنع: عرض فقط"],["not allowed","مش مسموح لك بالعملية دي (تخصصك أو صلاحياتك)"],["kiln name exists","اسم الفرن موجود قبل كده"],["invalid qty","كمية غير صحيحة"],["items required","ضيف صنف واحد على الأقل"],["cart code required","اكتب رقم أو كود العربية"],["worker required","اختار اسم العامل"],["photo already replaced","الصورة دي اتعاد رفعها قبل كده"],["invalid path","مسار الصورة غير صحيح"],["load not found","سجل الشحن مش موجود"],["operation not found","العملية مش موجودة"],["invalid kind","نوع غير صحيح"],["already exists","السجل ده موجود بالفعل (اتسترجع قبل كده)"],["not latest","فيه تعديل أحدث على السجل ده — ارجع من آخر تعديل الأول"],["not restorable","السجل ده مينفعش يتسترجع"],["date too recent","التاريخ لازم يكون قبل النهارده بأسبوع على الأقل"],["date required","اختار التاريخ"],["audit not found","سجل المراجعة مش موجود"]];
+  const T=[["kiln has history","الفرن ده عليه عمليات أو شحنات سابقة — امسحها الأول (أو اوقف الفرن بدل حذفه)"],["kiln kind mismatch","نوع الفرن مش مناسب لنوع العملية — اختار فرن من نفس النوع (بسكوت أو جليز)"],["kiln kind unset","الفرن ده لسه نوعه ماتحددش — المدير لازم يحدد نوعه من «الأفران»"],["kiln kind required","اختار نوع الفرن (بسكوت أو جليز)"],["kiln has history","مينفعش تغيّر نوع فرن عليه عمليات سابقة من نوع تاني"],["load kind mismatch","الشحنة المرتبطة من نوع مختلف عن نوع الحريق"],["kiln busy","الفرن ده فيه عربية داخلة دلوقتي — اختار فرن تاني أو أنهِ الحريق الحالي الأول"],["unknown item","فيه صنف مش مسجّل في الأصناف — اختار الصنف من القائمة"],["load locked","الشحن اتعتمد ومبقاش ينفع يتعدّل أو يتحذف بالطريقة القديمة"],["load not approved","لازم تعتمد شحن العربية الأول"],["load already fired","الشحنة دي مربوطة بعملية حريق تانية"],["kiln not found","الفرن مش موجود أو موقوف"],["entered before loaded","موعد الدخول قبل موعد الشحن"],["future time","الموعد في المستقبل"],["finish before entry","موعد الإطفاء قبل موعد الدخول"],["invalid tubes","عدد الأنابيب غير صحيح"],["not entered","العربية لسه ما دخلتش الفرن"],["operation finished","الحريق خلّص — مينفعش تضيف صور جديدة"],["invalid state","حالة العملية مش بتسمح بالإجراء ده"],["owner read only","صاحب المصنع: عرض فقط"],["not allowed","مش مسموح لك بالعملية دي (تخصصك أو صلاحياتك)"],["kiln name exists","اسم الفرن موجود قبل كده"],["invalid qty","كمية غير صحيحة"],["items required","ضيف صنف واحد على الأقل"],["cart code required","اكتب رقم أو كود العربية"],["worker required","اختار اسم العامل"],["photo already replaced","الصورة دي اتعاد رفعها قبل كده"],["invalid path","مسار الصورة غير صحيح"],["load not found","سجل الشحن مش موجود"],["operation not found","العملية مش موجودة"],["invalid kind","نوع غير صحيح"],["already exists","السجل ده موجود بالفعل (اتسترجع قبل كده)"],["not latest","فيه تعديل أحدث على السجل ده — ارجع من آخر تعديل الأول"],["not restorable","السجل ده مينفعش يتسترجع"],["date too recent","التاريخ لازم يكون قبل النهارده بأسبوع على الأقل"],["date required","اختار التاريخ"],["audit not found","سجل المراجعة مش موجود"]];
   for(const [k,v] of T)if(m.includes(k))return v;
-  if(/firing_ship_save|firing_fire_save|firing_ship_delete|firing_fire_delete|firing_audit|firing_restore|firing_purge_old|firing_operation_items|fire_role|PGRST202/i.test(m))return"التحديث الجديد لقسم الحريق مش متفعّل — شغّل ملف setup_fire_v2.sql من Supabase (SQL Editor ← Run) الأول";
+  if(/firing_ship_save|firing_fire_save|firing_ship_delete|firing_fire_delete|firing_audit|firing_restore|firing_purge_old|firing_kiln_delete|firing_purge_test|firing_operation_items|fire_role|PGRST202/i.test(m))return"التحديث الجديد لقسم الحريق مش متفعّل — شغّل ملف setup_fire_v2.sql من Supabase (SQL Editor ← Run) الأول";
   if(/firing_|schema cache|does not exist|could not find|bucket not found/i.test(m))return"قسم الحريق لسه مش متفعّل — شغّل ملف setup_firing.sql ثم setup_fire_v2.sql من Supabase الأول";
   if(/row-level security|violates|permission denied|unauthorized|jwt/i.test(m))return"مش مسموح لك بالعملية دي (الصلاحيات)";
   return"خطأ: "+m;
@@ -232,7 +230,7 @@ const TI={
   prod:I('<path d="M5 20V10M12 20V4M19 20v-7"/>'),
   aud:I('<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>')
 };
-/* القائمة مجمّعة: أزرار رئيسية (5) + أزرار فرعية للمجموعة المفتوحة */
+/* التنقل الأساسي في القائمة الجانبية (common.js)؛ هنا شريط مختصر لتبويبات المجموعة الحالية فقط */
 const TGROUPS=[
   {id:"home",n:"الرئيسية",ic:"home",t:[["dash","لوحة التحكم","home"]]},
   {id:"fire",n:"الحريق",ic:"fire",t:[["bf","بسكوت","biscuit"],["gf","جليز","glaze"],["run","جارية","run"],["dn","مكتملة","done"]]},
@@ -245,10 +243,34 @@ function drawTabs(){
   const el=document.getElementById("ftabs");
   const gs=TGROUPS.map(g=>({...g,t:g.t.filter(x=>tabOk(x[0]))})).filter(g=>g.t.length);
   const cur=gs.find(g=>g.t.some(x=>x[0]===tab))||gs[0];
-  el.innerHTML=`<div class="ftop">${gs.map(g=>`<button type="button" data-t="${g.t[0][0]}" class="${g===cur?"on":""}" aria-label="${g.n}">${TI[g.ic]}<span>${g.n}</span></button>`).join("")}</div>`
-   +(cur&&cur.t.length>1?`<div class="fsub">${cur.t.map(x=>`<button type="button" data-t="${x[0]}" class="${x[0]===tab?"on":""}">${TI[x[2]]}<span>${x[1]}</span></button>`).join("")}</div>`:"");
+  el.innerHTML=cur&&cur.t.length>1?`<div class="fn-sub">${cur.t.map(x=>`<button type="button" data-t="${x[0]}" class="${x[0]===tab?"on":""}">${TI[x[2]]}<span>${x[1]}</span></button>`).join("")}</div>`:"";
 }
-function setTab(){
+const PLUS_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+const svgOf=h=>h.replace('class="ui" ','');
+/* ➕ المركزي: حسب التبويب الحالي، ولو مش واضح يسأل (بدء حريق / شحن) */
+function plusAct(){
+  const kind=KIND[tab];
+  if(tab==="bf"||tab==="gf"){if(canDo("fire",kind))return fireForm(kind);return toast("مفيش صلاحية بدء حريق","warn")}
+  if(tab==="bl"||tab==="gl"){if(canDo("ship",kind))return shipForm(kind);return toast("مفيش صلاحية شحن","warn")}
+  const acts=[];
+  ["biscuit","glaze"].forEach(k=>{if(canDo("fire",k))acts.push(["newfire",k,"بدء حريق "+KAR[k],FLAME]);});
+  ["biscuit","glaze"].forEach(k=>{if(canDo("ship",k))acts.push(["newship",k,"شحن عربية "+KAR[k],PLUS]);});
+  if(!acts.length)return toast("مفيش عمليات متاحة ليك","warn");
+  if(acts.length===1){const x=acts[0];return x[0]==="newfire"?fireForm(x[1]):shipForm(x[1])}
+  openModal("إضافة جديدة",`<div style="display:grid;gap:8px">${acts.map(x=>`<button type="button" class="btn ${x[0]==="newship"?"ghost":""}" data-a="${x[0]}" data-k="${x[1]}">${x[3]}<span>${x[2]}</span></button>`).join("")}</div>`,closeModal,"إلغاء");
+}
+function drawBar(){
+  const gs=TGROUPS.map(g=>({...g,t:g.t.filter(x=>tabOk(x[0]))})).filter(g=>g.t.length);
+  const cur=gs.find(g=>g.t.some(x=>x[0]===tab));
+  const g=id=>gs.find(x=>x.id===id);
+  const it=(id,label)=>{const x=g(id);return x?{k:x.t[0][0],label:label||x.n,svg:svgOf(TI[x.ic]),on:!!cur&&cur.id===id}:null};
+  const canAdd=!isOwner();
+  Bar.mount([it("home"),it("fire"),canAdd?{k:"+",fab:true,label:"إضافة",svg:PLUS_SVG}:null,it("ship"),it("rec")],k=>{
+    if(k==="+")return plusAct();
+    goTab(k);window.scrollTo(0,0);
+  });
+}
+function setTab(){drawBar();
   drawTabs();
   document.getElementById("fsearch").style.display=["bf","gf","bl","gl","run","dn"].includes(tab)?"block":"none";
   if(loaded)render();
@@ -361,11 +383,11 @@ function kilnsView(){
   const un=K.filter(x=>!x.kind);
   return `<h3 class="fsec"><span>الأفران</span><span class="sp"></span>${sup?`<button class="btn sm noprint" data-a="kadd">${PLUS}<span>إضافة فرن</span></button>`:""}</h3>
   <div class="nums" style="margin-bottom:8px">كل فرن له نوع (بسكوت أو جليز) وبيظهر في اختيارات نوعه بس. الفرن المشغول مينفعش يتوقّف.</div>
-  ${un.length?`<div class="fal">${isSup()?"أفران نوعها غير محدد — اضغط «تعديل» وحدد النوع:":"أفران لسه المدير ما حددش نوعها:"}</div><div class="kgrid">${un.map(kilnCard).join("")}</div>`:""}${grp("biscuit")}${grp("glaze")}`;
+  ${un.length?`<div class="fal">${isSup()?"أفران نوعها غير محدد — اضغط «تعديل» وحدد النوع:":"أفران لسه المدير ما حددش نوعها:"}</div><div class="kgrid">${un.map(kilnCard).join("")}</div>`:""}${grp("biscuit")}${grp("glaze")}${isAdminU()?testPurgeCard():""}`;
 }
 function kilnCard(k){
   const o=kilnBusy(k.id),st=!k.active?"off":o?"busy":"free";
-  return `<div class="kln ${st}"><b>${esc(k.name)}</b><span class="pt kk-${k.kind||"none"}">${k.kind?"فرن "+KAR[k.kind]:"نوعه غير محدد"}</span><div class="nums">${!k.active?"موقوف":o?`مشغول: عربية ${esc(opCart(o)||"—")} · حريق #${o.id}`:"متاح"}${k.note?" · "+esc(k.note):""}</div>${isSup()&&!isOwner()?`<button class="btn ghost sm noprint" data-a="kedit" data-id="${k.id}" style="margin-top:6px">تعديل</button>`:""}${o?`<button class="btn ghost sm noprint" data-a="opview" data-id="${o.id}" style="margin-top:6px">العملية</button>`:""}</div>`;
+  return `<div class="kln ${st}"><b>${esc(k.name)}</b><span class="pt kk-${k.kind||"none"}">${k.kind?"فرن "+KAR[k.kind]:"نوعه غير محدد"}</span><div class="nums">${!k.active?"موقوف":o?`مشغول: عربية ${esc(opCart(o)||"—")} · حريق #${o.id}`:"متاح"}${k.note?" · "+esc(k.note):""}</div>${isSup()&&!isOwner()?`<button class="btn ghost sm noprint" data-a="kedit" data-id="${k.id}" style="margin-top:6px">تعديل</button><button class="btn ghost sm noprint dangerbtn" data-a="kdel" data-id="${k.id}" style="margin-top:6px">حذف</button>`:""}${o?`<button class="btn ghost sm noprint" data-a="opview" data-id="${o.id}" style="margin-top:6px">العملية</button>`:""}</div>`;
 }
 
 /* ---------- نماذج الإدخال ---------- */
@@ -651,6 +673,28 @@ function diffHtml(e){
   return `<table class="ftb adt"><tbody>${rows.join("")}</tbody></table>`;
 }
 const isAdminU=()=>!!ME&&ME.role==="admin"&&!isOwner();
+
+/* ---------- حذف فرن + مسح بيانات التجربة ---------- */
+async function delKiln(id){
+  if(roBlock())return;const k=Kk(id);if(!k)return;
+  if(kilnBusy(id)){toast("الفرن مشغول — أنهِ العملية الأول","warn");return}
+  if(!await ask("حذف الفرن «"+k.name+"» نهائيًا؟ مينفعش لو عليه عمليات أو شحنات سابقة (ساعتها اوقفه بدل ما تحذفه).","نعم، احذف الفرن"))return;
+  try{await rpc("firing_kiln_delete",{p_id:id});await load();toast("تم حذف الفرن")}catch(e){fail_(e)}
+}
+const testPurgeCard=()=>`<div class="card noprint" style="padding:10px 12px;margin-top:14px;border-color:#b3261e55"><b>مسح بيانات التجربة (للمدير فقط)</b><div class="nums" style="margin:4px 0">بيمسح كل عمليات الحريق وشحنات العربيات للنوع المختار، بأي تاريخ وأي حالة. كل سجل بيتسجّل في المراجعة وتقدر تسترجعه (إلا صور العداد).</div><label>النوع</label><select id="tp-k"><option value="biscuit">بسكوت</option><option value="glaze">جليز</option></select><label class="chk" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="tp-kl" style="width:auto;margin:0"><span>احذف أفران النوع ده كمان</span></label><button class="btn ghost dangerbtn" data-a="tpurge" style="margin-top:8px">معاينة ثم مسح</button></div>`;
+async function purgeTest(){
+  if(roBlock())return;if(!isAdminU())return toast("للمدير فقط","warn");
+  const kind=document.getElementById("tp-k").value,kl=document.getElementById("tp-kl").checked;
+  let pv;try{pv=await rpc("firing_purge_test",{p_kind:kind,p_kilns:kl,p_dry:true})}catch(x){return fail_(x)}
+  if(!pv.operations&&!pv.loads&&!pv.kilns){toast("مفيش بيانات "+KAR[kind]+" تتمسح");return}
+  if(!await ask("هيتمسح "+nf(pv.operations)+" عملية حريق و"+nf(pv.loads)+" شحنة"+(kl?" و"+nf(pv.kilns)+" فرن":"")+" من نوع "+KAR[kind]+". صور العداد هتتمسح نهائيًا. متأكد؟","نعم، امسح"))return;
+  try{
+    const r=await rpc("firing_purge_test",{p_kind:kind,p_kilns:kl,p_dry:false});
+    const paths=Array.isArray(r.paths)?r.paths:[];
+    for(let i=0;i<paths.length;i+=100){try{await db.storage.from(BUCKET).remove(paths.slice(i,i+100))}catch(x){}}
+    await load();render();toast("اتمسح "+nf(r.operations)+" عملية و"+nf(r.loads)+" شحنة"+(kl?" و"+nf(r.kilns)+" فرن":""));
+  }catch(x){fail_(x)}
+}
 const purgeCard=()=>`<div class="card noprint" style="padding:10px 12px;margin-top:8px;border-color:#b3261e55"><b>حذف البيانات القديمة (للمدير فقط)</b><div class="nums" style="margin:4px 0">بيحذف الشحنات والعمليات المكتملة اللي قبل التاريخ ده. كل سجل بيتسجّل في المراجعة وتقدر تسترجعه (إلا صور العداد).</div><label>احذف كل اللي قبل تاريخ</label><input type="date" id="pg-d" max="${new Date(Date.now()-7*864e5).toISOString().slice(0,10)}"><button class="btn ghost dangerbtn" data-a="purge" style="margin-top:8px">معاينة ثم حذف</button></div>`;
 async function purgeOld(){
   if(roBlock())return;if(!isAdminU())return toast("للمدير فقط","warn");
@@ -867,7 +911,7 @@ document.addEventListener("click",async e=>{
   const b=e.target.closest("[data-a]");if(!b)return;
   const a=b.dataset.a,id=+b.dataset.id;
   if(a==="newfire"){closeModal();return fireForm(b.dataset.k)}
-  if(a==="newship"){return shipForm(b.dataset.k)}
+  if(a==="newship"){closeModal();return shipForm(b.dataset.k)}
   if(a==="shipedit")return shipForm(null,id);
   if(a==="shipdel")return delShip(id);
   if(a==="shipprt")return printShip(id);
@@ -886,6 +930,8 @@ document.addEventListener("click",async e=>{
   if(a==="prt")return printOp(id);
   if(a==="kedit"){closeModal();return kilnForm(id)}
   if(a==="kadd")return kilnForm(0);
+  if(a==="kdel")return delKiln(id);
+  if(a==="tpurge")return purgeTest();
   if(a==="rprint")return printPeriod(false);
   if(a==="rpdf")return printPeriod(true);
   if(a==="rcsv")return repCsv();
@@ -897,7 +943,7 @@ document.getElementById("ftabs").addEventListener("click",e=>{const b=e.target.c
 document.getElementById("fq").addEventListener("input",e=>{Q=e.target.value;render()});
 setInterval(()=>{if(document.hidden||document.getElementById("ov")||_up)return;load()},60000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!document.getElementById("ov"))load()});
-(async()=>{if(await requireAuth("fire.html")){renderNav("fire.html");drawTabs();load().finally(settle)}})();
+(async()=>{if(await requireAuth("fire.html")){renderNav("fire.html");drawTabs();drawBar();load().finally(settle)}})();
 
 </script>
 <script src="install.js" defer></script>
