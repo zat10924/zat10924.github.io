@@ -126,65 +126,30 @@
   .loginpage::after { display: none !important; }
 }
 
-/* Laptop light-mode surface corrections; dark mode is intentionally untouched. */
-@media (min-width: 1024px) {
-  :root[data-theme="light"] {
-    --bg: #f3f1ed;
-    --card: #fbfaf8;
-    --card2: #f1eee9;
-    --ink: #29272a;
-    --mute: #625d60;
-    --line: #d9d4cd;
-    --pri: #642631;
-    --pri-d: #421b24;
-    --on-pri: #ffffff;
-    --ok: #247348;
-    --warn: #94520d;
-    --bad: #a52a25;
-    --hd1: #642631;
-    --hd2: #421b24;
-    --sh: 0 1px 2px rgba(45,35,30,.045), 0 7px 22px rgba(45,35,30,.055);
-    color-scheme: light;
-  }
-  :root[data-theme="light"] body { background: #f3f1ed; color: #29272a; }
-  :root[data-theme="light"] .side { background: #fbfaf8; color: #29272a; border-color: #d9d4cd; }
-  :root[data-theme="light"] .side .sh { color: #29272a; }
-  :root[data-theme="light"] .side .sh.on { color: #642631; background: rgba(100,38,49,.09); }
-  :root[data-theme="light"] .side .sh svg { color: #642631; }
-  :root[data-theme="light"] .card,
-  :root[data-theme="light"] .kpi,
-  :root[data-theme="light"] .modal,
-  :root[data-theme="light"] .umenu,
-  :root[data-theme="light"] .tabs { color: #29272a; border-color: #d9d4cd; }
-  :root[data-theme="light"] input,
-  :root[data-theme="light"] select,
-  :root[data-theme="light"] textarea { background: #fffdfa; color: #29272a; border-color: #d9d4cd; }
-  :root[data-theme="light"] th { background: #642631; color: #fff; }
-  :root[data-theme="light"] td { color: #29272a; border-color: #d9d4cd; }
+/* MAS Manager 4.8.6 — وضع الأداء الخفيف: إيقاف كل الحركة والمؤثرات على الهاتف والكمبيوتر */
+html,
+html * ,
+html *::before,
+html *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
-@media (min-width: 1024px) and (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg: #f3f1ed; --card: #fbfaf8; --card2: #f1eee9;
-    --ink: #29272a; --mute: #625d60; --line: #d9d4cd;
-    --pri: #642631; --pri-d: #421b24; --on-pri: #fff;
-    --ok: #247348; --warn: #94520d; --bad: #a52a25;
-    --hd1: #642631; --hd2: #421b24;
-    --sh: 0 1px 2px rgba(45,35,30,.045), 0 7px 22px rgba(45,35,30,.055);
-    color-scheme: light;
-  }
-  :root:not([data-theme="dark"]) body { background: #f3f1ed; color: #29272a; }
-  :root:not([data-theme="dark"]) .side { background: #fbfaf8; color: #29272a; border-color: #d9d4cd; }
-  :root:not([data-theme="dark"]) .side .sh { color: #29272a; }
-  :root:not([data-theme="dark"]) .side .sh.on { color: #642631; background: rgba(100,38,49,.09); }
-  :root:not([data-theme="dark"]) .side .sh svg { color: #642631; }
-  :root:not([data-theme="dark"]) .card,
-  :root:not([data-theme="dark"]) .kpi,
-  :root:not([data-theme="dark"]) .modal,
-  :root:not([data-theme="dark"]) .umenu,
-  :root:not([data-theme="dark"]) .tabs { color: #29272a; border-color: #d9d4cd; }
-  :root:not([data-theme="dark"]) input,
-  :root:not([data-theme="dark"]) select,
-  :root:not([data-theme="dark"]) textarea { background: #fffdfa; color: #29272a; border-color: #d9d4cd; }
-  :root:not([data-theme="dark"]) th { background: #642631; color: #fff; }
-  :root:not([data-theme="dark"]) td { color: #29272a; border-color: #d9d4cd; }
+html { scroll-behavior: auto !important; }
+body { background-attachment: scroll !important; }
+/* إزالة الزخارف المتحركة واللمعان مع الإبقاء على المحتوى والوظائف */
+#splash .gears,
+#splash::after,
+.topbar::after,
+.loginpage::after,
+.logoframe::after,
+.lbg,
+.tile::before {
+  animation: none !important;
+  display: none !important;
 }
+#splash::after { animation: none !important; }
+.sk { animation: none !important; background: var(--line) !important; }
+*, *::before, *::after { will-change: auto !important; }

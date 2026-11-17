@@ -981,7 +981,7 @@ async function addCat(kind,name){
 }
 // true = كمّل الحفظ | false = ارجع للتعديل
 async function checkNames(root){
-  const els=[...root.querySelectorAll(NAME_SEL)].filter(el=>el.type!=="hidden");if(!els.length)return true; // الخانات المخفية (زي «الكمية» في طلبية الصب) مش أسماء ولا ألوان
+  const els=[...root.querySelectorAll(NAME_SEL)].filter(el=>el.type!=="hidden"&&el.dataset.skipCatalog!=="true");if(!els.length)return true; // الخانات المخفية (زي «الكمية» في طلبية الصب) مش أسماء ولا ألوان
   await catReady();
   const lock=itemsLocked();let cache=null;
   if(!CAT){ // مفيش اتصال بالكتالوج: مسجّل الإنتاج بيتراجع على آخر نسخة محفوظة من الأصناف
@@ -1101,30 +1101,20 @@ document.addEventListener("input",e=>{const x=e.target;if(!x||x.id!=="m-wx")retu
     if(this.id==="m-w"&&v&&![...this.options].some(o=>o.value===v)){const o=document.createElement("option");o.value=v;o.textContent=v;this.appendChild(o)}
     d.set.call(this,v);if(this._spr)this._spr()}});})();
 // ===== البرشر: عدد القوالب وعدد الصبات (اختياريين) — القيم الافتراضية بتيجي من الصنف في الأصناف =====
-// ===== تسجيل أذكى: بيفتكر آخر عامل وصنف وكمية لكل قسم، وأزرار كميات سريعة =====
-const smartGet=k=>{try{return JSON.parse(localStorage.getItem("smart_"+k))||{}}catch(e){return{}}};
-const smartSave=(k,o)=>{try{localStorage.setItem("smart_"+k,JSON.stringify({w:o.w||"",i:o.i||"",q:+o.q||0,at:Date.now()}))}catch(e){}};
-function smartFill(k,rec){
-  const q=document.getElementById("m-q");if(!q||q.dataset.sm)return;q.dataset.sm="1";
-  const last=smartGet(k);
-  if(!rec){
-    const w=document.getElementById("m-w"),it=document.getElementById("m-item");
-    if(w&&!w.value&&last.w)w.value=last.w; // القائمة المنسدلة بتضيف الاسم لو مش موجود
-    if(it&&!it.value&&!it.readOnly&&last.i){it.value=last.i;it.dispatchEvent(new Event("input",{bubbles:true}))}
-  }
-  const ch=[...(last.q>0?[[last.q,"آخر كمية "+nf(last.q),0]]:[]),[10,"+10",1],[25,"+25",1],[50,"+50",1],[100,"+100",1]];
+// لا يتم حفظ أو استرجاع آخر عامل/صنف/كمية تلقائيًا؛ كل تسجيل جديد يبدأ فارغًا.
+try{for(const k of Object.keys(localStorage)){if(k.startsWith("smart_")||k==="recent_workers")localStorage.removeItem(k)}}catch(e){}
+// أزرار الكميات السريعة ثابتة ولا تحفظ آخر كمية أو تسترجعها.
+function addQuickQtyButtons(){
+  const q=document.getElementById("m-q");if(!q||q.dataset.quickQty==="1")return;
+  q.dataset.quickQty="1";
   const row=document.createElement("div");row.className="qchips";
-  row.innerHTML=ch.map((c,i)=>`<button type="button" class="chip" data-i="${i}">${c[1]}</button>`).join("")+`<button type="button" class="chip" data-z="1">مسح</button>`;
-  row.onclick=e=>{const b=e.target.closest("button");if(!b)return;
-    if(b.dataset.z){q.value="";}else{const c=ch[+b.dataset.i];q.value=c[2]?(parseInt(q.value)||0)+c[0]:c[0]}
-    q.dispatchEvent(new Event("input",{bubbles:true}))};
+  const vals=[10,25,50,100];
+  row.innerHTML=vals.map(v=>`<button type="button" class="chip" data-add="${v}">+${v}</button>`).join("")+`<button type="button" class="chip" data-clear="1">مسح</button>`;
+  row.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+    if(b.dataset.clear)q.value="";else q.value=(parseInt(q.value,10)||0)+(+b.dataset.add||0);
+    q.dispatchEvent(new Event("input",{bubbles:true}));q.dispatchEvent(new Event("change",{bubbles:true}));
+  });
   q.insertAdjacentElement("afterend",row);
-  // إظهار أن التعبئة المسبقة مجرد اقتراح قابل للمراجعة والتعديل.
-  if(!rec&&(last.w||last.i||last.q>0)){
-    const hint=document.createElement("small");hint.className="smart-fill-hint";
-    hint.textContent="اقتراح من آخر تسجيل لك — راجع البيانات وعدّلها قبل الحفظ.";
-    row.insertAdjacentElement("beforebegin",hint);
-  }
 }
 let BRC=new Map();
 async function brcLoad(){
@@ -1528,8 +1518,6 @@ function spOpts(sel){
   });
   return out.map(([o,g])=>({i:o.index,v:o.value,t:o.textContent.trim(),g,other:o.id==="m-w-other",dis:o.disabled}));
 }
-const spRecent=()=>{try{return JSON.parse(localStorage.getItem("recent_workers")||"[]")}catch(e){return[]}};
-const spSave=n=>{try{localStorage.setItem("recent_workers",JSON.stringify([n,...spRecent().filter(x=>x!==n)].slice(0,6)))}catch(e){}};
 function spSub(name){
   try{const w=WKA.find(x=>x.name===name);if(!w)return"";
     const ks=[w.section,...(Array.isArray(w.sections)?w.sections:[])].filter((k,i,a)=>k&&a.indexOf(k)===i);
@@ -1557,8 +1545,6 @@ function spOpen(sel){
     const hit_=real.filter(x=>!q||norm(x.t).includes(q)||(worker&&norm(spSub(x.v)).includes(q)));
     let h="";
     if(!q)h+=none.map(x=>row(x,"")).join("");
-    if(worker&&!q){const rc=spRecent().map(n=>real.find(x=>x.v===n)).filter(Boolean).slice(0,4);
-      if(rc.length>1||(rc.length&&real.length>rc.length))h+=`<div class="gh">آخر من اخترتهم</div>`+rc.map(x=>row(x,"")).join("")}
     const gs=[...new Set(hit_.map(x=>x.g))];
     gs.forEach(g=>{h+=(g?`<div class="gh">${esc(g)}</div>`:(gs.length>1?'<div class="gh">أخرى</div>':""))+hit_.filter(x=>x.g===g).map(x=>row(x,raw)).join("")});
     if(!hit_.length&&real.length)h+=`<div class="em">مفيش نتائج لـ «${esc(raw)}»</div>`;
@@ -1576,7 +1562,6 @@ function spOpen(sel){
     if(e.target===o)return close();
     const b=e.target.closest(".spo-i");if(!b||b.disabled)return;
     const i=+b.dataset.i;sel.selectedIndex=i;
-    const op=sel.options[i];if(worker&&op&&op.value&&op.id!=="m-w-other")spSave(op.value);
     sel.dispatchEvent(new Event("input",{bubbles:true}));sel.dispatchEvent(new Event("change",{bubbles:true}));
     if(sel._spr)sel._spr();close();try{Snd&&Snd.play("tap")}catch(x){}
   });

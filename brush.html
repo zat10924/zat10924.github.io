@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{const t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <meta name="theme-color" content="#642631">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -17,7 +16,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="theme.css">
-<link rel="stylesheet" href="light-mode.css">
 <link rel="stylesheet" href="desktop.css">
 </head>
 <body>
@@ -172,17 +170,18 @@ function castForm(id,presetOid,waste){if(roBlock())return;
       }
     }
     const cd=lockDate?(rec?rec.d:today()):(document.getElementById("m-d").value||today());
-    // الإصلاح: الهالك الجديد يجب أن يُضاف إلى سجل إنتاج موجود، لا كسجل مستقل بكمية سليمة صفر.
+    // ربط الهالك بإجمالي إنتاج الصنف في نفس اليوم، بغض النظر عن العامل أو الوردية.
+    // يُحفظ الهالك كسجل مستقل مرتبط منطقيًا بالصنف/التاريخ حتى لا ننسبه عشوائيًا لعامل إنتاج آخر.
     if(waste&&!rec){
-      const candidates=rows.filter(r=>!r.isw&&r.d===cd&&r.item===item&&r.sh===sh&&r.w===x.worker);
-      if(candidates.length===0){toast("لا يوجد سجل إنتاج مطابق لهذا العامل والصنف والتاريخ والوردية. سجّل الإنتاج أولًا ثم أضف الهالك.","bad");return false}
-      if(candidates.length>1){toast("يوجد أكثر من سجل إنتاج مطابق. لم يتم الحفظ حتى لا يرتبط الهالك بسجل خاطئ؛ يلزم تحديد سجل الإنتاج المقصود.","bad");return false}
-      const target=candidates[0];
-      if(!canRow(target)){toast("لا تملك صلاحية تعديل سجل الإنتاج الذي تريد ربط الهالك به.","bad");return false}
-      const {data:updated,error:updateError}=await db.from("brush_log").update({scrap:(+target.sc||0)+sc}).eq("id",target.id).select("id");
-      if(updateError){toast(isNet(updateError)?"يلزم الاتصال بالإنترنت لإضافة الهالك إلى سجل الإنتاج بأمان":"تعذر تحديث سجل الإنتاج: "+updateError.message,"bad");return false}
-      if(!updated||!updated.length){toast("لم يتم تحديث سجل الإنتاج؛ تحقق من الصلاحيات ثم حاول مرة أخرى.","bad");return false}
-      await load();toast("تم ربط الهالك بسجل الإنتاج الأصلي");return;
+      const dayRows=rows.filter(r=>!r.isw&&r.d===cd&&norm(r.item)===norm(item));
+      const good=dayRows.reduce((n,r)=>n+(+r.qty||0),0);
+      if(!dayRows.length||good<=0){toast("لا يوجد إنتاج سليم مسجل لهذا الصنف اليوم. سجّل الإنتاج أولًا ثم أضف الهالك.","bad");return false}
+      if(!await reviewSave({title:"راجع الهالك قبل الحفظ",meta:[["التاريخ",fmtD(cd)],["الصنف",item],["إجمالي السليم اليوم",nf(good)],["العامل المسجل للهالك",x.worker]],items:[{title:item,rows:[["إجمالي السليم اليوم",nf(good)],["عدد القطع الهالكة",nf(sc)]]}]}))return false;
+      const wasteRow={brush_date:cd,item,qty:0,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null,order_id:null};
+      const saved=await castInsert(wasteRow,"brush_log","brush");
+      if(saved.queued){try{localStorage.setItem("brush_shift",sh)}catch(e){}toast("الهالك اتحفظ على الجهاز وسيتزامن عند عودة الإنترنت","warn");return}
+      if(saved.error){toast("تعذر حفظ الهالك: "+saved.error.message,"bad");return false}
+      await load();toast("تم ربط الهالك بإجمالي إنتاج الصنف اليوم ("+nf(good)+" سليم)");return;
     }
     const brx=(!waste&&true&&!rec)?(()=>{const b=brcRead(),o={};if(b.molds!=null)o.molds=b.molds;if(b.pours!=null)o.pours=b.pours;return o})():{},exb=e=>{const o={};if(e.molds!=null)o.molds=e.molds;if(e.pours!=null)o.pours=e.pours;return o};
     const ents=!rec?(auto?castAutoSplit([{item,qty:q,...brx},...extra.map(e=>({item:e.item,qty:e.qty,...exb(e)}))],orders.filter(o=>o.st==="open").map(o=>({id:o.id,item:o.item,rem:orderProg(o).rem-pendQ(o.id),due:o.due,date:o.od}))):[{item,qty:q,order_id:oid,...brx},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid,...exb(e)}))]):null;
@@ -199,7 +198,7 @@ function castForm(id,presetOid,waste){if(roBlock())return;
       const linked=ents.filter(e=>e.order_id).length;
       let ok=0,qd=0,err=null;
       let ix=0;for(const en of ents){const r1={...row,...en};ix++;const rr=await castInsert(r1,"brush_log","brush");if(rr.queued)qd++;else if(rr.error){err=rr.error;break}else ok++}
-      try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("brush",{w:x.worker,i:item,q:q});
+      try{localStorage.setItem("cast_shift",sh)}catch(e){}
       if(err){
         const m=BRC_ERR.test(err.message||"")?"شغّل ملف setup_v4_4.sql من Supabase الأول":V2_ERR.test(err.message||"")?"شغّل ملف setup_brush.sql من Supabase الأول":"خطأ: "+err.message;
         if(!ok&&!qd){toast(m,"bad");return false}
@@ -209,21 +208,21 @@ function castForm(id,presetOid,waste){if(roBlock())return;
       toast(qd?"مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع":(auto?(linked?"تم التسجيل وربطه تلقائيًا بالطلبية":"تم التسجيل (مفيش طلبية مفتوحة للصنف ده)"):(ok>1?"تم تسجيل "+ok+" أصناف":"تم التسجيل")),qd?"warn":undefined);return;
     }
     const res=rec?await db.from("brush_log").update(row).eq("id",id):await castInsert(row,"brush_log","brush");
-    if(res.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("brush",{w:x.worker,i:item,q:q});toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
+    if(res.queued){try{localStorage.setItem("cast_shift",sh)}catch(e){}toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
     const error=res.error;
     if(error){toast(BRC_ERR.test(error.message||"")?"شغّل ملف setup_v4_4.sql من Supabase الأول":V2_ERR.test(error.message||"")?"شغّل ملف setup_brush.sql من Supabase الأول":"خطأ: "+error.message);return false}
-    try{localStorage.setItem("cast_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("brush",{w:x.worker,i:item,q:q});
+    try{localStorage.setItem("cast_shift",sh)}catch(e){}
     await load();toast(rec?"تم التعديل":"تم التسجيل");
   });
   setTimeout(()=>{
     const w=document.getElementById("m-w");if(w&&rec)w.value=rec.w;
-    if(!waste){brcWire(rec);smartFill("brush",rec)}
+    if(!waste){brcWire(rec);addQuickQtyButtons();}
     if(waste){ // سليم العامل وهالكه ونسبة الهالك في اليوم
-      const h=document.getElementById("m-wh"),dEl=document.getElementById("m-d"),sEl=document.getElementById("m-scrap");
-      const upd=()=>{const n=w.value.trim();if(!n){h.textContent="";return}
-        const mine=rows.filter(r=>r.w===n&&r.d===dEl.value&&(!rec||r.id!==rec.id)),g=mine.reduce((a,r)=>a+r.qty,0),s=mine.reduce((a,r)=>a+r.sc,0)+(parseInt(sEl.value)||0);
-        h.textContent="سليم "+n+" في اليوم: "+nf(g)+" · هالك: "+nf(s)+" · نسبة الهالك: "+(g+s?Math.round(s/(g+s)*1000)/10:0)+"%"};
-      ["input","change","blur"].forEach(ev=>[w,dEl,sEl].forEach(el=>el.addEventListener(ev,upd)));upd();
+      const h=document.getElementById("m-wh"),dEl=document.getElementById("m-d"),sEl=document.getElementById("m-scrap"),itemEl=document.getElementById("m-item");
+      const upd=()=>{const it=itemEl.value.trim();if(!it){h.textContent="اكتب الصنف لعرض إجمالي إنتاجه اليوم";return}
+        const mine=rows.filter(r=>norm(r.item)===norm(it)&&r.d===dEl.value&&(!rec||r.id!==rec.id)),g=mine.reduce((a,r)=>a+r.qty,0),s=mine.reduce((a,r)=>a+r.sc,0)+(parseInt(sEl.value)||0);
+        h.textContent="إجمالي سليم الصنف اليوم: "+nf(g)+" · الهالك: "+nf(s)+" · نسبة الهالك: "+(g+s?Math.round(s/(g+s)*1000)/10:0)+"%"};
+      ["input","change","blur"].forEach(ev=>[w,dEl,sEl,itemEl].forEach(el=>el.addEventListener(ev,upd)));upd();
     }
     const mode=document.getElementById("m-mode");
     mx=(!waste&&!rec)?CM.wire(openOrds.map(o=>`<option value="${o.id}">${esc(oLab(o))}</option>`).join(""),()=>mode&&mode.value==="order"?"order":"free",id=>(ordOf(id)||{}).item):null;
