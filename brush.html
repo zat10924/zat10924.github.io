@@ -169,6 +169,18 @@ function castForm(id,presetOid,waste){if(roBlock())return;
       }
     }
     const cd=lockDate?(rec?rec.d:today()):(document.getElementById("m-d").value||today());
+    // الإصلاح: الهالك الجديد يجب أن يُضاف إلى سجل إنتاج موجود، لا كسجل مستقل بكمية سليمة صفر.
+    if(waste&&!rec){
+      const candidates=rows.filter(r=>!r.isw&&r.d===cd&&r.item===item&&r.sh===sh&&r.w===x.worker);
+      if(candidates.length===0){toast("لا يوجد سجل إنتاج مطابق لهذا العامل والصنف والتاريخ والوردية. سجّل الإنتاج أولًا ثم أضف الهالك.","bad");return false}
+      if(candidates.length>1){toast("يوجد أكثر من سجل إنتاج مطابق. لم يتم الحفظ حتى لا يرتبط الهالك بسجل خاطئ؛ يلزم تحديد سجل الإنتاج المقصود.","bad");return false}
+      const target=candidates[0];
+      if(!canRow(target)){toast("لا تملك صلاحية تعديل سجل الإنتاج الذي تريد ربط الهالك به.","bad");return false}
+      const {data:updated,error:updateError}=await db.from("brush_log").update({scrap:(+target.sc||0)+sc}).eq("id",target.id).select("id");
+      if(updateError){toast(isNet(updateError)?"يلزم الاتصال بالإنترنت لإضافة الهالك إلى سجل الإنتاج بأمان":"تعذر تحديث سجل الإنتاج: "+updateError.message,"bad");return false}
+      if(!updated||!updated.length){toast("لم يتم تحديث سجل الإنتاج؛ تحقق من الصلاحيات ثم حاول مرة أخرى.","bad");return false}
+      await load();toast("تم ربط الهالك بسجل الإنتاج الأصلي");return;
+    }
     const brx=(!waste&&true&&!rec)?(()=>{const b=brcRead(),o={};if(b.molds!=null)o.molds=b.molds;if(b.pours!=null)o.pours=b.pours;return o})():{},exb=e=>{const o={};if(e.molds!=null)o.molds=e.molds;if(e.pours!=null)o.pours=e.pours;return o};
     const ents=!rec?(auto?castAutoSplit([{item,qty:q,...brx},...extra.map(e=>({item:e.item,qty:e.qty,...exb(e)}))],orders.filter(o=>o.st==="open").map(o=>({id:o.id,item:o.item,rem:orderProg(o).rem-pendQ(o.id),due:o.due,date:o.od}))):[{item,qty:q,order_id:oid,...brx},...extra.map(e=>({item:e.item,qty:e.qty,order_id:e.oid,...exb(e)}))]):null;
     const used=new Map();

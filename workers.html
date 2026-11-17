@@ -52,7 +52,7 @@ async function load(){
       const r=await db.from(tb).select("worker,qty").eq("prod_date",t).not("worker","is",null);
       (r.data||[]).forEach(x=>prodToday.set(x.worker,(prodToday.get(x.worker)||0)+(+x.qty||0)));
     }
-    for(const [tb,dc] of [["casting_log","casting_date"],["brush_log","brush_date"],["finish_log","finish_date"]]){
+    for(const [tb,dc] of [["repair_log","repair_date"],["casting_log","casting_date"],["brush_log","brush_date"],["finish_log","finish_date"]]){
       const cr=await db.from(tb).select("worker,qty").eq(dc,t).not("worker","is",null);
       (cr.data||[]).forEach(x=>prodToday.set(x.worker,(prodToday.get(x.worker)||0)+(+x.qty||0)));
     }

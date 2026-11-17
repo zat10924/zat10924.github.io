@@ -221,28 +221,55 @@ function increase(orderId){
   document.getElementById("m-line").onchange=e=>document.getElementById("m-newc").style.display=e.target.value==="new"?"block":"none";
 }
 
-function waste(orderId,rec){
+async function waste(orderId,rec){
   const o=orders.find(x=>x.id===orderId);
-  const items=[...new Set(orders.map(x=>x.item))];
-  openModal(rec?"تعديل هالك":"تسجيل هالك بسكوت",`<label>الصنف</label><input id="m-item" list="m-items" value="${esc(rec?rec.item:(o?o.item:""))}"><datalist id="m-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
-    <div class="two"><div><label>الكمية السليمة</label><input type="number" id="m-g" min="0" inputmode="numeric" value="${rec?rec.good:""}"></div><div><label>الكمية الهالكة</label><input type="number" id="m-q" min="0" inputmode="numeric" value="${rec?rec.qty:""}"></div></div>
+  // اربط الهالك بسجل إنتاج محدد؛ لا نستخدم مجموع الصنف في اليوم لأنه قد يضم أكثر من عملية.
+  const [gp,fp]=await Promise.all([
+    db.from("glaze_production").select("id,line_id,qty,prod_date").order("prod_date",{ascending:false}),
+    db.from("free_production").select("id,item,qty,prod_date").eq("section","glaze").order("prod_date",{ascending:false})
+  ]);
+  if(gp.error||fp.error){toast("تعذر تحميل سجلات الإنتاج: "+(gp.error||fp.error).message);return}
+  const lineMap=new Map(lines.map(x=>[String(x.id),x]));
+  const orderMap=new Map(orders.map(x=>[String(x.id),x]));
+  const sources=[];
+  (gp.data||[]).forEach(p=>{
+    const l=lineMap.get(String(p.line_id)),ord=l&&orderMap.get(String(l.order_id));
+    if(!l||!ord)return;
+    if(o&&ord.id!==o.id)return;
+    sources.push({table:"glaze_production",id:String(p.id),item:ord.item,sub:l.color||"",qty:+p.qty||0,date:p.prod_date,label:`${ord.item} · ${l.color||"بدون لون"} · ${p.qty} قطعة · ${p.prod_date||""}`});
+  });
+  (fp.data||[]).forEach(p=>{
+    if(o&&String(p.item||"").trim()!==String(o.item||"").trim())return;
+    sources.push({table:"free_production",id:String(p.id),item:p.item||"",sub:"بدون طلبية",qty:+p.qty||0,date:p.prod_date,label:`${p.item||"صنف غير محدد"} · إنتاج بدون طلبية · ${p.qty} قطعة · ${p.prod_date||""}`});
+  });
+  const key=x=>x.table+":"+x.id;
+  const selected=rec&&rec.source_table&&rec.source_id?key({table:rec.source_table,id:rec.source_id}):"";
+  const sourceOptions=sources.map(x=>`<option value="${esc(key(x))}" ${key(x)===selected?"selected":""}>${esc(x.label)}</option>`).join("");
+  openModal(rec?"تعديل هالك":"تسجيل هالك بسكوت",`<label>سجل الإنتاج الذي نتج عنه الهالك</label><select id="m-source"><option value="">اختر عملية الإنتاج</option>${sourceOptions}</select>
+    <div class="hint">السليم يُسحب تلقائيًا من سجل الإنتاج المختار. لا تختَر سجلًا آخر لمجرد أنه لنفس الصنف.</div>
+    <label>الصنف</label><input id="m-item" value="${esc(rec?rec.item:(o?o.item:""))}" readonly>
+    <div class="two"><div><label>الكمية السليمة من الإنتاج</label><input type="number" id="m-g" min="0" readonly value="${rec?rec.good:""}"></div><div><label>الكمية الهالكة</label><input type="number" id="m-q" min="0" inputmode="numeric" value="${rec?rec.qty:""}"></div></div>
     <div class="nums" id="m-pct"></div>
-    <label>التاريخ</label><input type="date" id="m-d" value="${rec?rec.d:today()}">
+    <label>تاريخ تسجيل الهالك</label><input type="date" id="m-d" value="${rec?rec.d:today()}">
     <label>السبب (اختياري)</label><input id="m-r" value="${esc(rec?rec.reason:"")}">`,async()=>{
-    const item=document.getElementById("m-item").value.trim();
-    const g=parseInt(document.getElementById("m-g").value)||0,q=parseInt(document.getElementById("m-q").value)||0;
-    if(!item){toast("اكتب الصنف");return false}
-    if(g+q<=0){toast("اكتب الكمية السليمة والهالكة");return false}
-    const row={item,waste_date:document.getElementById("m-d").value||today(),good_qty:g,qty:q,reason:document.getElementById("m-r").value.trim()||null};
+    const source=sources.find(x=>key(x)===document.getElementById("m-source").value);
+    const q=parseInt(document.getElementById("m-q").value)||0;
+    if(!source){toast("اختر سجل الإنتاج الأصلي أولًا");return false}
+    if(!(source.qty>0)){toast("كمية الإنتاج المرتبط غير صحيحة");return false}
+    if(q<0){toast("كمية الهالك غير صحيحة");return false}
+    const row={item:source.item,waste_date:document.getElementById("m-d").value||today(),good_qty:source.qty,qty:q,reason:document.getElementById("m-r").value.trim()||null,source_table:source.table,source_id:source.id};
     const{error}=rec?await db.from("glaze_waste").update(row).eq("id",rec.id):await db.from("glaze_waste").insert(row);
     if(error){toast("خطأ: "+error.message);return false}
-    toast(rec?"تم التعديل":"تم تسجيل الهالك");
+    toast(rec?"تم تعديل الهالك وربطه بالإنتاج":"تم تسجيل الهالك وربطه بسجل الإنتاج");
     if(tab==="rep")report();
   });
-  const upd=()=>{const g=parseInt(document.getElementById("m-g").value)||0,q=parseInt(document.getElementById("m-q").value)||0;document.getElementById("m-pct").innerHTML=g+q>0?`الإجمالي <b>${g+q}</b> · نسبة الهالك <b>${(q/(g+q)*100).toFixed(1)}%</b>`:""};
-  document.getElementById("m-g").oninput=upd;document.getElementById("m-q").oninput=upd;upd();
-  wireWasteGood(upd,!!rec);
+  const sourceEl=document.getElementById("m-source"),itemEl=document.getElementById("m-item"),goodEl=document.getElementById("m-g"),dateEl=document.getElementById("m-d");
+  const setSource=()=>{const x=sources.find(x=>key(x)===sourceEl.value);if(x){itemEl.value=x.item;goodEl.value=x.qty;if(!rec)dateEl.value=x.date||today()}else if(!rec){itemEl.value="";goodEl.value=""}};
+  sourceEl.onchange=setSource;
+  const upd=()=>{const g=parseInt(goodEl.value)||0,q=parseInt(document.getElementById("m-q").value)||0;document.getElementById("m-pct").innerHTML=g+q>0?`إجمالي الناتج <b>${g+q}</b> · نسبة الهالك <b>${(q/(g+q)*100).toFixed(1)}%</b>`:""};
+  document.getElementById("m-q").oninput=upd;setSource();upd();
 }
+
 function editW(id){waste(0,wRows.find(r=>r.id===id))}
 async function delW(id){
   if(!await ask("حذف سجل الهالك ده؟"))return;
@@ -308,7 +335,7 @@ async function report(){
   if(r.error){await new Promise(x=>setTimeout(x,700));r=await db.from("glaze_waste").select("*").order("waste_date",{ascending:false})} // محاولة تانية تلقائيًا لو النت ضعف
   const{data,error}=r;
   if(error){console.warn("glaze_waste:",error.message);if(!wRows.length)document.getElementById("wTotal").innerHTML="";fail("wBody",report);return}
-  wRows=(data||[]).map(w=>({id:w.id,d:String(w.waste_date||"").slice(0,10),item:w.item||"-",good:+w.good_qty||0,qty:+w.qty||0,reason:w.reason||""}));
+  wRows=(data||[]).map(w=>({id:w.id,d:String(w.waste_date||"").slice(0,10),item:w.item||"-",good:+w.good_qty||0,qty:+w.qty||0,reason:w.reason||"",source_table:w.source_table||null,source_id:w.source_id||null}));
   const s=document.getElementById("f-item"),cur=s.value;
   s.innerHTML='<option value="">الكل</option>'+[...new Set(wRows.map(r=>r.item))].map(v=>`<option>${esc(v)}</option>`).join("");
   s.value=cur;

@@ -1560,3 +1560,28 @@ body:not(.sideopen) .side{will-change:auto}
 .fgr ul,.frgr ul{margin:4px 0 4px;padding:0 18px 0 0;line-height:1.8}
 .frgr{background:color-mix(in srgb,var(--bg) 50%,var(--card));border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin-top:6px}
 ul.fgr-ul{margin:4px 0;padding:0 18px 0 0;line-height:1.8;font-size:14px}
+
+/* ===== 4.6.7: توازن شاشة الدخول على اللابتوب والكمبيوتر ===== */
+@media(min-width:900px){
+  #login .lshell{
+    width:min(100%,1060px);
+    max-width:1060px;
+    grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);
+    min-height:clamp(520px,calc(100vh - 96px),620px);
+    border-radius:30px;
+  }
+  #login .lbrand{padding:clamp(34px,4vw,58px)}
+  #login .lbrand ul{gap:clamp(10px,1.4vh,18px)}
+  #login .lbrand li{font-size:clamp(.94rem,1vw,1.05rem)}
+  #login .login{padding:clamp(30px,3.8vw,48px) clamp(28px,3.6vw,46px) 24px}
+}
+@media(min-width:900px) and (max-height:700px){
+  #login .lshell{min-height:0}
+  #login .lbrand{padding:28px 38px}
+  #login .lbrand .lb-tag{margin-bottom:18px}
+  #login .lbrand ul{gap:8px}
+  #login .lbrand li{font-size:.92rem;line-height:1.45}
+  #login .login{padding:28px 38px 18px}
+  #login .login .sub{margin-bottom:10px}
+  #login .lfoot{margin-top:10px;padding-top:8px}
+}

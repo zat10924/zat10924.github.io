@@ -240,13 +240,12 @@ async function loadMe(){
   // آخر ظهور (مرة كل جلسة) — بيتجاهل الخطأ لو العمود لسه مش موجود
   try{if(!p.error&&navigator.onLine&&!sessionStorage.getItem("seen")){sessionStorage.setItem("seen","1");db.from("profiles").update({last_seen:new Date().toISOString()}).eq("id",session.user.id).then(()=>{},()=>{})}}catch(e){}
   if(!t.error&&t.data)_today=String(t.data).slice(0,10);
-  let cached=null;try{cached=JSON.parse(localStorage.getItem("me_"+session.user.id))}catch(e){}
-  if(p.error&&cached&&(!navigator.onLine||/fetch|network|load failed/i.test(p.error.message||"")))ME=cached;
-  else{
-    ME=p.error?{id:session.user.id,name:"",email:session.user.email||"",role:"admin",section:null,sections:[],active:true,perms:{},avatar:"",phone:"",whatsapp:"",legacy:true}
-      :{id:session.user.id,name:p.data?.full_name||"",email:session.user.email||"",role:p.data?.role||null,section:p.data?.section||null,sections:secList(p.data),active:p.data?.active!==false,perms:p.data?.perms||{},avatar:safeAv(p.data?.avatar),phone:p.data?.phone||"",whatsapp:p.data?.whatsapp||"",fire_role:p.data?.fire_role||""};
-    if(!p.error)try{localStorage.setItem("me_"+session.user.id,JSON.stringify(ME))}catch(e){}
-  }
+  // Deny by default: a failed profiles lookup must never grant an admin role
+  // or trust a cached role for protected operations.
+  ME=p.error
+    ?{id:session.user.id,name:"",email:session.user.email||"",role:null,section:null,sections:[],active:false,perms:{},avatar:"",phone:"",whatsapp:"",profile_error:true}
+    :{id:session.user.id,name:p.data?.full_name||"",email:session.user.email||"",role:p.data?.role||null,section:p.data?.section||null,sections:secList(p.data),active:p.data?.active!==false,perms:p.data?.perms||{},avatar:safeAv(p.data?.avatar),phone:p.data?.phone||"",whatsapp:p.data?.whatsapp||"",fire_role:p.data?.fire_role||""};
+  if(!p.error)try{localStorage.setItem("me_"+session.user.id,JSON.stringify(ME))}catch(e){}
   return ME;
 }
 // كل الأقسام اللي المستخدم متابعها (القسم الأساسي + الأقسام الإضافية)
@@ -751,7 +750,7 @@ function fmtD(d){return new Date(d+"T00:00:00").toLocaleDateString("ar-EG")}
 // التاريخ مع اسم اليوم (الخميس ١٣‏/١١‏/٢٠٢٦) — بيُستخدم في التقارير
 function fmtDW(d){if(!d)return"";const x=new Date(d+"T00:00:00");return isNaN(x)?String(d):x.toLocaleDateString("ar-EG",{weekday:"long"})+" "+fmtD(d)}
 function ask(msg,yes="نعم، احذف"){return new Promise(res=>{
-  const d=document.createElement("div");d.className="ov";d.style.zIndex=40;
+  const d=document.createElement("div");d.className="ov";d.style.zIndex=85;
   d.innerHTML=`<div class="modal"><h3>${msg}</h3><div class="row"><button class="btn" id="yes">${yes}</button><button class="btn ghost" id="no">إلغاء</button></div></div>`;
   document.body.appendChild(d);
   d.querySelector("#yes").onclick=()=>{d.remove();res(true)};
@@ -936,7 +935,7 @@ function fillLists(){
 function attachLists(root){enhanceAll(root)}
 function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,i)=>i);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
 function pick(msg,opts){return new Promise(res=>{
-  const d=document.createElement("div");d.className="ov";d.style.zIndex=40;
+  const d=document.createElement("div");d.className="ov";d.style.zIndex=80;
   d.innerHTML=`<div class="modal"><h3>${esc(msg)}</h3><div style="display:flex;flex-direction:column;gap:8px">${opts.map((o,i)=>`<button class="btn ${i===opts.length-1?"ghost":""}" data-i="${i}">${esc(o)}</button>`).join("")}</div></div>`;
   document.body.appendChild(d);
   d.onclick=e=>{const b=e.target.closest("[data-i]");if(b){d.remove();res(+b.dataset.i)}};
@@ -981,20 +980,46 @@ async function checkNames(root){
 }
 
 /* ===== الشغل بدون إنترنت: التسجيلات بتتحفظ على الجهاز وتتبعت لوحدها ===== */
-const Q_={k:"pendingQ",get(){try{return JSON.parse(localStorage.getItem(this.k)||"[]")}catch(e){return[]}},set(v){try{localStorage.setItem(this.k,JSON.stringify(v))}catch(e){}try{masMeta.put("pend",v.length)}catch(e){}},add(it){const q=this.get();q.push(it);this.set(q)}};
+const Q_={
+  // Keep every account's queue isolated. Legacy pendingQ is deliberately left untouched.
+  uid(){return ME&&ME.id?String(ME.id):""},
+  key(u=this.uid()){return u?"pendingQ:"+String(u):null},
+  failedKey(u=this.uid()){return u?"failedQ:"+String(u):null},
+  get(u=this.uid()){const k=this.key(u);if(!k)return[];try{const q=JSON.parse(localStorage.getItem(k)||"[]");return Array.isArray(q)?q:[]}catch(e){return[]}},
+  set(u,v){const k=this.key(u);if(!k)return false;try{localStorage.setItem(k,JSON.stringify(v));try{if(String(u)===this.uid())masMeta.put("pend",v.length)}catch(e){}return true}catch(e){return false}},
+  failed(u=this.uid()){const k=this.failedKey(u);if(!k)return[];try{const q=JSON.parse(localStorage.getItem(k)||"[]");return Array.isArray(q)?q:[]}catch(e){return[]}},
+  fail(u,it,err){const f=this.failed(u);f.push({...it,status:"Failed",err:String(err||"تعذر المزامنة"),failed_at:new Date().toISOString()});const k=this.failedKey(u);if(!k)return false;try{localStorage.setItem(k,JSON.stringify(f));return true}catch(e){return false}},
+  add(it){
+    const u=this.uid();if(!u)throw new Error("لا يمكن حفظ تسجيل دون تحديد حساب المستخدم");
+    const row={...(it.row||{})};
+    if(row.created_by&&String(row.created_by)!==u)throw new Error("هوية منشئ التسجيل لا تطابق الحساب الحالي");
+    row.created_by=u; // Server-side trigger must verify this against auth.uid().
+    const q=this.get(u),key=String(it.id||row.client_id||uuid());
+    if(q.some(x=>String(x.id||x.idempotency_key)===key))return;
+    q.push({...it,row,id:key,owner_id:u,status:"Pending",idempotency_key:key,created_at:new Date().toISOString()});
+    if(!this.set(u,q))throw new Error("تعذر حفظ التسجيل المعلق على الجهاز");
+  }
+};
 const uuid=()=>crypto.randomUUID?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==="x"?r:(r&3|8)).toString(16)});
 const isNet=e=>!navigator.onLine||/fetch|network|load failed/i.test((e&&e.message)||"");
-let CID=true;
-const noCid=({client_id,...r})=>r;
-let WK=null;
-async function wkLoad(){
-  if(WK)return;WK=[];
-  try{
+let WK=null,WK_AT=0;
+async function wkLoad(force=false){
+  // شارك طلب التحميل الجاري، وجدّد القائمة دوريًا حتى تظهر العمالة المضافة حديثًا.
+  if(WK&&!force&&(WK_AT===0||Date.now()-WK_AT<30000))return WK;
+  WK=(async()=>{
     let r=await db.from("workers").select("name,section,sections").eq("active",true).order("name");
     if(r.error)r=await db.from("workers").select("name,section").eq("active",true).order("name");
-    WKA=r.data||[];
-  }catch(e){}
-  const sl=document.getElementById("m-w");if(sl&&sl.tagName==="SELECT"){const cur=sl.value;sl.innerHTML=wkOpts();if(cur)sl.value=cur}
+    if(r.error)throw r.error;
+    WKA=Array.isArray(r.data)?r.data.filter(x=>x&&String(x.name||"").trim()):[];
+    WK_AT=Date.now();
+    const sl=document.getElementById("m-w");
+    if(sl&&sl.tagName==="SELECT"){
+      const cur=sl.value;sl.innerHTML=wkOpts();
+      if(cur&&[...sl.options].some(o=>o.value===cur))sl.value=cur;
+    }
+    return WKA;
+  })().catch(e=>{WK=null;WK_AT=0;try{console.error("تعذر تحميل قائمة العمال:",e)}catch(_){};return WKA});
+  return WK;
 }
 // العامل ممكن يتبع أكتر من قسم: القسم الأساسي (section) + أقسام إضافية (sections)
 let WKA=[];
@@ -1027,7 +1052,8 @@ function wkOpts(){
   if(!all)return base+wkSel().map(o).join("")+other;
   if(!cs)return base+wkSel().map(o).join("");
   const mine=WKA.filter(x=>wkIn(x,cs)),others=WKA.filter(x=>!wkIn(x,cs));
-  return base+(mine.length?`<optgroup label="عمال ${esc(SEC_AR[cs]||"القسم")}">${mine.map(o).join("")}</optgroup>`:"")+(others.length?`<optgroup label="عمال أقسام أخرى">${others.map(o).join("")}</optgroup>`:"");
+  // اعرض الأسماء كاختيارات فعلية بدون عناوين optgroup التي قد تبدو كأنها أول عامل.
+  return base+mine.concat(others).map(o).join("");
 }
 // خيار «عامل تاني»: بيظهر خانة كتابة، والاسم المكتوب بيبقى هو قيمة القائمة (فباقي الكود بيقراه عادي)
 document.addEventListener("change",e=>{const s=e.target;if(!s||s.id!=="m-w"||s.tagName!=="SELECT")return;
@@ -1087,18 +1113,9 @@ const XF=(deco)=>{wkLoad();return (deco?'<label>الرسمة — كود أو و�
 // لون الرش: خانة منسدلة من قائمة الألوان، بتتملّى مسبقًا بلون الطلبية (تقدر تغيّره لو اترشّ بلون تاني)
 const XS=(def,id="m-sc")=>'<label>لون الرش</label><input id="'+id+'" data-kind="color" value="'+esc(def||"")+'" placeholder="لون الرش" autocomplete="off" maxlength="60">';
 const xfRead=()=>{const o={},w=(document.getElementById("m-w")||{}).value,n=(document.getElementById("m-n")||{}).value;if(w&&w.trim())o.worker=w.trim();if(n&&n.trim())o.note=n.trim();const d=(document.getElementById("m-ds")||{}).value;if(d&&d.trim())o.design=d.trim();const sc=(document.getElementById("m-sc")||{}).value;if(sc&&sc.trim())o.spray_color=sc.trim();return o};
-let _scWarn=false;
 async function insertRow(t,row){
-  let r=await db.from(t).insert(CID?row:noCid(row));
-  // عمود spray_color لسه ما اتضافش في Supabase: نسجّل الإنتاج من غيره ونفكّر المستخدم يشغّل الملف
-  if(r.error&&/spray_color/.test(r.error.message||"")&&row.spray_color){
-    const{spray_color,...rest}=row;row=rest;
-    if(!_scWarn){_scWarn=true;try{toast("اتسجّل الإنتاج لكن لون الرش ما اتحفظش — شغّل ملف setup_spray_color.sql في Supabase","warn")}catch(e){}}
-    r=await db.from(t).insert(CID?row:noCid(row));
-  }
-  if(r.error&&/worker|note|design/.test(r.error.message||"")&&(row.worker||row.note||row.design)){const{worker,note,design,...rest}=row;row=rest;r=await db.from(t).insert(CID?row:noCid(row))}
-  if(r.error&&/client_id/.test(r.error.message||"")){CID=false;r=await db.from(t).insert(noCid(row))}
-  return r;
+  // Fail visibly instead of silently dropping client_id/worker/design/spray_color fields.
+  return await db.from(t).insert(row);
 }
 // الصب اليدوي: أكتر من صنف لنفس العامل في تسجيل واحد
 const CM={
@@ -1150,32 +1167,82 @@ function castAutoSplit(entries,orders){
   return out;
 }
 // بعد التسجيل: نظبط حالة الطلبية (مفتوحة / مكتملة)
-async function syncAfter(it){
+async function syncAfter(it,expectedUid=""){
+  if(expectedUid&&!(await currentQueueSession(expectedUid)))return false;
   const s=it.sync;if(!s)return false;
   if(s.lv){
     const{data}=await db.from(s.lv).select("*").eq("order_id",s.oid);
     const done=!!data&&data.length>0&&data.every(x=>x.produced>=x.total_required);
+    if(expectedUid&&!(await currentQueueSession(expectedUid)))return false;
     await db.from(s.o).update({status:done?"done":"open"}).eq("id",s.oid);return done;
   }
   const{data}=await db.from(s.sv).select("*").eq("id",s.oid).single();
   const done=!!data&&data.produced>=data.qty_required;
-  if(done)await db.from(s.o).update({status:"done"}).eq("id",s.oid);return done;
+  if(done){if(expectedUid&&!(await currentQueueSession(expectedUid)))return false;await db.from(s.o).update({status:"done"}).eq("id",s.oid)}return done;
 }
 let _fl=false;
+async function currentQueueSession(uid){
+  try{
+    const s=await db.auth.getSession(),actual=String(s.data?.session?.user?.id||"");
+    return !!actual&&actual===String(uid)&&actual===Q_.uid();
+  }catch(e){return false}
+}
+async function insertQueuedRow(it,uid){
+  if(!it||!it.table||!it.row||!it.id) return {error:{message:"بيانات التسجيل المعلق غير مكتملة"}};
+  const row={...it.row,client_id:it.row.client_id||it.id,created_by:uid};
+  // Never retry without client_id or created_by: that would defeat server idempotency/ownership.
+  let r=await db.from(it.table).insert(row);
+  if(r.error&&r.error.code==="23505"){
+    // Treat a conflict as a successful retry only when this exact operation already exists
+    // and the server confirms the same creator.
+    try{
+      const check=await db.from(it.table).select("id,created_by").eq("client_id",row.client_id).maybeSingle();
+      if(!check.error&&check.data&&String(check.data.created_by)===String(uid))return {data:check.data,error:null,duplicate:true};
+    }catch(e){}
+  }
+  return r;
+}
 async function flushQueue(){
-  if(_fl||!navigator.onLine)return 0;_fl=true;let n=0;
+  if(_fl||!navigator.onLine)return 0;
+  const uid=Q_.uid();
+  if(!uid||!(await currentQueueSession(uid)))return 0;
+  _fl=true;let n=0;
   try{
     for(;;){
-      const q=Q_.get();if(!q.length)break;const it=q[0];
-      let r;try{r=await insertRow(it.table,it.row)}catch(e){r={error:{message:String(e)}}}
-      if(r.error&&r.error.code!=="23505"){
-        if(isNet(r.error))break;
-        let f=[];try{f=JSON.parse(localStorage.getItem("failedQ")||"[]")}catch(e){}
-        f.push({...it,err:r.error.message});try{localStorage.setItem("failedQ",JSON.stringify(f))}catch(e){}
-        toast("تسجيل اترفض: "+r.error.message,"bad");q.shift();Q_.set(q);continue;
+      if(!(await currentQueueSession(uid)))break; // leave remaining items Pending for their owner
+      const q=Q_.get(uid);if(!q.length)break;
+      let it=q[0];
+      if(!it.owner_id||String(it.owner_id)!==uid||!it.row){
+        // Keep unowned/foreign legacy records in the queue; never discard or replay them.
+        q[0]={...it,status:"Failed",local_error:"هوية منشئ التسجيل غير مؤكدة؛ يلزم تصدير/مراجعة يدوية"};
+        Q_.set(uid,q);break;
       }
-      try{await syncAfter(it)}catch(e){}
-      q.shift();Q_.set(q);n++;
+      // A local owner_id is not proof of authorship: localStorage can be edited.
+      // Never retrofit created_by onto an older queue item from the currently signed-in user.
+      // Preserve the item for manual export/review instead of risking cross-account attribution.
+      if(!it.row.created_by){
+        q[0]={...it,status:"Failed",local_error:"التسجيل قديم ولا يحتوي على created_by موثوق؛ لن تتم نسبته للحساب الحالي تلقائيًا"};
+        Q_.set(uid,q);break;
+      }
+      if(String(it.row.created_by)!==uid){
+        q[0]={...it,status:"Failed",local_error:"هوية منشئ التسجيل لا تطابق الحساب الحالي"};
+        Q_.set(uid,q);break;
+      }
+      q[0]={...it,status:"Syncing"};Q_.set(uid,q);
+      // Recheck immediately before network write; server trigger remains the final authority.
+      if(!(await currentQueueSession(uid))){q[0]={...it,status:"Pending"};Q_.set(uid,q);break;}
+      let r;try{r=await insertQueuedRow(it,uid)}catch(e){r={error:{message:String(e)}}}
+      if(!(await currentQueueSession(uid))){q[0]={...it,status:"Pending"};Q_.set(uid,q);break;}
+      if(r.error){
+        if(isNet(r.error)){q[0]={...it,status:"Pending"};Q_.set(uid,q);break;}
+        if(!Q_.fail(uid,it,r.error.message||"رفض الخادم التسجيل"))break;
+        toast("تسجيل اترفض: "+(r.error.message||"خطأ غير معروف"),"bad");
+        q.shift();Q_.set(uid,q);continue;
+      }
+      // If auth changed during the request, don't mutate another user's queue.
+      if(!(await currentQueueSession(uid)))break;
+      try{await syncAfter(it,uid)}catch(e){/* production row is saved; status can be recalculated later */}
+      q.shift();Q_.set(uid,q);n++;
     }
   }finally{_fl=false;updateBadge()}
   return n;
@@ -1196,6 +1263,12 @@ async function autoFlush(){
   const n=await flushQueue();
   if(n){toast("اتسجل "+n+" تسجيل كان منتظر");if(typeof load==="function")load()}
 }
+// Supabase propagates auth changes between tabs. Reload to rebuild ME and the account-scoped queue.
+db.auth.onAuthStateChange((event,session)=>{
+  if(!["SIGNED_IN","SIGNED_OUT","USER_DELETED"].includes(event))return;
+  const next=String(session?.user?.id||"");
+  if(ME&&String(ME.id||"")!==next)setTimeout(()=>location.reload(),0);
+});
 addEventListener("online",autoFlush);
 setInterval(autoFlush,30000);
 document.addEventListener("DOMContentLoaded",()=>setTimeout(autoFlush,1500));

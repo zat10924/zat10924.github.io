@@ -91,8 +91,8 @@ const SRC={
     }},
   repair:{name:"تصليح",page:"repair.html",icon:"repair",color:"#5D6B7A",noun:"التصليح",sub:"",
     async fetch(){
-      const r=await all("repair_log","id,repair_date,item,qty");
-      return{prod:r.map(x=>({d:D(x.repair_date),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0})),ord:null};
+      const r=await all("repair_log","id,repair_date,item,qty,worker");
+      return{prod:r.map(x=>({d:D(x.repair_date),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0,w:x.worker||"",id:x.id,tb:"repair_log",raw:x})),ord:null};
     }}
 };
 const isCast=k=>k==="casting"||k==="brush";
@@ -116,7 +116,8 @@ const mkCast=P=>({name:P.name,page:P.page,icon:P.key,color:P.color,noun:P.noun,s
 SRC.casting=mkCast({key:"casting",name:"الصب اليدوي",page:"casting.html",color:"#8A5A3C",noun:"الصب",l:"casting_log",o:"casting_orders",d:"casting_date"});
 SRC.finish={name:"الفنش",page:"finish.html",icon:"finish",color:"#3E7C6B",noun:"الفنش",sub:"",it:"الأداء",its:"الأداءات",
   async fetch(){
-    const r=await all("finish_log","*").catch(()=>[]);
+    // لا تخفِ أخطاء الصلاحيات/الاتصال/الجدول المفقود كأنها تقرير فارغ؛ دع لوحة التقارير تعرض تعذر التحميل.
+    const r=await all("finish_log","*");
     return{prod:r.map(x=>({d:D(x.finish_date),item:x.task||"بدون أداء",sub:"",qty:+x.qty||0,sc:+x.scrap||0,w:x.worker||"",
         n:[x.shift,(+x.scrap>0?"هالك "+x.scrap:""),x.note].filter(Boolean).join(" · ")})),
       ord:null,waste:r.map(x=>({d:D(x.finish_date),item:x.task||"بدون أداء",good:+x.qty||0,qty:+x.scrap||0}))};
@@ -809,6 +810,8 @@ function dashboard(rootId){
     <div class="two"><div><label>من</label><input type="date" class="rf"></div><div><label>إلى</label><input type="date" class="rt"></div></div>
   </div>
   <div class="secgrid rs" data-ps="secs">${Array.from({length:4},()=>'<i class="sk" style="height:96px;border-radius:14px"></i>').join("")}</div>
+  <div class="card" data-ps="waste"><div class="sec-head"><h3>ملخص الهالك حسب القسم</h3></div><div class="scroll rwaste"></div></div>
+  <div class="card" data-ps="workers"><div class="sec-head"><h3>إنتاج العمال حسب القسم</h3></div><div class="scroll rworkers"></div></div>
   <div class="card" data-ps="insights"><div class="sec-head"><h3 class="hi">${ui("sparkles")}<span>ملاحظات ذكية</span></h3></div><div class="rins"></div></div>
   <div class="card" data-ps="chart"><div class="sec-head"><h3>الإنتاج اليومي لكل الأقسام</h3></div><div class="rc"><i class="sk" style="height:170px"></i></div></div>
   <div class="card" data-ps="colors"><div class="sec-head"><h3>ألوان الرش</h3></div><div class="scroll rcol"></div></div>
@@ -828,7 +831,9 @@ function dashboard(rootId){
       const rows=d.prod.filter(r=>inRange(r.d,f,t));
       const prevT=pr?sum(d.prod.filter(r=>inRange(r.d,pr[0],pr[1]))):null;
       const open=d.ord?d.ord.filter(o=>o.status==="open"):null;
-      return{k,rows,total:sum(rows),prevT,delta:deltaOf(sum(rows),prevT),open,bk:backlog(k,d),late:open?open.filter(o=>isLate(o.status,o.date)).length:0};
+      const carriesScrap=rows.some(r=>Object.prototype.hasOwnProperty.call(r,"sc"));
+      const scrap=carriesScrap?rows.reduce((a,r)=>a+(+r.sc||0),0):(d.waste||[]).filter(w=>inRange(w.d,f,t)).reduce((a,w)=>a+(+w.qty||0),0);
+      return{k,rows,total:sum(rows),scrap,prevT,delta:deltaOf(sum(rows),prevT),open,bk:backlog(k,d),late:open?open.filter(o=>isLate(o.status,o.date)).length:0};
     });
     $(".rs").innerHTML=per.map(p=>{
       const c=SRC[p.k];
@@ -836,6 +841,17 @@ function dashboard(rootId){
       return `<a class="seccard" href="${c.page}#reports" style="--c:${c.color}"><div class="h">${ico(c.icon)}${c.name}</div><div class="big kv2">0</div><div class="sm">${c.noun} في الفترة</div>${p.delta?`<div class="kd ${p.delta[0]}">${p.delta[1]}</div>`:""}${p.open?`<div class="sm">${p.open.length} مفتوحة${p.late?` · <b style="color:var(--warn)">${p.late} متأخرة</b>`:""}</div>`:""}${p.bk&&p.bk.eta!=null?`<div class="sm">يخلص المتبقي في ~${etaTxt(p.bk.eta)}</div>`:""}</a>`;
     }).join("");
     $$(".rs .kv2").forEach((el,i)=>countUp(el,per.filter(p=>!p.err)[i].total));
+    // الهالك: استخدم sc من سجل الإنتاج، أو جدول الهالك المنفصل عند عدم وجود sc لتجنب العد المزدوج.
+    const wasteRows=per.filter(p=>!p.err&&p.scrap>0).sort((a,b)=>b.scrap-a.scrap);
+    const wasteTotal=wasteRows.reduce((a,p)=>a+p.scrap,0);
+    $(".rwaste").innerHTML=wasteRows.length?`<table><thead><tr><th>القسم</th><th>الهالك</th><th>نسبة الهالك من (السليم + الهالك)</th></tr></thead><tbody>${wasteRows.map(p=>{const rate=p.total+p.scrap?Math.round(p.scrap/(p.total+p.scrap)*1000)/10:0;return `<tr><td><b>${SRC[p.k].name}</b></td><td><b>${nf(p.scrap)}</b></td><td>${rate}%</td></tr>`}).join("")}</tbody><tfoot><tr><th>إجمالي الهالك</th><th>${nf(wasteTotal)}</th><th></th></tr></tfoot></table>`:'<div class="empty">مفيش هالك مسجل في الفترة دي</div>';
+    $('[data-ps="waste"]').toggleAttribute("data-empty",!wasteRows.length);
+    const workerRows=[];
+    per.filter(p=>!p.err).forEach(p=>p.rows.forEach(r=>{if(!r.w)return;workerRows.push({section:p.k,w:r.w,q:+r.qty||0,sc:+r.sc||0,d:r.d})}));
+    const workerMap=new Map();workerRows.forEach(r=>{const key=r.section+"\u0000"+r.w,o=workerMap.get(key)||{...r,q:0,sc:0,days:new Set()};o.q+=r.q;o.sc+=r.sc;if(r.q>0||r.sc>0)o.days.add(r.d);workerMap.set(key,o)});
+    const workers=[...workerMap.values()].sort((a,b)=>b.q-a.q);
+    $(".rworkers").innerHTML=workers.length?`<table><thead><tr><th>القسم</th><th>العامل</th><th>الإنتاج السليم</th><th>الهالك</th><th>أيام العمل</th></tr></thead><tbody>${workers.map(w=>`<tr><td>${SRC[w.section].name}</td><td><b>${esc(w.w)}</b></td><td>${nf(w.q)}</td><td>${w.sc?nf(w.sc):"—"}</td><td>${w.days.size}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">مفيش أسماء عمال مسجلة في الفترة دي</div>';
+    $('[data-ps="workers"]').toggleAttribute("data-empty",!workers.length);
     // رسم مجمّع
     const series=per.filter(p=>!p.err).map(p=>({name:SRC[p.k].name,color:SRC[p.k].color,rows:p.rows}));
     drawChart($(".rc"),{f,t,series});
@@ -896,8 +912,8 @@ function dashboard(rootId){
   root.addEventListener("click",e=>{const mo=e.target.closest(".more");if(!mo)return;const m=mo.dataset.m;if(m==="t")st.moreT=!st.moreT;else if(m==="c")st.moreC=!st.moreC;else st.moreL=!st.moreL;draw()});
   $(".rx").onclick=()=>{
     if(!st.last)return;const{f,t,per}=st.last;
-    const rows=per.filter(p=>!p.err).flatMap(p=>p.rows.map(r=>[SRC[p.k].name,r.d,r.item,r.sub,r.qty,r.w||""])).sort((a,b)=>a[1].localeCompare(b[1]));
-    csvDownload(`تقرير-الأقسام-${f||"الكل"}${t&&t!==f?"-"+t:""}.csv`,["القسم","التاريخ","الصنف","اللون/الكود (لون الرش في الرش)","الكمية","العامل"],rows);
+    const rows=per.filter(p=>!p.err).flatMap(p=>p.rows.map(r=>[SRC[p.k].name,r.d,r.item,r.sub,r.qty,r.sc||0,r.w||""])).sort((a,b)=>a[1].localeCompare(b[1]));
+    csvDownload(`تقرير-الأقسام-${f||"الكل"}${t&&t!==f?"-"+t:""}.csv`,["القسم","التاريخ","الصنف/الأداء","اللون/الكود (لون الرش في الرش)","الكمية السليمة","الهالك","العامل"],rows);
   };
   $(".rbk").onclick=async e=>{
     const b=e.currentTarget;b.disabled=true;b.classList.add("loading");
@@ -911,8 +927,8 @@ function dashboard(rootId){
   };
   $(".rpr").onclick=()=>{
     if(!st.last)return;const L=st.last;
-    const has={secs:true,insights:L.I.length>0,chart:L.per.some(p=>!p.err&&p.total>0),colors:!$('[data-ps="colors"]').hasAttribute("data-empty"),top:L.top.length>0,late:L.late.length>0};
-    printDialog(root,"dash",[["secs","كروت الأقسام",has.secs],["insights","الملاحظات الذكية",has.insights],["chart","الرسم البياني",has.chart],["colors","ألوان الرش",has.colors],["top","أعلى الأصناف",has.top],["late","طلبيات متأخرة وراكدة",has.late]],{before(){st.printing=true;draw()},after(){st.printing=false;draw()}});
+    const has={secs:true,waste:!$('[data-ps="waste"]').hasAttribute("data-empty"),workers:!$('[data-ps="workers"]').hasAttribute("data-empty"),insights:L.I.length>0,chart:L.per.some(p=>!p.err&&p.total>0),colors:!$('[data-ps="colors"]').hasAttribute("data-empty"),top:L.top.length>0,late:L.late.length>0};
+    printDialog(root,"dash",[["secs","كروت الأقسام",has.secs],["waste","ملخص الهالك",has.waste],["workers","إنتاج العمال",has.workers],["insights","الملاحظات الذكية",has.insights],["chart","الرسم البياني",has.chart],["colors","ألوان الرش",has.colors],["top","أعلى الأصناف",has.top],["late","طلبيات متأخرة وراكدة",has.late]],{before(){st.printing=true;draw()},after(){st.printing=false;draw()}});
   };
   $(".rsh").onclick=()=>{
     if(!st.last)return;const{f,t,per,late,I}=st.last;
