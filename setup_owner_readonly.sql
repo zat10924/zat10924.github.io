@@ -29,7 +29,7 @@ begin
     'spray_orders','spray_production',
     'repair_log',
     'casting_orders','casting_log',
-    'brush_orders','brush_log',
+    'brush_orders','brush_log','finish_log',
     'order_groups','order_deliveries','order_postponements','customers',
     'catalog','workers'
   ] loop

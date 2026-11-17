@@ -76,6 +76,7 @@ const SUMMARY={
   "spray.html":async()=>{const[o,a,b]=await Promise.all([openCount("spray_status"),todayQty("spray_production","prod_date"),freeTodayQty("spray")]);return[o,"طلبية مفتوحة",a+b]},
   "repair.html":async()=>{const q=await todayQty("repair_log","repair_date");return[q,"تصليح النهارده",q,true]},
   "casting.html":async()=>{const q=await todayQty("casting_log","casting_date");try{const o=await openCount("casting_orders");return[o,"طلبية مفتوحة",q]}catch(e){return[q,"صب النهارده",q,true]}},
+"finish.html":async()=>{const q=await todayQty("finish_log","finish_date");return[q,"فنش النهارده",q,true]},
 "brush.html":async()=>{const q=await todayQty("brush_log","brush_date");try{const o=await openCount("brush_orders");return[o,"طلبية مفتوحة",q]}catch(e){return[q,"برشر النهارده",q,true]}},
   "fire.html":async()=>{const r=await db.from("firing_operations").select("id",{count:"exact",head:true}).eq("status","in_kiln");if(r.error)throw r.error;return[r.count,"عربية داخل الفرن",0,true,true]}
 };
@@ -125,7 +126,7 @@ async function riskAlert(){
   document.getElementById("tiles").insertAdjacentHTML("beforebegin",`<div class="card" id="riskcard" style="border-color:var(--warn);margin-top:14px"><div class="top"><b class="ibt">${ui("hourglass")}معرّضة للتأخير (${risk.length})</b></div>${risk.slice(0,5).map(x=>`<a class="line" href="${x.s[0]}#open" style="display:flex;justify-content:space-between;gap:8px;text-decoration:none;color:var(--ink)"><span>${esc(x.o.item)} <span class="nums">· ${x.s[1]}</span></span><span class="tag late">باقي ${x.left} يوم وتحتاج ~${x.eta}</span></a>`).join("")}<div class="nums" style="margin-top:6px">تقدير مبني على معدل إنتاج آخر 14 يوم</div></div>`);
 }
 // ===== لوحة الإنتاج: آخر 7 أيام مقارنةً بالأسبوع اللي قبله =====
-const DSRC={"glaze.html":["glaze_production","prod_date"],"decoration.html":["deco_production","prod_date"],"spray.html":["spray_production","prod_date"],"repair.html":["repair_log","repair_date"],"casting.html":["casting_log","casting_date"],"brush.html":["brush_log","brush_date"]};
+const DSRC={"glaze.html":["glaze_production","prod_date"],"decoration.html":["deco_production","prod_date"],"spray.html":["spray_production","prod_date"],"repair.html":["repair_log","repair_date"],"casting.html":["casting_log","casting_date"],"brush.html":["brush_log","brush_date"],"finish.html":["finish_log","finish_date"]};
 async function prodRows(t,col,from){
   const out=[];
   for(let f=0;;f+=1000){

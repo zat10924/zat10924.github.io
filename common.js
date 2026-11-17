@@ -135,7 +135,7 @@ const ACTIVITY=["activity.html","سجل النشاط والنسخ","pulse","#5b6
 const PROFILE=["profile.html","ملفي الشخصي","user","#642631"];
 const SETTINGS=["settings.html","الإعدادات","cog","#5b6b8c"];
 const USERS=["users.html","المستخدمين والصلاحيات","shield","#7a5ea8"];
-const SEC_AR={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي",brush:"البرشر",fire:"الحريق"};
+const SEC_AR={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي",brush:"البرشر",finish:"الفنش",fire:"الحريق"};
 const ROLE_DESC={admin:"صلاحية كاملة: كل الأقسام والتقارير والمستخدمين",owner:"صاحب المصنع: يشوف كل الأقسام والطلبيات والتقارير (عرض فقط، من غير إدارة المستخدمين)",manager:"مسؤول عن قسم أو أكتر: يشوف ويدير أقسامه بس",worker:"يسجّل الإنتاج في قسمه بس"};
 // تخصصات قسم الحريق والشحن (profiles.fire_role) — كل تخصص ليه صلاحيات مهمته بس
 const FIRE_ROLE_AR={biscuit_kiln:"متخصص أفران البسكوت",glaze_kiln:"متخصص أفران الجليز",biscuit_loader:"مسؤول شحن البسكوت",glaze_loader:"مسؤول شحن الجليز",fire_supervisor:"مشرف قسم الحريق والشحن"};
@@ -158,7 +158,7 @@ const seesAll=()=>!!ME&&(ME.role==="admin"||ME.role==="owner");
 const isOwner=()=>!!ME&&ME.role==="owner";
 // مسؤول القسم اللي معاه «يشوف باقي الأقسام»: بيشوف كل الأقسام والتقارير، ويسجّل ويدير أقسامه بس
 const viewsAll=()=>seesAll()||(!!ME&&ME.role==="manager"&&!!ME.view_all);
-const SEC_OF_TBL=t=>/^glaze_/.test(t)?"glaze":/^deco_/.test(t)?"deco":/^spray_/.test(t)?"spray":t==="repair_log"?"repair":/^casting_/.test(t)?"casting":/^brush_/.test(t)?"brush":/^firing_/.test(t)?"fire":"";
+const SEC_OF_TBL=t=>/^glaze_/.test(t)?"glaze":/^deco_/.test(t)?"deco":/^spray_/.test(t)?"spray":t==="repair_log"?"repair":/^casting_/.test(t)?"casting":/^brush_/.test(t)?"brush":/^finish_/.test(t)?"finish":/^firing_/.test(t)?"fire":"";
 const roTbl=t=>{const k=SEC_OF_TBL(t);return !!k&&!!ME&&ME.role==="manager"&&!!ME.view_all&&!secList(ME).includes(k)};
 // صفحة قسم مش من أقسام المستخدم (وهو بيشوفها بصلاحية «يشوف باقي الأقسام») = عرض فقط
 const roPage=()=>{const k=KEY[location.pathname.split("/").pop()];return !!k&&!!ME&&ME.role==="manager"&&!!ME.view_all&&!secList(ME).includes(k)};
@@ -189,9 +189,9 @@ const canEditEntry=e=>{
 };
 function applyPerms(){Object.keys(PERM_LBL).forEach(k=>document.body.classList.toggle("np-"+k,!can(k)));document.body.classList.toggle("ro",isOwner()||roPage())}
 /* أقسام لسه هتتنشأ (بتظهر للمدير ومسؤول القسم كإعلان، من غير صفحة ولا صلاحيات) */
-const SOON=[["الفنش","finish","#3E7C6B"],["الفرز","sortx","#6B5B95"]];
+const SOON=[["الفرز","sortx","#6B5B95"]];
 const soonSections=()=>canReports()?SOON:[];
-const SECTIONS=[["glaze.html","جليز","glaze","#2E6F80"],["decoration.html","زخرفة","deco","#5E5A8C"],["spray.html","رش","spray","#B8862B"],["repair.html","تصليح","repair","#5D6B7A"],["casting.html","الصب اليدوي","casting","#8A5A3C"],["brush.html","البرشر","brush","#A0522D"],["fire.html","الحريق","fire","#C0502B"]];
+const SECTIONS=[["glaze.html","جليز","glaze","#2E6F80"],["decoration.html","زخرفة","deco","#5E5A8C"],["spray.html","رش","spray","#B8862B"],["repair.html","تصليح","repair","#5D6B7A"],["casting.html","الصب اليدوي","casting","#8A5A3C"],["brush.html","البرشر","brush","#A0522D"],["finish.html","الفنش","finish","#3E7C6B"],["fire.html","الحريق","fire","#C0502B"]];
 
 /* ===== بريد داخلي (للمستخدم بالاسم فقط) + صورة الملف الشخصي ===== */
 const NOMAIL=/@(noemail\.mas\.app|example\.com)$/i;
@@ -215,7 +215,7 @@ function photoToData(file,size=320,q=.82){return new Promise((res,rej)=>{
 })}
 
 /* ===== الجلسة والتنقل ===== */
-const KEY={"glaze.html":"glaze","decoration.html":"deco","spray.html":"spray","repair.html":"repair","casting.html":"casting","brush.html":"brush","fire.html":"fire"};
+const KEY={"glaze.html":"glaze","decoration.html":"deco","spray.html":"spray","repair.html":"repair","casting.html":"casting","brush.html":"brush","finish.html":"finish","fire.html":"fire"};
 let ME=null,_today=null;
 // يجيب دور المستخدم وقسمه + تاريخ السيرفر. لو جدول profiles لسه مش متعمل (قبل تشغيل setup_roles_v2.sql) بيشتغل كمدير عشان البرنامج ما يقفش.
 // جلسة الدخول: لو مفيش نت والتوكن منتهي نكمل بآخر جلسة محفوظة بدل ما نرجّع المستخدم لصفحة الدخول
@@ -253,7 +253,7 @@ async function loadMe(){
 const secList=r=>{const a=[];if(r&&Array.isArray(r.sections))r.sections.forEach(x=>{if(SEC_AR[x]&&!a.includes(x))a.push(x)});if(r&&r.section&&SEC_AR[r.section]&&!a.includes(r.section))a.unshift(r.section);return a};
 const mySecs=()=>ME?(seesAll()?Object.keys(SEC_AR):secList(ME)):[];
 const secNames=l=>(l||[]).map(k=>SEC_AR[k]).filter(Boolean).join("، ");
-const canSee=f=>!!ME&&!!ME.role&&(f==="index.html"||f==="production.html"||f==="profile.html"||f==="settings.html"||ME.role==="admin"||(ME.role==="owner"&&f!=="users.html")||(KEY[f]&&ME.role==="manager"&&ME.view_all&&can("view"))||(KEY[f]&&mySecs().includes(KEY[f])&&(f==="repair.html"||f==="fire.html"||(can("view")&&!((f==="casting.html"||f==="brush.html")&&ME.role==="worker")))));
+const canSee=f=>!!ME&&!!ME.role&&(f==="index.html"||f==="production.html"||f==="profile.html"||f==="settings.html"||ME.role==="admin"||(ME.role==="owner"&&f!=="users.html")||(KEY[f]&&ME.role==="manager"&&ME.view_all&&can("view"))||(KEY[f]&&mySecs().includes(KEY[f])&&(f==="repair.html"||f==="fire.html"||f==="finish.html"||(can("view")&&!((f==="casting.html"||f==="brush.html")&&ME.role==="worker")))));
 const visibleSections=()=>SECTIONS.filter(s=>canSee(s[0]));
 const canReports=()=>viewsAll();
 function noAccess(){
@@ -280,6 +280,7 @@ const SUBS={
  "repair.html":[["سجل التصليح","log"],["تقارير القسم","prod"]],
  "casting.html":[["سجل الصب","log"],["تقارير القسم","prod"]],
  "brush.html":[["سجل البرشر","log"],["تقارير القسم","prod"]],
+ "finish.html":[["سجل الفنش","log"],["تقارير القسم","prod"]],
  "fire.html":[["لوحة التحكم","dash"],["حريق البسكوت","bf"],["حريق الجليز","gf"],["شحن عربيات البسكوت","bl"],["شحن عربيات الجليز","gl"],["الأفران","kil"],["عمليات جارية","run"],["عمليات مكتملة","dn"],["سجل العمليات","log"],["التقارير والطباعة","prt"],["تقارير القسم","prod"],["سجل المراجعة","aud"]],
  "orders.html":[["الطلبيات المفتوحة","open"],["الطلبيات المكتملة","done"]],
  "reports.html":[["التقرير اليومي","daily"],["تقرير الطلبيات","orders"],["التقارير العامة","general"]]};
@@ -552,7 +553,7 @@ function closeModal(){
 /* ===== ما الجديد: تلقائي من رسائل الـ commit على GitHub =====
    اكتب رسالة الـ commit بالعربي (السطر الأول + سطور إضافية اختيارية) وهتظهر لوحدها.
    الـ commits اللي رسالتها إنجليزي (Update x.js ...) بتتجاهل. لو عاوز تحكم يدوي: ضيف إصدار في APP_CHANGES وهيكسب. */
-const GH_NAMES={"glaze.html":"صفحة الجليز","decoration.html":"صفحة الزخرفة","spray.html":"صفحة الرش","repair.html":"صفحة التصليح","casting.html":"صفحة الصب اليدوي","brush.html":"صفحة البرشر","fire.html":"صفحة الحريق","production.html":"تسجيل الإنتاج","reports.html":"التقارير","orders.html":"الطلبيات","reports.js":"التقارير","search.html":"البحث الشامل","catalog.html":"الأصناف والألوان","workers.html":"العمال","users.html":"المستخدمين والصلاحيات","activity.html":"سجل النشاط","settings.html":"الإعدادات","profile.html":"الملف الشخصي","index.html":"الصفحة الرئيسية","common.js":"وظائف البرنامج الأساسية","style.css":"التصميم","theme.css":"التصميم والأيقونات","dash.js":"لوحة المؤشرات"};
+const GH_NAMES={"glaze.html":"صفحة الجليز","decoration.html":"صفحة الزخرفة","spray.html":"صفحة الرش","repair.html":"صفحة التصليح","casting.html":"صفحة الصب اليدوي","brush.html":"صفحة البرشر","finish.html":"صفحة الفنش","fire.html":"صفحة الحريق","production.html":"تسجيل الإنتاج","reports.html":"التقارير","orders.html":"الطلبيات","reports.js":"التقارير","search.html":"البحث الشامل","catalog.html":"الأصناف والألوان","workers.html":"العمال","users.html":"المستخدمين والصلاحيات","activity.html":"سجل النشاط","settings.html":"الإعدادات","profile.html":"الملف الشخصي","index.html":"الصفحة الرئيسية","common.js":"وظائف البرنامج الأساسية","style.css":"التصميم","theme.css":"التصميم والأيقونات","dash.js":"لوحة المؤشرات"};
 function ghFiles(files){
   const n=[...new Set((files||[]).map(f=>GH_NAMES[String(f.filename||"").split("/").pop()]).filter(Boolean))];
   return n.length?"تحديث وتحسين: "+n.slice(0,4).join("، ")+(n.length>4?" وغيرها":""):"";
@@ -876,6 +877,7 @@ function wkCur(){
   let cs="";try{if(typeof sec==="string")cs=sec}catch(e){}
   if(/casting\.html/.test(location.pathname))return "casting";
   if(/brush\.html/.test(location.pathname))return "brush";
+  if(/finish\.html/.test(location.pathname))return "finish";
   if(/fire\.html/.test(location.pathname))return "fire";
   if(/repair\.html/.test(location.pathname))return "repair";
   if(cs&&SEC_AR[cs])return cs;
@@ -1432,7 +1434,7 @@ function decoFind(lines,item,code){
 }
 function freeProduction(sec,done){
   if(roBlock())return;
-  if(!SEC_AR[sec]||sec==="repair"||sec==="casting"||sec==="brush")return;
+  if(!SEC_AR[sec]||sec==="repair"||sec==="casting"||sec==="brush"||sec==="finish")return;
   const deco=sec==="deco",spr=sec==="spray",lab=deco?"كود الرسمة":"اللون",kind=deco?"code":"color";
   const rowHtml=()=>`<div class="itemblk mrow"><div class="ih"><b class="mn"></b><button type="button" class="rmi" aria-label="حذف الصنف">${ib("trash","حذف")}</button></div>
     <label>الصنف</label><input class="it" placeholder="اسم الصنف" autocomplete="off">
@@ -1766,7 +1768,8 @@ const TIC={
   wrench:'<path d="M14.5 6.5a4 4 0 0 0 5 5l-9 9a2.1 2.1 0 0 1-3-3l9-9a4 4 0 0 0-2-2z"/>',
   cast:'<path d="M8 2.5h8"/><path d="M9.5 2.5v3.6c0 1.3-4 2.4-4 7.4a6.5 6.5 0 0 0 13 0c0-5-4-6.1-4-7.4V2.5"/><path d="M6 12.5h12"/>',
   fire:'<path class="f" d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
-  brush:'<path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/>'
+  brush:'<path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/>',
+  finish:'<path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4M5 17v4M3 19h4"/>'
 };
 function tabIconKey(b){
   const t=b.textContent.trim(),k=[b.id,b.dataset.t,b.dataset.s,b.dataset.k].join(" ");
@@ -1779,6 +1782,7 @@ function tabIconKey(b){
   if(has(/repair|تصليح/))return"wrench";
   if(has(/casting|الصب/)&&!has(/سجل الصب/))return"cast";
   if(has(/brush|البرشر/)&&!has(/سجل البرشر/))return"brush";
+  if(has(/finish|الفنش/)&&!has(/سجل الفنش/))return"finish";
   if(has(/مفتوح|\bopen\b/))return"open";
   if(has(/مكتمل|\bdone\b/))return"done";
   if(has(/هالك|\brep\b/))return"waste";

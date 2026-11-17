@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#642631">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="الأقسام">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>الفنش</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div id="splash"><svg class="gears" viewBox="0 0 120 80" aria-hidden="true"><path class="g1" fill-rule="evenodd" fill="#D7B96F" d="M56.5,42.0 L63.4,44.7 L62.8,48.1 L55.4,48.3 L54.0,51.2 L58.6,57.0 L56.4,59.7 L49.9,56.1 L47.2,58.0 L48.4,65.3 L45.1,66.5 L41.3,60.2 L38.0,60.5 L35.3,67.4 L31.9,66.8 L31.7,59.4 L28.8,58.0 L23.0,62.6 L20.3,60.4 L23.9,53.9 L22.0,51.2 L14.7,52.4 L13.5,49.1 L19.8,45.3 L19.5,42.0 L12.6,39.3 L13.2,35.9 L20.6,35.7 L22.0,32.8 L17.4,27.0 L19.6,24.3 L26.1,27.9 L28.8,26.0 L27.6,18.7 L30.9,17.5 L34.7,23.8 L38.0,23.5 L40.7,16.6 L44.1,17.2 L44.3,24.6 L47.2,26.0 L53.0,21.4 L55.7,23.6 L52.1,30.1 L54.0,32.8 L61.3,31.6 L62.5,34.9 L56.2,38.7Z M45,42 a7,7 0 1,0 -14,0 a7,7 0 1,0 14,0Z"/><path class="g2" fill-rule="evenodd" fill="#E8D49B" d="M85.6,30.0 L90.2,32.7 L89.3,36.2 L83.9,36.2 L81.9,38.9 L83.2,44.1 L80.2,45.9 L76.3,42.2 L73.0,42.6 L70.3,47.2 L66.8,46.3 L66.8,40.9 L64.1,38.9 L58.9,40.2 L57.1,37.2 L60.8,33.3 L60.4,30.0 L55.8,27.3 L56.7,23.8 L62.1,23.8 L64.1,21.1 L62.8,15.9 L65.8,14.1 L69.7,17.8 L73.0,17.4 L75.7,12.8 L79.2,13.7 L79.2,19.1 L81.9,21.1 L87.1,19.8 L88.9,22.8 L85.2,26.7Z M78,30 a5,5 0 1,0 -10,0 a5,5 0 1,0 10,0Z"/><path class="g3" fill-rule="evenodd" fill="#B9984C" d="M95.2,52.5 L98.6,54.8 L97.7,57.6 L93.7,57.7 L91.8,59.7 L92.0,63.7 L89.3,64.8 L86.7,61.7 L83.9,61.5 L81.0,64.2 L78.4,62.8 L79.3,58.8 L77.7,56.5 L73.7,55.9 L73.2,53.0 L76.9,51.2 L77.7,48.5 L75.7,45.0 L77.7,42.8 L81.3,44.5 L83.9,43.5 L85.4,39.8 L88.4,40.0 L89.3,43.9 L91.8,45.3 L95.6,44.1 L97.3,46.6 L94.8,49.7Z M90,52.5 a4,4 0 1,0 -8,0 a4,4 0 1,0 8,0Z"/></svg><img src="icon.svg" alt=""><b>إدارة الأقسام</b><div class="ld"><i></i></div><small class="ldt">جاري التحميل…</small></div>
+<script>try{var n=performance.getEntriesByType("navigation")[0];if(sessionStorage.getItem("sp")&&!(n&&n.type==="reload"))document.getElementById("splash").remove()}catch(e){}</script>
+<div class="wrap">
+  <h1>الفنش</h1>
+  <div class="tabs noprint"><button class="btn on" id="t-log">السجل</button><button class="btn ghost" id="t-prod">تقارير</button></div>
+  <div id="logView">
+  <div class="kpis mini three" id="stats"></div>
+  <div class="row noprint" style="margin-bottom:12px"><button class="btn" id="add" style="flex:1">+ تسجيل إنتاج</button><button class="btn ghost" id="addw" style="flex:1">+ تسجيل هالك</button></div>
+  <div class="card noprint">
+    <div class="two"><div><label>من</label><input type="date" id="f-from"></div><div><label>إلى</label><input type="date" id="f-to"></div></div>
+    <div class="two"><div><label>الأداء</label><select data-sp="1" id="f-task"><option value="">الكل</option><option>مشرط</option><option>مياه</option><option>صنفرة</option></select></div><div><label>العامل</label><select data-sp="1" id="f-wk"><option value="">الكل</option></select></div></div>
+    <div class="two"><div><label>الوردية</label><select data-sp="1" id="f-sh"><option value="">الكل</option><option>صباحي</option><option>مسائي</option><option>ليلي</option></select></div><div></div></div>
+    <div class="row"><button class="btn" id="f-go">عرض</button><button class="btn ghost" id="f-csv">تصدير Excel</button><button class="btn ghost" onclick="window.print()">طباعة</button></div>
+  </div>
+  <div class="total" id="total"></div>
+  <div class="nums" id="brk" style="margin-bottom:10px"></div>
+  <div class="scroll" id="wq" style="margin-bottom:10px"></div>
+  <div class="scroll" id="tbl"><table><thead><tr><th>التاريخ</th><th>الوردية</th><th>الأداء</th><th>العامل</th><th>القطع</th><th>هالك الجودة</th><th>ملاحظات</th><th class="noprint"></th></tr></thead><tbody id="body"></tbody></table></div>
+  </div>
+  <div id="prodRep" style="display:none"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="reports.js"></script>
+<script>
+let rows=[],Q="",repCtl=null,tab=location.hash==="#reports"?"prod":"log";
+const TASKS=["مشرط","مياه","صنفرة"],SHIFTS=["صباحي","مسائي","ليلي"],NONE="بدون أداء",TBL="finish_log";
+const lastShift=()=>{try{return localStorage.getItem("fin_shift")||""}catch(e){return ""}};
+
+async function load(){
+  const a=await db.from(TBL).select("*").order("finish_date",{ascending:false}).order("id",{ascending:false});
+  if(a.error){
+    if(/finish_log|relation|schema cache|does not exist/i.test(a.error.message||"")){
+      document.getElementById("body").innerHTML='<tr><td colspan="8" class="empty err-state">جدول الفنش غير موجود. شغّل ملف setup_finish.sql من Supabase (SQL Editor) مرة واحدة.<br><button class="btn sm" onclick="load()">إعادة المحاولة</button></td></tr>';return}
+    fail("body",load);return}
+  rows=a.data.map(r=>({id:r.id,d:r.finish_date,task:r.task||"",qty:+r.qty||0,sc:+r.scrap||0,isw:!(+r.qty>0)&&+r.scrap>0,sh:r.shift||"",w:r.worker||"",n:r.note||"",by:r.created_by||null}));
+  fillWk();draw();drawStats();
+}
+function fillWk(){
+  const s=document.getElementById("f-wk"),cur=s.value;
+  s.innerHTML='<option value="">الكل</option><option value="__none">بدون عامل</option>'+[...new Set(rows.map(r=>r.w).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ar")).map(v=>`<option>${esc(v)}</option>`).join("");
+  s.value=cur;
+}
+function drawStats(){
+  const t=today(),m=t.slice(0,8)+"01";
+  const scr=rows.reduce((a,r)=>a+(r.d>=m&&r.d<=t?r.sc:0),0);
+  kpis("stats",[["إنتاج النهارده",sumQty(rows,t,t),"var(--ok)"],["هذا الشهر",sumQty(rows,m,t)],["هالك هذا الشهر",scr,scr?"var(--bad,#b3261e)":""]]);
+}
+function setTab(){
+  document.getElementById("t-log").className="btn "+(tab==="log"?"on":"ghost");
+  document.getElementById("t-prod").className="btn "+(tab==="prod"?"on":"ghost");
+  document.getElementById("logView").style.display=tab==="log"?"block":"none";
+  document.getElementById("prodRep").style.display=tab==="prod"?"block":"none";
+  try{history.replaceState(null,"",tab==="prod"?"#reports":location.pathname+location.search)}catch(e){}
+  if(tab==="prod")repCtl?repCtl.refresh():repCtl=Reports.mount("prodRep","finish");
+}
+function filtered(){
+  const f=document.getElementById("f-from").value,t=document.getElementById("f-to").value,
+        k=document.getElementById("f-task").value,w=document.getElementById("f-wk").value,sh=document.getElementById("f-sh").value;
+  return rows.filter(r=>(!f||r.d>=f)&&(!t||r.d<=t)&&(!k||r.task===k)&&(!w||(w==="__none"?!r.w:r.w===w))&&(!sh||r.sh===sh)&&hit(Q,r.task,r.w,r.n,r.sh));
+}
+const canRow=r=>canEditEntry({date:r.d,by:r.by});
+const canDel=r=>can("delete")||(!can("edit")&&canRow(r));
+const dash='<span class="nums">—</span>';
+function draw(){
+  const rs=filtered(),sum=rs.reduce((a,r)=>a+r.qty,0),scr=rs.reduce((a,r)=>a+r.sc,0);
+  document.getElementById("total").textContent="إجمالي الإنتاج: "+nf(sum)+(scr?" · هالك الجودة: "+nf(scr)+(sum+scr?" (نسبة الهالك من الإجمالي "+(Math.round(scr/(sum+scr)*1000)/10)+"%)":""):"");
+  const wm=new Map();rs.forEach(r=>{if(!r.w)return;const o=wm.get(r.w)||{q:0,s:0};o.q+=r.qty;o.s+=r.sc;wm.set(r.w,o)});
+  const wl=[...wm.entries()].filter(([,o])=>o.s>0).sort((a,b)=>b[1].s-a[1].s);
+  document.getElementById("wq").innerHTML=wl.length?`<table><thead><tr><th>العامل</th><th>السليم</th><th>الهالك</th><th>نسبة الهالك</th></tr></thead><tbody>${wl.map(([n,o])=>`<tr><td><b>${esc(n)}</b></td><td>${nf(o.q)}</td><td><b style="color:var(--bad,#b3261e)">${nf(o.s)}</b></td><td>${Math.round(o.s/(o.q+o.s)*1000)/10}%</td></tr>`).join("")}</tbody></table>`:"";
+  const by={};rs.forEach(r=>{const k=r.task||NONE;by[k]=(by[k]||0)+r.qty});
+  document.getElementById("brk").textContent=Object.keys(by).length>1?Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+": "+nf(v)).join(" · "):"";
+  document.getElementById("body").innerHTML=rs.length?rs.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${r.sh?esc(r.sh):dash}</td><td>${r.task?esc(r.task):'<span class="nums">'+NONE+'</span>'}</td><td>${r.w?esc(r.w):dash}</td><td><b>${nf(r.qty)}</b></td><td>${r.sc?'<b style="color:var(--bad,#b3261e)">'+nf(r.sc)+'</b>':dash}</td><td>${r.isw?'<span class="tag late">هالك جودة</span> ':''}${r.n?esc(r.n):""}</td><td class="noprint" style="white-space:nowrap">${canRow(r)?`<button class="btn ghost sm" onclick="finForm(${r.id})">تعديل</button> `:""}${canDel(r)?`<button class="btn ghost sm" onclick="del(${r.id})">حذف</button>`:""}</td></tr>`).join(""):'<tr><td colspan="8" class="empty">مفيش تسجيلات</td></tr>';
+}
+
+/* ===== تسجيل الإنتاج / الهالك (الأداء: مشرط · مياه · صنفرة) ===== */
+async function finInsert(row){
+  const id=uuid(),r2={...row,client_id:id};
+  let res;try{res=await insertRow(TBL,r2)}catch(e){res={error:{message:String(e)}}}
+  if(res.error&&isNet(res.error)){
+    Q_.add({id,table:TBL,row:r2,sec:"finish",rid:"free",qty:row.qty,txt:(row.task||"—")+(row.shift?" · "+row.shift:"")+(row.scrap?" · هالك "+row.scrap:"")});
+    updateBadge();return{queued:true};
+  }
+  return res;
+}
+function finForm(id,waste){if(roBlock())return;
+  const rec=id?rows.find(r=>r.id===id):null;
+  if(rec&&rec.isw)waste=true;
+  const legacySc=!waste&&rec&&rec.sc>0;
+  if(rec&&!canRow(rec)){toast("التعديل مقفول — تقدر تعدّل تسجيلاتك انت في نفس اليوم بس");return}
+  wkLoad();
+  const lockDate=!can("edit"),shiftDef=rec?rec.sh:lastShift();
+  openModal(waste?(rec?"تعديل هالك جودة":"تسجيل هالك جودة"):(rec?"تعديل تسجيل":"تسجيل إنتاج"),`
+    <label>التاريخ</label><input type="date" id="m-d" value="${rec?rec.d:today()}" ${lockDate?"disabled":""}>
+    <label>الوردية</label><select id="m-sh">${SHIFTS.map(s=>`<option ${s===shiftDef?"selected":""}>${s}</option>`).join("")}</select>
+    ${XW(true)}
+    <label>الأداء</label><select id="m-item"><option value="">— اختار الأداء —</option>${TASKS.map(t=>`<option ${rec&&rec.task===t?"selected":""}>${t}</option>`).join("")}</select>
+    ${waste?`<label>عدد القطع الهالكة</label><input type="number" id="m-scrap" min="1" max="100000" inputmode="numeric" value="${rec&&rec.sc?rec.sc:""}"><div class="nums" id="m-wh" style="margin:4px 0 0"></div>`
+      :`<label>عدد القطع</label><input type="number" id="m-q" min="${legacySc?0:1}" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">${legacySc?`<label>هالك الجودة (تسجيل قديم)</label><input type="number" id="m-scrap" min="0" max="100000" inputmode="numeric" value="${rec.sc}">`:""}`}
+    <label>${waste?"السبب / ملاحظات (اختياري)":"ملاحظات (اختياري)"}</label><input id="m-n" maxlength="300" placeholder="أي تعليق على الشغل" value="${rec?esc(rec.n):""}">`,async()=>{
+    const qe=document.getElementById("m-q"),se=document.getElementById("m-scrap");
+    const q=qe?(parseInt(qe.value)||0):0,sc=se?(parseInt(se.value)||0):0;
+    if(waste?sc<1:(q<0||sc<0||q+sc<1||(!legacySc&&q<1))){toast(waste?"اكتب عدد القطع الهالكة":"اكتب عدد القطع");return false}
+    const task=document.getElementById("m-item").value;
+    if(!TASKS.includes(task)){toast("اختار الأداء (مشرط أو مياه أو صنفرة)");return false}
+    const sh=document.getElementById("m-sh").value,x=xfRead();
+    if(!x.worker){toast(waste?"اختار العامل اللي طلع منه الهالك":"اختار اسم العامل");return false}
+    const cd=lockDate?(rec?rec.d:today()):(document.getElementById("m-d").value||today());
+    if(!await reviewSave({title:waste?"راجع الهالك قبل الحفظ":"راجع الإنتاج قبل الحفظ",meta:[["التاريخ",fmtD(cd)],["الوردية",sh],...rvFields(x)],
+      items:[{title:task,rows:[[waste?"عدد القطع الهالكة":"عدد القطع",nf(waste?sc:q)]]}]}))return false;
+    const row={finish_date:cd,task,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null};
+    if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
+    const res=rec?await db.from(TBL).update(row).eq("id",id):await finInsert(row);
+    if(res.queued){try{localStorage.setItem("fin_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("finish",{w:x.worker,i:task,q:q});toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
+    if(res.error){toast(/finish_log|schema cache/i.test(res.error.message||"")?"شغّل ملف setup_finish.sql من Supabase الأول":"خطأ: "+res.error.message);return false}
+    try{localStorage.setItem("fin_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("finish",{w:x.worker,i:task,q:q});
+    await load();toast(rec?"تم التعديل":"تم التسجيل");
+  });
+  setTimeout(()=>{
+    const w=document.getElementById("m-w");if(w&&rec)w.value=rec.w;
+    if(!waste)smartFill("finish",rec);
+    if(waste){ // سليم العامل وهالكه ونسبة الهالك في اليوم
+      const h=document.getElementById("m-wh"),dEl=document.getElementById("m-d"),sEl=document.getElementById("m-scrap");
+      const upd=()=>{const n=w.value.trim();if(!n){h.textContent="";return}
+        const mine=rows.filter(r=>r.w===n&&r.d===dEl.value&&(!rec||r.id!==rec.id)),g=mine.reduce((a,r)=>a+r.qty,0),s=mine.reduce((a,r)=>a+r.sc,0)+(parseInt(sEl.value)||0);
+        h.textContent="سليم "+n+" في اليوم: "+nf(g)+" · هالك: "+nf(s)+" · نسبة الهالك: "+(g+s?Math.round(s/(g+s)*1000)/10:0)+"%"};
+      ["input","change","blur"].forEach(ev=>[w,dEl,sEl].forEach(el=>el.addEventListener(ev,upd)));upd();
+    }
+  },0);
+}
+async function del(id){
+  const rec=rows.find(r=>r.id===id);
+  if(rec&&!canDel(rec)){toast("الحذف مش متاح لك");return}
+  if(!await ask("حذف السجل ده؟"))return;
+  const{data:dd,error}=await db.from(TBL).delete().eq("id",id).select();
+  if(error||!dd.length){toast(error?"خطأ: "+error.message:"لم يتم الحذف، راجع الصلاحيات");return}
+  await load();toast("تم الحذف");
+}
+function exportCsv(){
+  const q=s=>{s=String(s==null?"":s);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
+  const csv="\uFEFF"+["التاريخ,الوردية,الأداء,العامل,عدد القطع,هالك الجودة,ملاحظات",...filtered().map(r=>[r.d,r.sh,r.task||NONE,r.w,r.qty,r.sc,r.n].map(q).join(","))].join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="الفنش.csv";a.click();
+}
+document.getElementById("add").onclick=()=>finForm(0);
+document.getElementById("addw").onclick=()=>finForm(0,true);
+document.getElementById("f-go").onclick=draw;
+document.getElementById("f-csv").onclick=exportCsv;
+document.getElementById("t-log").onclick=()=>{tab="log";setTab()};
+document.getElementById("t-prod").onclick=()=>{tab="prod";setTab()};
+(async()=>{if(await requireAuth("finish.html")){renderNav("finish.html");searchBox("tbl",q=>{Q=q;draw()},"بحث بالأداء أو العامل…");dateChips("f-from","f-to",draw);skel("body",4);if(tab==="prod")setTab();load().finally(settle)}})();
+</script>
+<script src="install.js" defer></script>
+</body>
+</html>

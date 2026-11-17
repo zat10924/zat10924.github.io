@@ -24,7 +24,7 @@
   <h1>بحث عن عامل</h1>
   <div class="card noprint">
     <label>اسم العامل</label><select data-sp="1" id="w_name"><option value="">— اختار العامل —</option></select>
-    <label>القسم</label><select data-sp="1" id="w_sec"><option value="">كل الأقسام</option><option value="glaze">جليز</option><option value="deco">زخرفة</option><option value="spray">رش</option><option value="casting">الصب اليدوي</option><option value="brush">البرشر</option><option value="repair">التصليح</option></select>
+    <label>القسم</label><select data-sp="1" id="w_sec"><option value="">كل الأقسام</option><option value="glaze">جليز</option><option value="deco">زخرفة</option><option value="spray">رش</option><option value="casting">الصب اليدوي</option><option value="brush">البرشر</option><option value="finish">الفنش</option><option value="repair">التصليح</option></select>
     <div class="two"><div><label>من</label><input type="date" id="w_from"></div><div><label>إلى</label><input type="date" id="w_to"></div></div>
     <div class="row"><button class="btn" id="w_go">ابحث</button><button class="btn ghost" onclick="window.print()">طباعة</button></div>
   </div>
@@ -37,7 +37,7 @@
 <script src="config.js"></script>
 <script src="common.js"></script>
 <script>
-const SRC=[["glaze_production","glaze","prod_date"],["deco_production","deco","prod_date"],["spray_production","spray","prod_date"],["free_production",null,"prod_date"],["casting_log","casting","casting_date"],["brush_log","brush","brush_date"],["repair_log","repair","repair_date"]];
+const SRC=[["glaze_production","glaze","prod_date"],["deco_production","deco","prod_date"],["spray_production","spray","prod_date"],["free_production",null,"prod_date"],["casting_log","casting","casting_date"],["brush_log","brush","brush_date"],["finish_log","finish","finish_date"],["repair_log","repair","repair_date"]];
 let WTARGET=new Map(),LAST=[],PICK="";
 const esc2=s=>esc(String(s==null?"":s));
 async function pull(tb,dcol,name,from,to,sec){
@@ -57,10 +57,10 @@ async function go(){
   if(name.length<2){toast("اكتب اسم العامل");return}
   if(from&&to&&from>to){toast("تاريخ البداية بعد النهاية","warn");return}
   skel("w_out",2);w_kpi.innerHTML="";
-  const srcs=SRC.filter(s=>!sec||s[1]===sec||(s[1]===null&&sec!=="casting"&&sec!=="brush"));
+  const srcs=SRC.filter(s=>!sec||s[1]===sec||(s[1]===null&&sec!=="casting"&&sec!=="brush"&&sec!=="finish"));
   const res=await Promise.all(srcs.map(async s=>(await pull(s[0],s[2],name,from,to,sec)).map(r=>({
     d:String(r[s[2]]||"").slice(0,10),sec:s[1]||r.section||"",w:(r.worker||"").trim(),
-    item:r.item||r.color||r.code||r.sub||"",qty:+r.qty||0,sc:(s[0]==="casting_log"||s[0]==="brush_log")?(+r.scrap||0):0}))));
+    item:r.item||r.task||r.color||r.code||r.sub||"",qty:+r.qty||0,sc:(s[0]==="casting_log"||s[0]==="brush_log"||s[0]==="finish_log")?(+r.scrap||0):0}))));
   LAST=res.flat().filter(r=>r.d);
   const names=[...new Set(LAST.map(r=>r.w))].sort((a,b)=>a.localeCompare(b,"ar"));
   w_names.innerHTML=names.length>1?names.map(n=>`<button type="button" class="chip ${PICK===n?"on":""}" data-n="${esc2(n)}">${esc2(n)}</button>`).join(""):"";

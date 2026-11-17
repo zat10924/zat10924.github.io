@@ -287,7 +287,7 @@ s_upd.onclick=async()=>{
   try{
     const ks=await caches.keys();await Promise.all(ks.filter(k=>k!=="mas-lib").map(k=>caches.delete(k)));
     try{await masCacheClear()}catch(e){}
-    await Promise.all(["index.html","settings.html","profile.html","production.html","orders.html","glaze.html","decoration.html","spray.html","repair.html","casting.html","brush.html","fire.html","catalog.html","reports.html","search.html","activity.html","users.html","workers.html","worker-search.html","common.js","config.js","dash.js","reports.js","style.css","theme.css","install.js","manifest.json","sw.js"].map(f=>fetch(f,{cache:"reload"}).catch(()=>{})));
+    await Promise.all(["index.html","settings.html","profile.html","production.html","orders.html","glaze.html","decoration.html","spray.html","repair.html","casting.html","brush.html","finish.html","fire.html","catalog.html","reports.html","search.html","activity.html","users.html","workers.html","worker-search.html","common.js","config.js","dash.js","reports.js","style.css","theme.css","install.js","manifest.json","sw.js"].map(f=>fetch(f,{cache:"reload"}).catch(()=>{})));
     try{const g=await navigator.serviceWorker.getRegistration();if(g)await g.update()}catch(e){}
   }catch(e){}
   try{sessionStorage.setItem("upd_done",latest+"|"+APP_VERSION)}catch(e){}

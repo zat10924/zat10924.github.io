@@ -26,7 +26,7 @@
   <div id="logv">
     <div class="card noprint">
       <div class="two"><div><label>من</label><input type="date" id="f-from"></div><div><label>إلى</label><input type="date" id="f-to"></div></div>
-      <div class="two"><div><label>القسم</label><select data-sp="1" id="f-sec"><option value="">الكل</option><option value="glaze">جليز</option><option value="deco">زخرفة</option><option value="spray">رش</option><option value="repair">تصليح</option><option value="casting">الصب اليدوي</option><option value="brush">البرشر</option><option value="other">تأجيل / مستخدمين</option></select></div>
+      <div class="two"><div><label>القسم</label><select data-sp="1" id="f-sec"><option value="">الكل</option><option value="glaze">جليز</option><option value="deco">زخرفة</option><option value="spray">رش</option><option value="repair">تصليح</option><option value="casting">الصب اليدوي</option><option value="brush">البرشر</option><option value="finish">الفنش</option><option value="other">تأجيل / مستخدمين</option></select></div>
       <div><label>العملية</label><select data-sp="1" id="f-act"><option value="">الكل</option><option value="insert">إضافة</option><option value="update">تعديل</option><option value="delete">حذف</option></select></div></div>
       <label>المستخدم</label><select data-sp="1" id="f-user"><option value="">الكل</option></select>
     </div>
@@ -52,8 +52,8 @@ const PS=60;
 let page=0,rowsAll=[];const users=new Set();
 const TBL={glaze_orders:["جليز","طلبية"],glaze_order_lines:["جليز","لون"],glaze_production:["جليز","إنتاج"],glaze_order_increases:["جليز","زيادة"],glaze_waste:["جليز","هالك"],
  deco_orders:["زخرفة","طلبية"],deco_lines:["زخرفة","كود"],deco_production:["زخرفة","إنتاج"],deco_increases:["زخرفة","زيادة"],
- spray_orders:["رش","طلبية"],spray_production:["رش","إنتاج"],repair_log:["تصليح","تسجيل"],casting_log:["الصب اليدوي","تسجيل"],casting_orders:["الصب اليدوي","طلبية"],brush_log:["البرشر","تسجيل"],brush_orders:["البرشر","طلبية"],free_production:["","إنتاج بدون طلبية"],order_postponements:["","تأجيل طلبية"],profiles:["","مستخدم"]};
-const SECT={};Object.keys(TBL).forEach(t=>{const k=t.startsWith("glaze")?"glaze":t.startsWith("deco")?"deco":t.startsWith("spray")?"spray":t==="repair_log"?"repair":(t==="casting_log"||t==="casting_orders")?"casting":t.startsWith("brush")?"brush":"other";(SECT[k]=SECT[k]||[]).push(t)});
+ spray_orders:["رش","طلبية"],spray_production:["رش","إنتاج"],repair_log:["تصليح","تسجيل"],casting_log:["الصب اليدوي","تسجيل"],casting_orders:["الصب اليدوي","طلبية"],brush_log:["البرشر","تسجيل"],brush_orders:["البرشر","طلبية"],finish_log:["الفنش","تسجيل"],free_production:["","إنتاج بدون طلبية"],order_postponements:["","تأجيل طلبية"],profiles:["","مستخدم"]};
+const SECT={};Object.keys(TBL).forEach(t=>{const k=t.startsWith("glaze")?"glaze":t.startsWith("deco")?"deco":t.startsWith("spray")?"spray":t==="repair_log"?"repair":(t==="casting_log"||t==="casting_orders")?"casting":t.startsWith("brush")?"brush":t.startsWith("finish")?"finish":"other";(SECT[k]=SECT[k]||[]).push(t)});
 const VERB={insert:"إضافة",update:"تعديل",delete:"حذف"};
 const LBL={sub:"اللون/الكود",worker:"العامل",phone:"الهاتف",whatsapp:"واتساب",item:"الصنف",color:"اللون",code:"الكود",qty:"الكمية",qty_required:"المطلوب",good_qty:"السليم",status:"الحالة",order_date:"تاريخ الطلبية",due_date:"التسليم",prod_date:"تاريخ الإنتاج",waste_date:"تاريخ الهالك",repair_date:"التاريخ",reason:"السبب",full_name:"الاسم",role:"الدور",section:"القسم",postponed_count:"مرات التأجيل",new_date:"التاريخ الجديد",old_date:"التاريخ القديم"};
 const STAT={open:"مفتوحة",done:"مكتملة"};
@@ -113,14 +113,14 @@ document.getElementById("more").onclick=()=>{page++;load(true)};
 ["f-from","f-to","f-sec","f-act","f-user"].forEach(i=>document.getElementById(i).onchange=()=>load(false));
 
 /* ---------- النسخ الاحتياطي ---------- */
-const BK=["glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log","casting_log","casting_orders","brush_log","brush_orders","order_postponements","profiles","free_production","catalog"];
+const BK=["glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log","casting_log","casting_orders","brush_log","brush_orders","finish_log","order_postponements","profiles","free_production","catalog"];
 async function allRows(t){const out=[];for(let f=0;;f+=1000){const{data,error}=await db.from(t).select("*").order("id").range(f,f+999);if(error)throw error;out.push(...data);if(data.length<1000)break}return out}
 function showLast(){let v=null;try{v=localStorage.getItem("lastBackup")}catch(e){}document.getElementById("last").textContent=v?new Date(v).toLocaleString("ar-EG"):"لسه ما اتعملتش"}
 document.getElementById("bk").onclick=async()=>{
   const b=document.getElementById("bk"),p=document.getElementById("prog");b.disabled=true;b.classList.add("loading");
   try{
     const out={app:"sections",at:new Date().toISOString(),tables:{}};let n=0;
-    for(const t of BK){p.textContent="جاري تحميل: "+t;try{out.tables[t]=await allRows(t)}catch(e){if(t==="casting_orders"||t.startsWith("brush")){out.tables[t]=[];continue}throw e}n+=out.tables[t].length}
+    for(const t of BK){p.textContent="جاري تحميل: "+t;try{out.tables[t]=await allRows(t)}catch(e){if(t==="casting_orders"||t==="finish_log"||t.startsWith("brush")){out.tables[t]=[];continue}throw e}n+=out.tables[t].length}
     const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(out)],{type:"application/json"}));a.download="backup-"+today()+".json";a.click();
     try{localStorage.setItem("lastBackup",out.at)}catch(e){}
     showLast();p.textContent="تم تنزيل النسخة: "+nf(n)+" سجل";toast("تم تنزيل النسخة الاحتياطية");

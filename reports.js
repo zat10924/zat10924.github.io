@@ -114,6 +114,13 @@ const mkCast=P=>({name:P.name,page:P.page,icon:P.key,color:P.color,noun:P.noun,s
       };
     }});
 SRC.casting=mkCast({key:"casting",name:"الصب اليدوي",page:"casting.html",color:"#8A5A3C",noun:"الصب",l:"casting_log",o:"casting_orders",d:"casting_date"});
+SRC.finish={name:"الفنش",page:"finish.html",icon:"finish",color:"#3E7C6B",noun:"الفنش",sub:"",
+  async fetch(){
+    const r=await all("finish_log","*").catch(()=>[]);
+    return{prod:r.map(x=>({d:D(x.finish_date),item:x.task||"بدون أداء",sub:"",qty:+x.qty||0,sc:+x.scrap||0,w:x.worker||"",
+        n:[x.shift,(+x.scrap>0?"هالك "+x.scrap:""),x.note].filter(Boolean).join(" · ")})),
+      ord:null,waste:r.map(x=>({d:D(x.finish_date),item:x.task||"بدون أداء",good:+x.qty||0,qty:+x.scrap||0}))};
+  }};
 SRC.brush=mkCast({key:"brush",name:"البرشر",page:"brush.html",color:"#A0522D",noun:"البرشر",l:"brush_log",o:"brush_orders",d:"brush_date"});
 
 /* ---------- الحريق: كل عملية حريق مكتملة = قطع اتحرقت (بتتحسب يوم الإطفاء) ---------- */
@@ -484,7 +491,7 @@ function printDialog(root,scope,secs,hooks={}){
 function mount(rootId,key){
   const root=typeof rootId==="string"?document.getElementById(rootId):rootId,cfg=SRC[key];
   const st={k:"month",f:"",t:"",item:"",col:"",wk:"",by:"item",data:null,moreB:false,moreO:false,moreL:false,printing:false,last:null};
-  const hasOrd=key!=="repair"&&key!=="fire";
+  const hasOrd=key!=="repair"&&key!=="fire"&&key!=="finish";
   root.innerHTML=`
   <div class="print-head"><h2>${APP} — تقرير ${cfg.name}</h2><div class="nums rpd"></div></div>
   <div class="card noprint">
@@ -894,7 +901,7 @@ function dashboard(rootId){
   };
   $(".rbk").onclick=async e=>{
     const b=e.currentTarget;b.disabled=true;b.classList.add("loading");
-    const TABLES=["free_production","glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log","casting_log","casting_orders","brush_log","brush_orders","firing_kilns","firing_loads","firing_load_items","firing_operations"];
+    const TABLES=["free_production","glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log","casting_log","casting_orders","brush_log","brush_orders","finish_log","firing_kilns","firing_loads","firing_load_items","firing_operations"];
     try{
       const out={exported_at:new Date().toISOString(),tables:{},errors:{}};
       for(const tb of TABLES){try{out.tables[tb]=await all(tb,"*")}catch(er){out.errors[tb]=er.message||String(er)}}

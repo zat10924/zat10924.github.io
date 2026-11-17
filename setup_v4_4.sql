@@ -112,7 +112,7 @@ begin
     'glaze_orders','glaze_order_lines','glaze_order_increases','glaze_production','glaze_waste',
     'deco_orders','deco_lines','deco_increases','deco_production',
     'spray_orders','spray_production',
-    'repair_log','casting_orders','casting_log','brush_orders','brush_log'
+    'repair_log','casting_orders','casting_log','brush_orders','brush_log','finish_log'
   ] loop
     if to_regclass('public.' || t) is null then continue; end if;
     execute format('drop policy if exists view_all_sel on public.%I', t);

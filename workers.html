@@ -23,7 +23,7 @@
 <div class="wrap">
   <h1>العمال</h1>
   <div class="kpis mini three" id="stats"></div>
-  <div class="tabs noprint" id="tb"><button class="btn on" data-k="">الكل</button><button class="btn ghost" data-k="glaze">جليز</button><button class="btn ghost" data-k="deco">زخرفة</button><button class="btn ghost" data-k="spray">رش</button><button class="btn ghost" data-k="repair">تصليح</button><button class="btn ghost" data-k="casting">الصب اليدوي</button><button class="btn ghost" data-k="brush">البرشر</button><button class="btn ghost" data-k="fire">الحريق</button></div>
+  <div class="tabs noprint" id="tb"><button class="btn on" data-k="">الكل</button><button class="btn ghost" data-k="glaze">جليز</button><button class="btn ghost" data-k="deco">زخرفة</button><button class="btn ghost" data-k="spray">رش</button><button class="btn ghost" data-k="repair">تصليح</button><button class="btn ghost" data-k="casting">الصب اليدوي</button><button class="btn ghost" data-k="brush">البرشر</button><button class="btn ghost" data-k="finish">الفنش</button><button class="btn ghost" data-k="fire">الحريق</button></div>
   <div class="nums" style="margin-bottom:8px">العمال بيظهروا كاقتراحات في خانة «اسم العامل» وقت تسجيل الإنتاج، وفي التقرير اليومي.</div>
   <button class="btn" id="add" style="width:100%;margin-bottom:10px">+ إضافة عامل</button>
   <div class="search"><input type="search" id="q" placeholder="بحث عن عامل…" aria-label="بحث"></div>
@@ -36,7 +36,7 @@
 <script>
 const wsecs=x=>[...new Set([x.section,...(Array.isArray(x.sections)?x.sections:[])].filter(k=>SECN[k]))];
 let sec="",all=[],Q="",prodToday=new Map();
-const SECN={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي",brush:"البرشر",fire:"الحريق"};
+const SECN={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي",brush:"البرشر",finish:"الفنش",fire:"الحريق"};
 const secOpts=v=>'<option value="">كل الأقسام</option>'+Object.entries(SECN).map(([k,n])=>`<option value="${k}" ${k===v?"selected":""}>${n}</option>`).join("");
 async function load(){
   skel("list",3);
@@ -52,7 +52,7 @@ async function load(){
       const r=await db.from(tb).select("worker,qty").eq("prod_date",t).not("worker","is",null);
       (r.data||[]).forEach(x=>prodToday.set(x.worker,(prodToday.get(x.worker)||0)+(+x.qty||0)));
     }
-    for(const [tb,dc] of [["casting_log","casting_date"],["brush_log","brush_date"]]){
+    for(const [tb,dc] of [["casting_log","casting_date"],["brush_log","brush_date"],["finish_log","finish_date"]]){
       const cr=await db.from(tb).select("worker,qty").eq(dc,t).not("worker","is",null);
       (cr.data||[]).forEach(x=>prodToday.set(x.worker,(prodToday.get(x.worker)||0)+(+x.qty||0)));
     }
