@@ -57,7 +57,7 @@ window.masCacheClear=()=>{try{localStorage.removeItem("masc_uid")}catch(e){}retu
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {global:{fetch:MASC.fetch}});
 
 /* ===== إصدار البرنامج (غيّر الرقم هنا عند كل تحديث) ===== */
-const APP_VERSION = "4.6.9";
+const APP_VERSION = "4.7.1";
 // مفتاح الإشعارات العام (آمن إنه يبقى ظاهر)
 const VAPID_PUBLIC = "BMI1dksSzpLuotH8TRjMLlwd53SaAltxeJkdfGYnb0GNTjQLbqXy-HDXbWZUlA5jtahNrND9TZRV7afcjnDfLhs";
 /* مستودع GitHub: منه بتتجاب «ما الجديد» تلقائيًا من رسائل الـ commit العربي */
@@ -65,6 +65,10 @@ const GH_REPO = "zat10924/zat10924.github.io";
 const APP_BUILD = "2026-11-17";
 // آخر التحديثات (الأحدث أولاً) — بتظهر في الإعدادات > البرنامج > «ما الجديد»
 const APP_CHANGES = [
+  ["4.7.1", "2026-11-17", [
+    "تحسين طي القائمة الجانبية على الكمبيوتر لتتحول إلى شريط أيقونات ثابت بدل اختفاء القائمة بالكامل.",
+    "تحسين وضوح التركيز بلوحة المفاتيح وقابلية قراءة الجداول على الشاشات الكبيرة.",
+  ]],
   ["4.6.9", "2026-11-17", [
     "تثبيت هوية منشئ التسجيل والتحقق منها داخل قاعدة البيانات عند مزامنة التسجيلات غير المتصلة.",
     "منع إعادة إرسال التسجيل بدون client_id أو حذف حقول التسجيل بصمت عند نقص أعمدة قاعدة البيانات.",

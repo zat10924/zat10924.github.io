@@ -445,7 +445,7 @@ function renderNav(active){
   const scrim=document.createElement("div");scrim.className="scrim";scrim.id="scrim";
   document.body.prepend(h);document.body.appendChild(side);document.body.appendChild(scrim);
   const open=v=>{document.body.classList.toggle("sideopen",v);if(v)setTimeout(()=>{try{const c=side.querySelector(".sg.cur");c&&c.scrollIntoView({block:"center"})}catch(e){}},80);const m=h.querySelector("#mn");m&&m.setAttribute("aria-expanded",v?"true":"false")};
-  const mnB=h.querySelector("#mn"),wide=()=>matchMedia("(min-width:1200px)").matches;
+  const mnB=h.querySelector("#mn"),wide=()=>matchMedia("(min-width:1100px)").matches;
   try{if(localStorage.getItem("navhide")==="1")document.body.classList.add("navhide")}catch(e){}
   const syncMn=()=>mnB.setAttribute("aria-expanded",String(wide()?!document.body.classList.contains("navhide"):document.body.classList.contains("sideopen")));
   mnB.setAttribute("aria-controls","side");syncMn();
