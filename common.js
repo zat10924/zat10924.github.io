@@ -137,6 +137,16 @@ const SETTINGS=["settings.html","الإعدادات","cog","#5b6b8c"];
 const USERS=["users.html","المستخدمين والصلاحيات","shield","#7a5ea8"];
 const SEC_AR={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي",brush:"البرشر",fire:"الحريق"};
 const ROLE_DESC={admin:"صلاحية كاملة: كل الأقسام والتقارير والمستخدمين",owner:"صاحب المصنع: يشوف كل الأقسام والطلبيات والتقارير (عرض فقط، من غير إدارة المستخدمين)",manager:"مسؤول عن قسم أو أكتر: يشوف ويدير أقسامه بس",worker:"يسجّل الإنتاج في قسمه بس"};
+// تخصصات قسم الحريق والشحن (profiles.fire_role) — كل تخصص ليه صلاحيات مهمته بس
+const FIRE_ROLE_AR={biscuit_kiln:"متخصص أفران البسكوت",glaze_kiln:"متخصص أفران الجليز",biscuit_loader:"مسؤول شحن البسكوت",glaze_loader:"مسؤول شحن الجليز",fire_supervisor:"مشرف قسم الحريق والشحن"};
+const FIRE_ROLE_GRANTS={
+ biscuit_kiln:["يبدأ ويسجّل حريق البسكوت ويطفّي العملية ويصوّر العداد","يشوف سجلات الحريق والشحن","يعدّل سجلاته هو في نفس اليوم بس","مفيش حذف ولا تعديل لسجلات غيره ولا شحن ولا حريق الجليز"],
+ glaze_kiln:["يبدأ ويسجّل حريق الجليز ويطفّي العملية ويصوّر العداد","يشوف سجلات الحريق والشحن","يعدّل سجلاته هو في نفس اليوم بس","مفيش حذف ولا تعديل لسجلات غيره ولا شحن ولا حريق البسكوت"],
+ biscuit_loader:["يسجّل شحن عربيات البسكوت (مرتبط بأفران البسكوت بس)","يشوف سجلات الحريق والشحن","يعدّل شحناته هو في نفس اليوم بس","مفيش حذف ولا حريق ولا شحن الجليز"],
+ glaze_loader:["يسجّل شحن عربيات الجليز (مرتبط بأفران الجليز بس)","يشوف سجلات الحريق والشحن","يعدّل شحناته هو في نفس اليوم بس","مفيش حذف ولا حريق ولا شحن البسكوت"],
+ fire_supervisor:["يسجّل ويعدّل ويحذف أي عملية حريق أو شحن (بسكوت وجليز) في أي وقت","يدير الأفران ويحدد نوعها","يشوف سجل المراجعة (مين أضاف وعدّل وحذف)","صلاحياته في قسم الحريق والشحن بس — مفيش إدارة مستخدمين ولا باقي الأقسام"]};
+const FIRE_ROLE_LEGACY=["عامل في قسم الحريق من غير تخصص: بيسجّل كل أنواع الحريق والشحن (الوضع القديم)","حدد له تخصص عشان تقيّد صلاحياته بمهمته"];
+const fireGrantsOf=r=>{if(!r||!secList(r).includes("fire"))return null;if(r.role==="admin")return["مدير: كل الصلاحيات"];if(r.role==="owner")return["عرض فقط"];if(r.fire_role&&FIRE_ROLE_GRANTS[r.fire_role])return FIRE_ROLE_GRANTS[r.fire_role];if(r.role==="manager")return["مسؤول قسم الحريق: كل العمليات + تعديل وحذف + إدارة الأفران"];return FIRE_ROLE_LEGACY};
 // صلاحيات تفصيلية: الافتراضي حسب الدور، والمدير يقدر يخصصها لكل مستخدم
 const PERM_LBL={view:["عرض صفحة القسم والطلبيات","فتح صفحة القسم ومشاهدة الطلبيات. لو مقفولة يقدر يسجّل إنتاج بس من صفحة «تسجيل الإنتاج»"],edit:["تعديل الطلبيات والسجلات","تعديل بيانات الطلبية واللون والهالك والتصليح"],delete:["الحذف","حذف الطلبيات والألوان وسجلات الإنتاج والهالك"],increase:["زيادة وتأجيل الطلبيات","زيادة الكمية وتأجيل تاريخ التسليم"],reports:["تقارير القسم","فتح تبويب التقارير داخل القسم"],editown:["تعديل إنتاجه في نفس اليوم","يعدّل تسجيلات الإنتاج اللي سجّلها هو بس، وما دام اليوم لسه ما خلصش. بعد انتهاء اليوم التعديل بيتقفل"]};
 const PERM_DEF={owner:{view:true,edit:false,delete:false,increase:false,reports:true,editown:false},manager:{view:true,edit:true,delete:false,increase:true,reports:true,editown:true},worker:{view:true,edit:false,delete:false,increase:false,reports:false,editown:true}};
@@ -163,7 +173,8 @@ const roBlock=()=>{if(isOwner()){toast("صاحب المصنع: عرض فقط —
   };
 })();
 const hideDone=()=>!!ME&&!seesAll()&&!can("edit");
-const subsOf=f=>(SUBS[f]||[]).filter(x=>(x[1]!=="prod"||can("reports"))&&(x[1]!=="done"||!hideDone()));
+const fireSupMe=()=>!!ME&&(ME.role==="admin"||((ME.role==="manager"||ME.fire_role==="fire_supervisor")&&secList(ME).includes("fire")&&(ME.role==="manager"||ME.fire_role==="fire_supervisor")));
+const subsOf=f=>(SUBS[f]||[]).filter(x=>(x[1]!=="prod"||can("reports"))&&(x[1]!=="done"||!hideDone())&&(x[1]!=="aud"||fireSupMe()||isOwner()||(!!ME&&!!ME.view_all)));
 // ===== تعديل الإنتاج في نفس اليوم فقط =====
 // اليوم بيعتبر منتهي لو تاريخ التسجيل أقدم من تاريخ السيرفر أو من تاريخ الجهاز (الأحدث فيهم) — عشان لو الصفحة فضلت مفتوحة بعد نص الليل.
 const localToday=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
@@ -218,10 +229,10 @@ async function loadMe(){
   const session=await getSess();if(!session)return null;
   // لو عمود active لسه مش موجود (قبل تشغيل setup_users.sql) نرجع للاستعلام القديم
   const getP=async()=>{
-    let cols=["full_name","role","section","sections","active","perms","avatar","phone","whatsapp","view_all"],r;
+    let cols=["full_name","role","section","sections","active","perms","avatar","phone","whatsapp","view_all","fire_role"],r;
     for(let i=0;i<8;i++){
       r=await db.from("profiles").select(cols.join(",")).eq("id",session.user.id).maybeSingle();
-      const bad=r.error&&["perms","active","avatar","sections","phone","whatsapp","view_all"].find(c=>cols.includes(c)&&(r.error.message||"").includes(c));
+      const bad=r.error&&["perms","active","avatar","sections","phone","whatsapp","view_all","fire_role"].find(c=>cols.includes(c)&&(r.error.message||"").includes(c));
       if(!bad)break;cols=cols.filter(c=>c!==bad);
     }
     return r};
@@ -233,7 +244,7 @@ async function loadMe(){
   if(p.error&&cached&&(!navigator.onLine||/fetch|network|load failed/i.test(p.error.message||"")))ME=cached;
   else{
     ME=p.error?{id:session.user.id,name:"",email:session.user.email||"",role:"admin",section:null,sections:[],active:true,perms:{},avatar:"",phone:"",whatsapp:"",legacy:true}
-      :{id:session.user.id,name:p.data?.full_name||"",email:session.user.email||"",role:p.data?.role||null,section:p.data?.section||null,sections:secList(p.data),active:p.data?.active!==false,perms:p.data?.perms||{},avatar:safeAv(p.data?.avatar),phone:p.data?.phone||"",whatsapp:p.data?.whatsapp||""};
+      :{id:session.user.id,name:p.data?.full_name||"",email:session.user.email||"",role:p.data?.role||null,section:p.data?.section||null,sections:secList(p.data),active:p.data?.active!==false,perms:p.data?.perms||{},avatar:safeAv(p.data?.avatar),phone:p.data?.phone||"",whatsapp:p.data?.whatsapp||"",fire_role:p.data?.fire_role||""};
     if(!p.error)try{localStorage.setItem("me_"+session.user.id,JSON.stringify(ME))}catch(e){}
   }
   return ME;
@@ -269,7 +280,7 @@ const SUBS={
  "repair.html":[["سجل التصليح","log"],["تقارير القسم","prod"]],
  "casting.html":[["سجل الصب","log"],["تقارير القسم","prod"]],
  "brush.html":[["سجل البرشر","log"],["تقارير القسم","prod"]],
- "fire.html":[["لوحة الحريق","dash"],["شحن عربية البسكوت","bl"],["حريق عربية البسكوت","bf"],["شحن عربية الجليز","gl"],["حريق عربية الجليز","gf"],["سجل العمليات","log"]],
+ "fire.html":[["لوحة التحكم","dash"],["حريق البسكوت","bf"],["حريق الجليز","gf"],["شحن عربيات البسكوت","bl"],["شحن عربيات الجليز","gl"],["الأفران","kil"],["عمليات جارية","run"],["عمليات مكتملة","dn"],["سجل العمليات","log"],["التقارير والطباعة","prt"],["تقارير القسم","prod"],["سجل المراجعة","aud"]],
  "orders.html":[["الطلبيات المفتوحة","open"],["الطلبيات المكتملة","done"]],
  "reports.html":[["التقرير اليومي","daily"],["تقرير الطلبيات","orders"],["التقارير العامة","general"]]};
 const ROLE_AR={admin:"مدير",owner:"صاحب المصنع",manager:"مسؤول قسم",worker:"مسجّل إنتاج"};
@@ -1764,6 +1775,7 @@ function tabIconKey(b){
     if(has(/حريق عربية|\bbf\b|\bgf\b/))return"fire";
     if(has(/شحن عربية|\bbl\b|\bgl\b/))return"box";
     if(has(/لوحة|\bdash\b/))return"grid";}
+  if(has(/\bfire\b|^الحريق$|حريق/)&&!has(/سجل/))return"fire";
   if(has(/repair|تصليح/))return"wrench";
   if(has(/casting|الصب/)&&!has(/سجل الصب/))return"cast";
   if(has(/brush|البرشر/)&&!has(/سجل البرشر/))return"brush";
@@ -1812,3 +1824,61 @@ function decorateTabs(){
 }
 (()=>{let q=0;const go=()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;try{decorateTabs()}catch(e){}})};
   document.addEventListener("DOMContentLoaded",()=>{go();new MutationObserver(go).observe(document.body,{childList:true,subtree:true})});})();
+
+/* ===== اختيار التاريخ والوقت الموحّد (نهاري/ليلي، موبايل وكمبيوتر) =====
+   بيحوّل أي input[type=datetime-local] لواجهة واحدة: يوم / شهر / سنة + ساعة : دقيقة + ص/م.
+   الـ input الأصلي بيفضل مخفي وبيحمل القيمة بصيغة YYYY-MM-DDTHH:mm فباقي الكود شغّال زي ما هو.
+   بدون لوحة اقتراحات المتصفح (autocomplete=off) وفيه كتابة يدوية وزر «الآن» و«مسح». */
+const DT=(()=>{
+  const MON=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+  const DAYN=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+  const AR=s=>String(s).replace(/\d/g,d=>"٠١٢٣٤٥٦٧٨٩"[d]);
+  const p2=n=>String(n).padStart(2,"0");
+  const parse=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(v||"");return m?{y:+m[1],mo:+m[2],d:+m[3],h:+m[4],mi:+m[5]}:null};
+  const fmt=v=>{const o=parse(v);if(!o)return"";const dt=new Date(o.y,o.mo-1,o.d);const h12=o.h%12||12,ap=o.h<12?"ص":"م";return DAYN[dt.getDay()]+" "+AR(o.d)+" "+MON[o.mo-1]+" "+AR(o.y)+" — "+AR(h12)+":"+AR(p2(o.mi))+" "+ap};
+  const nowLocal=()=>{const d=new Date();return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+"T"+p2(d.getHours())+":"+p2(d.getMinutes())};
+  const valid=(y,mo,d)=>{const x=new Date(y,mo-1,d);return x.getFullYear()===y&&x.getMonth()===mo-1&&x.getDate()===d};
+  function enhance(inp){
+    if(inp._dt||inp.type!=="datetime-local")return;inp._dt=1;
+    const dsc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value");
+    const w=document.createElement("div");w.className="dtw";
+    w.innerHTML=`<div class="dt-sum" aria-live="polite"></div>
+    <div class="dt-row"><label class="dt-f dt-d"><span>اليوم</span><input data-k="d" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="يوم"></label>
+    <label class="dt-f dt-m"><span>الشهر</span><select data-k="mo" autocomplete="off"><option value="">الشهر</option>${MON.map((n,i)=>`<option value="${i+1}">${n}</option>`).join("")}</select></label>
+    <label class="dt-f dt-y"><span>السنة</span><input data-k="y" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="سنة"></label></div>
+    <div class="dt-row"><label class="dt-f dt-h"><span>الساعة</span><input data-k="h" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="ساعة"></label><b class="dt-c">:</b>
+    <label class="dt-f dt-i"><span>الدقيقة</span><input data-k="mi" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="دقيقة"></label>
+    <label class="dt-f dt-p"><span>&nbsp;</span><select data-k="ap" autocomplete="off"><option value="am">ص (صباحًا)</option><option value="pm">م (مساءً)</option></select></label>
+    <div class="dt-act"><button type="button" class="dt-b" data-a="now">الآن</button><button type="button" class="dt-b ghost" data-a="clr">مسح</button></div></div>`;
+    inp.after(w);inp.style.display="none";inp.setAttribute("tabindex","-1");
+    const q=k=>w.querySelector(`[data-k="${k}"]`),sum=w.querySelector(".dt-sum");
+    const paint=()=>{const o=parse(dsc.get.call(inp));
+      q("d").value=o?o.d:"";q("mo").value=o?o.mo:"";q("y").value=o?o.y:"";
+      q("h").value=o?(o.h%12||12):"";q("mi").value=o?p2(o.mi):"";q("ap").value=o&&o.h>=12?"pm":"am";
+      sum.textContent=o?fmt(dsc.get.call(inp)):"لم يتم اختيار وقت";sum.classList.toggle("empty",!o)};
+    const commit=()=>{
+      const d=+q("d").value,mo=+q("mo").value,y=+q("y").value,h12=+q("h").value,mi=q("mi").value===""?0:+q("mi").value;
+      let v="",bad=false;
+      if(q("d").value&&q("mo").value&&q("y").value.length===4&&q("h").value!==""){
+        if(!valid(y,mo,d)||h12<1||h12>12||mi<0||mi>59)bad=true;
+        else{let h=h12%12;if(q("ap").value==="pm")h+=12;v=y+"-"+p2(mo)+"-"+p2(d)+"T"+p2(h)+":"+p2(mi)}
+      }
+      dsc.set.call(inp,v);
+      w.classList.toggle("bad",bad);
+      sum.textContent=bad?"قيمة غير صحيحة — راجع التاريخ والوقت":(v?fmt(v):"لم يتم اختيار وقت");sum.classList.toggle("empty",!v&&!bad);
+      inp.dispatchEvent(new Event("input",{bubbles:true}));inp.dispatchEvent(new Event("change",{bubbles:true}));
+    };
+    Object.defineProperty(inp,"value",{configurable:true,get(){return dsc.get.call(inp)},set(v){dsc.set.call(inp,v);paint()}});
+    w.addEventListener("input",e=>{const t=e.target;if(t.tagName==="INPUT")t.value=t.value.replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/\D/g,"");commit()});
+    w.addEventListener("change",e=>{if(e.target.tagName==="SELECT")commit()});
+    w.addEventListener("blur",e=>{if(e.target.dataset&&e.target.dataset.k==="mi"&&q("mi").value.length===1)q("mi").value=p2(q("mi").value)},true);
+    w.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;
+      if(b.dataset.a==="now"){inp.value=nowLocal();inp.dispatchEvent(new Event("input",{bubbles:true}));inp.dispatchEvent(new Event("change",{bubbles:true}))}
+      else{inp.value="";inp.dispatchEvent(new Event("input",{bubbles:true}));inp.dispatchEvent(new Event("change",{bubbles:true}))}});
+    paint();
+  }
+  const scan=root=>{(root||document).querySelectorAll&&(root||document).querySelectorAll('input[type="datetime-local"]').forEach(enhance)};
+  const start=()=>{scan(document);try{new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1){if(n.matches&&n.matches('input[type="datetime-local"]'))enhance(n);else scan(n)}}).observe(document.body,{childList:true,subtree:true})}catch(e){}};
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start();
+  return{enhance,fmt,AR,nowLocal,MON,DAYN};
+})();

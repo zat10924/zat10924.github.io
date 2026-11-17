@@ -38,11 +38,11 @@ const secOpts=(v)=>Object.entries(SEC_AR).map(([k,n])=>`<option value="${k}" ${v
 
 async function load(){
   skel("u_list",3);
-  let cols=["id","full_name","role","section","sections","email","active","perms","last_seen","avatar","phone","whatsapp","view_all"],data,error;
+  let cols=["id","full_name","role","section","sections","email","active","perms","last_seen","avatar","phone","whatsapp","view_all","fire_role"],data,error;
   HAS_PERMS=true;
   for(let k=0;k<8;k++){
     ({data,error}=await db.from("profiles").select(cols.join(",")).order("full_name"));
-    const bad=error&&["perms","last_seen","avatar","sections","phone","whatsapp","view_all"].find(c=>cols.includes(c)&&(error.message||"").includes(c));
+    const bad=error&&["perms","last_seen","avatar","sections","phone","whatsapp","view_all","fire_role"].find(c=>cols.includes(c)&&(error.message||"").includes(c));
     if(!bad)break;cols=cols.filter(c=>c!==bad);if(bad==="perms")HAS_PERMS=false;
   }
   if(error){
@@ -63,8 +63,8 @@ function render(){
     return `<div class="card ${off?"off":""}"><div class="urow">
       <span ${avAttr(r.avatar,"avatar big")}>${avText(r.avatar,(r.full_name||realEmail(r.email)||"?").trim().charAt(0).toUpperCase())}</span>
       <div class="ut"><b>${esc(r.full_name||"بدون اسم")}${me?' <span class="tag">أنت</span>':""}</b><small>${esc(realEmail(r.email)||"بدون إيميل — دخول بالاسم")}</small>${r.last_seen?`<small style="display:block">آخر ظهور: ${ageTxt(r.last_seen)}</small>`:""}
-        <div class="utags"><span class="tag ${r.role==="admin"?"role-admin":""}">${ROLE_AR[r.role]||"بدون صلاحية"}</span>${r.role&&r.role!=="admin"&&r.role!=="owner"?(ss.length?ss.map(k=>`<span class="tag">${SEC_AR[k]}</span>`).join(""):'<span class="tag">بدون قسم</span>'):""}${off?'<span class="tag bad">موقوف</span>':""}${locked?'<span class="tag lock" title="حسابات المديرين وصاحب المصنع محمية">'+ui("lock")+'محمي</span>':""}</div>
-        ${r.phone||r.whatsapp?`<div class="cline">${contactBtns(r)}</div>`:""}</div>
+        <div class="utags"><span class="tag ${r.role==="admin"?"role-admin":""}">${ROLE_AR[r.role]||"بدون صلاحية"}</span>${r.role&&r.role!=="admin"&&r.role!=="owner"?(ss.length?ss.map(k=>`<span class="tag">${SEC_AR[k]}</span>`).join(""):'<span class="tag">بدون قسم</span>'):""}${r.fire_role&&FIRE_ROLE_AR[r.fire_role]&&ss.includes("fire")?`<span class="tag role-fire">${FIRE_ROLE_AR[r.fire_role]}</span>`:""}${off?'<span class="tag bad">موقوف</span>':""}${locked?'<span class="tag lock" title="حسابات المديرين وصاحب المصنع محمية">'+ui("lock")+'محمي</span>':""}</div>
+        ${fireGrantsHtml(r)}${r.phone||r.whatsapp?`<div class="cline">${contactBtns(r)}</div>`:""}</div>
       ${locked?"":`<button class="btn ghost sm" data-e="${r.id}">تعديل</button>`}</div></div>`}).join("")
     :'<div class="empty">مفيش مستخدمين مطابقين</div>';
 }
@@ -72,20 +72,26 @@ u_chips.onclick=e=>{const b=e.target.closest(".chip");if(!b)return;fRole=b.datas
 u_list.onclick=e=>{const b=e.target.closest("[data-e]");if(b)editUser(ROWS.find(r=>r.id===b.dataset.e))};
 const PROT_MSG="حسابات المديرين محمية: بتتعدّل من Supabase بس. ولإضافة مدير أو صاحب مصنع شغّل setup_roles_v2.sql مرة واحدة";
 const OWN_MSG="حساب صاحب المصنع محمي: محدش يقدر يعدّل صلاحياته أو يوقفه أو يحذفه";
-const errTxt=m=>/protected owner/i.test(m||"")?OWN_MSG:/protected admin/i.test(m||"")?PROT_MSG:/view_all/i.test(m||"")?"لازم تشغّل ملف setup_v4_4.sql في Supabase الأول":/phone|whatsapp|sections|column/i.test(m||"")?"لازم تشغّل ملف setup_v2.sql في Supabase الأول":"خطأ: "+m;
+const errTxt=m=>/fire_role|profiles_section_check/i.test(m||"")?"لازم تشغّل ملف setup_fire_v2.sql في Supabase الأول (SQL Editor ← Run)":/protected owner/i.test(m||"")?OWN_MSG:/protected admin/i.test(m||"")?PROT_MSG:/view_all/i.test(m||"")?"لازم تشغّل ملف setup_v4_4.sql في Supabase الأول":/phone|whatsapp|sections|column/i.test(m||"")?"لازم تشغّل ملف setup_v2.sql في Supabase الأول":"خطأ: "+m;
 
 const roleBox=(v)=>`<label>الصلاحية</label><div class="rolebox">${["admin","owner","manager","worker"].map(k=>`<label><input type="radio" name="m-rl" value="${k}" ${v===k?"checked":""}><span><b>${ROLE_AR[k]}</b><small>${ROLE_DESC[k]}</small></span></label>`).join("")}</div>
-  <div id="m_secw"><label>الأقسام التابع لها (تقدر تختار أكتر من قسم)</label><div class="secpick" id="m_secs">${Object.entries(SEC_AR).map(([k,n])=>`<label><input type="checkbox" data-s="${k}"> ${n}</label>`).join("")}</div></div>
+  <div id="m_secw"><label>الأقسام التابع لها (تقدر تختار أكتر من قسم)</label><div class="secpick" id="m_secs">${Object.entries(SEC_AR).map(([k,n])=>`<label><input type="checkbox" data-s="${k}">${ico(k)}<span>${n}</span></label>`).join("")}</div></div>
+  <div id="m_frw" hidden><label>تخصص الحريق والشحن</label><div class="rolebox frbox">${[["","بدون تخصص (وضع قديم: يسجّل كل شيء)"],...Object.entries(FIRE_ROLE_AR)].map(([k,n])=>`<label><input type="radio" name="m-fr" value="${k}"><span><b>${k?n:"بدون تخصص"}</b><small>${k?esc(FIRE_ROLE_GRANTS[k][0]):"ملهوش تخصص محدد: بيسجّل الحريق والشحن لكل الأنواع. حدد تخصصه عشان تقيّد صلاحياته."}</small></span></label>`).join("")}</div><div class="hint frgr" id="m_frg"></div></div>
   <div id="m_vaw" hidden><label class="chk" style="display:flex;gap:8px;align-items:flex-start;margin:10px 0"><input type="checkbox" id="m_va" style="margin-top:4px"><span><b>يشوف باقي الأقسام والتقارير (عرض فقط)</b><small style="display:block;color:var(--mut)">مسؤول القسم بيسجّل ويدير أقسامه بس، وبيشوف إنتاج وتقارير الأقسام التانية زي صاحب المصنع من غير ما يعدّل فيها. محتاج setup_v4_4.sql</small></span></label></div>
   <div id="m_permw">${HAS_PERMS?`<label>الصلاحيات التفصيلية</label><div class="permtools"><button type="button" class="btn ghost sm" id="m_only">إنتاج فقط (إلغاء كل الصلاحيات)</button><button type="button" class="btn ghost sm" id="m_all">تحديد الكل</button></div><div class="permlist">${Object.entries(PERM_LBL).map(([k,l])=>`<label><input type="checkbox" data-p="${k}"><span><b>${l[0]}</b><small>${l[1]}</small></span></label>`).join("")}</div><div class="hint">بتتظبط تلقائي حسب الدور، وتقدر تغيّرها لكل مستخدم. «إنتاج فقط» بيسيب له تسجيل الإنتاج في قسمه من غير ما يشوف الطلبيات أو يعدّل أو يحذف.</div>`:'<div class="hint">لتفعيل الصلاحيات التفصيلية شغّل setup_perms.sql في Supabase.</div>'}</div>`;
 function setPerms(root,role,perms){
   root.querySelectorAll("[data-p]").forEach(c=>{const v=(perms||{})[c.dataset.p];c.checked=typeof v==="boolean"?v:!!(PERM_DEF[role]||{})[c.dataset.p]});
 }
-function wireRole(root,secVals,perms){
+function wireRole(root,secVals,perms,fireRole){
   const w=root.querySelector("#m_secw"),pw=root.querySelector("#m_permw"),vw=root.querySelector("#m_vaw"),full=r=>r==="admin"||r==="owner";
   (secVals||[]).forEach(k=>{const c=root.querySelector(`[data-s="${k}"]`);if(c)c.checked=true});
   const cur=()=>{const r=root.querySelector("input[name=m-rl]:checked");return r?r.value:""};
-  const upd=()=>{const r=cur();w.hidden=!r||full(r);pw.hidden=!r||full(r);if(vw)vw.hidden=r!=="manager"};
+  const fw=root.querySelector("#m_frw"),frg=root.querySelector("#m_frg");
+  const curFr=()=>{const r=root.querySelector("input[name=m-fr]:checked");return r?r.value:""};
+  const fireOn=()=>{const c=root.querySelector('[data-s="fire"]');return !!(c&&c.checked)};
+  const updFr=()=>{const r=cur();if(!fw)return;fw.hidden=!(fireOn()&&(r==="worker"||r==="manager"));const k=curFr();frg.innerHTML=k?"<b>الصلاحيات الممنوحة:</b><ul>"+FIRE_ROLE_GRANTS[k].map(x=>"<li>"+x+"</li>").join("")+"</ul>":"<b>بدون تخصص:</b><ul>"+FIRE_ROLE_LEGACY.map(x=>"<li>"+x+"</li>").join("")+"</ul>"};
+  if(fw){const fr=root.querySelector(`input[name=m-fr][value="${fireRole||""}"]`)||root.querySelector('input[name=m-fr][value=""]');fr.checked=true;root.querySelectorAll("input[name=m-fr]").forEach(i=>i.onchange=updFr);root.querySelectorAll("#m_secs [data-s]").forEach(i=>i.addEventListener("change",updFr))}
+  const upd=()=>{const r=cur();w.hidden=!r||full(r);pw.hidden=!r||full(r);if(vw)vw.hidden=r!=="manager";updFr()};
   root.querySelectorAll("input[name=m-rl]").forEach(i=>i.onchange=()=>{upd();setPerms(root,cur(),null)});
   setPerms(root,cur(),perms);upd();
   const only=root.querySelector("#m_only"),all=root.querySelector("#m_all");
@@ -93,17 +99,21 @@ function wireRole(root,secVals,perms){
   if(all)all.onclick=()=>root.querySelectorAll("[data-p]").forEach(c=>c.checked=true);
 }
 const HASVA=()=>ROWS.some(x=>"view_all" in x);
+const HASFR=()=>ROWS.some(x=>"fire_role" in x);
 function readRole(){
   const r=document.querySelector("input[name=m-rl]:checked"),role=r?r.value:"";
   const sections=[...document.querySelectorAll("#m_secs [data-s]:checked")].map(c=>c.dataset.s),section=sections[0]||null;
   if(!role){toast("اختار الصلاحية");return null}
-  if(role==="admin"||role==="owner"){const o={role,section:null,sections:[],perms:{}};if(HASVA())o.view_all=false;return o}
+  if(role==="admin"||role==="owner"){const o={role,section:null,sections:[],perms:{}};if(HASVA())o.view_all=false;if(HASFR())o.fire_role=null;return o}
   if(!section){toast("اختار قسم واحد على الأقل");return null}
   const va=document.getElementById("m_va"),out={role,section,sections};if(HASVA()||(role==="manager"&&va&&va.checked))out.view_all=role==="manager"&&!!(va&&va.checked);
+  const fr=document.querySelector("input[name=m-fr]:checked"),frv=fr&&fr.value&&sections.includes("fire")&&(role==="worker"||role==="manager")?fr.value:"";
+  if(frv||HASFR())out.fire_role=frv||null;
   if(HAS_PERMS){out.perms={};if(role!=="admin")document.querySelectorAll("[data-p]").forEach(c=>out.perms[c.dataset.p]=c.checked)}
   return out;
 }
 
+function fireGrantsHtml(r){const g=fireGrantsOf(r);if(!g||r.role==="admin"||r.role==="owner")return"";return `<details class="fgr"><summary>الصلاحيات الممنوحة في الحريق والشحن</summary><ul>${g.map(x=>`<li>${x}</li>`).join("")}</ul></details>`}
 const nn=s=>(s||"").trim().replace(/\s+/g," ").toLowerCase();
 const nameTaken=(n,except)=>ROWS.some(r=>r.id!==except&&nn(r.full_name)===nn(n));
 u_add.onclick=()=>{
@@ -119,7 +129,7 @@ u_add.onclick=()=>{
     if(!em){
       // بدون إيميل: دالة السيرفر بتعمل الحساب مؤكد وجاهز للدخول بالاسم
       const r=await db.rpc("admin_create_user",{p_name:fn,p_password:pw,p_role:rs.role,p_section:rs.section,p_perms:rs.perms||{}});
-      if(!r.error&&r.data){const u2=await db.from("profiles").update({sections:rs.sections}).eq("id",r.data);if(u2.error&&rs.sections.length>1)toast("اتضاف المستخدم لكن الأقسام الإضافية محتاجة setup_v2.sql","warn")}
+      if(!r.error&&r.data){const u2=await db.from("profiles").update({sections:rs.sections,...(rs.fire_role?{fire_role:rs.fire_role}:{})}).eq("id",r.data);if(u2.error&&rs.fire_role){toast(errTxt(u2.error.message),"bad");await load();return false}if(u2.error&&rs.sections.length>1)toast("اتضاف المستخدم لكن الأقسام الإضافية محتاجة setup_v2.sql","warn")}
       if(r.error){
         const m=r.error.message||"";
         toast(r.error.code==="PGRST202"?"لازم تشغّل ملف setup_create_user.sql في Supabase الأول (SQL Editor ← Run)":/exists|taken/i.test(m)?"الاسم ده مستخدم قبل كده":/not allowed/i.test(m)?"مش مسموح لك بإضافة مستخدمين":/bad role|protected/i.test(m)?PROT_MSG:"خطأ: "+m,"bad");
@@ -134,7 +144,7 @@ u_add.onclick=()=>{
     const{data,error}=await tmp.auth.signUp({email:em,password:pw,options:{data:{full_name:fn}}});
     if(error){toast("خطأ: "+(/registered|already/i.test(error.message)?"الإيميل ده مستخدم قبل كده":error.message));return false}
     if(!data.user||(data.user.identities&&!data.user.identities.length)){toast("الإيميل ده مستخدم قبل كده");return false}
-    const up=await db.from("profiles").upsert({id:data.user.id,full_name:fn,email:em,role:rs.role,section:rs.section,sections:rs.sections,active:true,...(rs.perms?{perms:rs.perms}:{})});
+    const up=await db.from("profiles").upsert({id:data.user.id,full_name:fn,email:em,role:rs.role,section:rs.section,sections:rs.sections,active:true,...(rs.perms?{perms:rs.perms}:{}),...(rs.fire_role?{fire_role:rs.fire_role}:{})});
     if(up.error){toast("اتعمل الحساب لكن الصلاحية ما اتحفظتش: "+up.error.message);return false}
     await load();toast("تمت إضافة "+fn+(data.session?"":" — لازم يأكد الإيميل قبل أول دخول"),data.session?"ok":"warn");
   },"إضافة");
@@ -162,7 +172,7 @@ function editUser(r){
     if(error){toast(/avatar/.test(error.message||"")?"لازم تشغّل ملف setup_avatar.sql في Supabase الأول":errTxt(error.message),"bad");return false}
     await load();toast("تم حفظ التعديلات");
   });
-  const ov=document.getElementById("ov");if(!me){wireRole(ov,secList(r),r.perms);const va=ov.querySelector("#m_va");if(va)va.checked=!!r.view_all}
+  const ov=document.getElementById("ov");if(!me){wireRole(ov,secList(r),r.perms,r.fire_role);const va=ov.querySelector("#m_va");if(va)va.checked=!!r.view_all}
   const mf=ov.querySelector("#m_file"),mav=ov.querySelector("#m_av");
   const showAv=u=>{const t=(ov.querySelector("#m_fn").value||"?").trim().charAt(0).toUpperCase();mav.className="avatar big"+(safeAv(u)?" has":"");mav.style.backgroundImage=safeAv(u)?`url('${safeAv(u)}')`:"";mav.textContent=safeAv(u)?"":t};
   ov.querySelector("#m_ph").onclick=()=>mf.click();

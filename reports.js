@@ -115,6 +115,25 @@ const mkCast=P=>({name:P.name,page:P.page,icon:P.key,color:P.color,noun:P.noun,s
     }});
 SRC.casting=mkCast({key:"casting",name:"الصب اليدوي",page:"casting.html",color:"#8A5A3C",noun:"الصب",l:"casting_log",o:"casting_orders",d:"casting_date"});
 SRC.brush=mkCast({key:"brush",name:"البرشر",page:"brush.html",color:"#A0522D",noun:"البرشر",l:"brush_log",o:"brush_orders",d:"brush_date"});
+
+/* ---------- الحريق: كل عملية حريق مكتملة = قطع اتحرقت (بتتحسب يوم الإطفاء) ---------- */
+SRC.fire={name:"الحريق",page:"fire.html",icon:"fire",color:"#C0502B",noun:"القطع المحروقة",sub:"النوع",
+  async fetch(){
+    const[ops,loads,kilns]=await Promise.all([
+      all("firing_operations","*"),
+      all("firing_loads","*,firing_load_items(*)"),
+      all("firing_kilns","id,name").catch(()=>[])]);
+    const LM=new Map(loads.map(l=>[l.id,l])),KM=new Map(kilns.map(k=>[k.id,k.name]));
+    const KN={biscuit:"بسكوت",glaze:"جليز"},prod=[],waste=[];
+    ops.filter(o=>o.status==="done"&&o.finished_at).forEach(o=>{
+      const l=LM.get(o.load_id),d=D(new Date(new Date(o.finished_at).getTime()-new Date(o.finished_at).getTimezoneOffset()*60000).toISOString());
+      const kn=String(KM.get(o.kiln_id)||"؟"),note=[(/^فرن/.test(kn)?kn:"فرن "+kn),"عربية "+(l?l.cart_code:"؟"),(o.tubes_used!=null?o.tubes_used+" أنبوب":"")].filter(Boolean).join(" · ");
+      const its=((l&&l.firing_load_items)||[]);
+      if(!its.length&&l&&+l.total_qty>0)prod.push({d,item:"بدون أصناف",sub:KN[o.kind]||"",qty:l?(+l.total_qty||0):0,w:o.worker||"",n:note});
+      its.filter(i=>+i.qty>0).forEach(i=>prod.push({d,item:i.item||"بدون صنف",sub:KN[o.kind]||"",qty:+i.qty||0,w:o.worker||"",n:note}));
+    });
+    return{prod,ord:null};
+  }};
 const KEYS=Object.keys(SRC);
 const cache={};
 const inflight={};
@@ -465,7 +484,7 @@ function printDialog(root,scope,secs,hooks={}){
 function mount(rootId,key){
   const root=typeof rootId==="string"?document.getElementById(rootId):rootId,cfg=SRC[key];
   const st={k:"month",f:"",t:"",item:"",col:"",wk:"",by:"item",data:null,moreB:false,moreO:false,moreL:false,printing:false,last:null};
-  const hasOrd=key!=="repair";
+  const hasOrd=key!=="repair"&&key!=="fire";
   root.innerHTML=`
   <div class="print-head"><h2>${APP} — تقرير ${cfg.name}</h2><div class="nums rpd"></div></div>
   <div class="card noprint">
@@ -875,7 +894,7 @@ function dashboard(rootId){
   };
   $(".rbk").onclick=async e=>{
     const b=e.currentTarget;b.disabled=true;b.classList.add("loading");
-    const TABLES=["free_production","glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log","casting_log","casting_orders","brush_log","brush_orders"];
+    const TABLES=["free_production","glaze_orders","glaze_order_lines","glaze_production","glaze_order_increases","glaze_waste","deco_orders","deco_lines","deco_production","deco_increases","spray_orders","spray_production","repair_log","casting_log","casting_orders","brush_log","brush_orders","firing_kilns","firing_loads","firing_load_items","firing_operations"];
     try{
       const out={exported_at:new Date().toISOString(),tables:{},errors:{}};
       for(const tb of TABLES){try{out.tables[tb]=await all(tb,"*")}catch(er){out.errors[tb]=er.message||String(er)}}

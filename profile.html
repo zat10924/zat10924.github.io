@@ -52,6 +52,7 @@
     <dl class="kv2"><dt>الدور</dt><dd id="p_role"></dd><dt>القسم</dt><dd id="p_sec"></dd></dl>
     <div class="nums" id="p_desc" style="margin-top:8px"></div>
     <div id="p_perms" style="margin-top:8px"></div>
+    <div id="p_fire" style="margin-top:8px"></div>
     <div class="hint" style="margin-top:8px">الدور والقسم بيحددهم المدير بس.</div>
   </div>
 
@@ -77,7 +78,7 @@ function fill(){
   p_tags.innerHTML=`<span class="tag ${ME.role==="admin"?"role-admin":""}">${ROLE_AR[ME.role]||""}</span>`+(!seesAll()?mySecs().map(k=>`<span class="tag">${SEC_AR[k]}</span>`).join(""):"");
   p_ph_n.value=ME.phone||"";p_wa_n.value=ME.whatsapp||"";p_same.checked=!!ME.phone&&ME.phone===ME.whatsapp;syncSame();links();
   p_fn.value=ME.name||"";p_em.value=realEmail(ME.email)||"— بدون إيميل —";
-  p_role.textContent=ROLE_AR[ME.role]||"—";p_sec.textContent=secTxt;p_desc.textContent=ROLE_DESC[ME.role]||"";
+  p_role.textContent=ROLE_AR[ME.role]||"—";p_sec.textContent=secTxt;p_desc.textContent=ROLE_DESC[ME.role]||"";{const g=fireGrantsOf(ME);p_fire.innerHTML=g?`<b>${ME.fire_role&&FIRE_ROLE_AR[ME.fire_role]?"تخصصي: "+FIRE_ROLE_AR[ME.fire_role]:"الحريق والشحن"}</b><ul class="fgr-ul">${g.map(x=>"<li>"+x+"</li>").join("")}</ul>`:""}
   p_perms.innerHTML=ME.role==="admin"?"":Object.entries(PERM_LBL).map(([k,l])=>`<div class="pk"><span>${l[0]}</span><span class="${can(k)?"y":"n"}">${can(k)?ib("check","مسموح"):ib("x","غير مسموح")}</span></div>`).join("");
 }
 async function saveAvatar(v){

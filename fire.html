@@ -22,14 +22,8 @@
 <script>try{var n=performance.getEntriesByType("navigation")[0];if(sessionStorage.getItem("sp")&&!(n&&n.type==="reload"))document.getElementById("splash").remove()}catch(e){}</script>
 <div class="wrap">
   <h1>الحريق</h1>
-  <div class="tabs noprint" id="ftabs" role="tablist">
-    <button class="btn on" data-t="dash">اللوحة</button>
-    <button class="btn ghost" data-t="bl">شحن بسكوت</button>
-    <button class="btn ghost" data-t="bf">حريق بسكوت</button>
-    <button class="btn ghost" data-t="gl">شحن جليز</button>
-    <button class="btn ghost" data-t="gf">حريق جليز</button>
-    <button class="btn ghost" data-t="log">السجل</button>
-  </div>
+  <div class="tabs noprint" id="ftabs" role="tablist" aria-label="أقسام الحريق والشحن"></div>
+  
   <div class="card noprint" id="fsearch" style="display:none;padding:8px 12px"><input type="search" id="fq" placeholder="بحث برقم العربية أو الفرن أو الصنف أو العامل…" autocomplete="off" style="margin:0"></div>
   <div id="view"><div class="empty">جاري التحميل…</div></div>
 </div>
@@ -69,49 +63,183 @@
 .irow .two{align-items:end}
 @media(min-width:760px){.pgrid{grid-template-columns:repeat(4,minmax(0,1fr))}.fm{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media print{.fb,.noprint{display:none!important}.fc{break-inside:avoid;box-shadow:none}}
+
+.fseg{display:flex;gap:4px;padding:4px;border-radius:14px;background:color-mix(in srgb,var(--mute) 12%,transparent);margin:0 0 12px}
+.fseg button{flex:1;border:0;background:transparent;color:var(--ink2,var(--mute));font:inherit;font-weight:700;padding:10px 8px;border-radius:11px;cursor:pointer;min-height:44px}
+.fseg button.on{background:var(--card);color:var(--ink,inherit);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.fseg button[data-k=biscuit].on{box-shadow:0 2px 8px rgba(138,90,60,.3);color:#8A5A3C}
+.fseg button[data-k=glaze].on{box-shadow:0 2px 8px rgba(46,111,128,.3);color:#2E6F80}
+.fsec{display:flex;align-items:center;gap:8px;margin:20px 0 10px;font-size:1.02rem}
+.fsec:before{content:"";width:5px;height:20px;border-radius:3px;background:var(--fire,#C0502B)}
+.fsec .sp{flex:1}
+.kcards{display:grid;grid-template-columns:1fr;gap:12px;margin:0 0 12px}
+.kcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;border-top:4px solid var(--kc)}
+.kcard.biscuit{--kc:#8A5A3C}.kcard.glaze{--kc:#2E6F80}
+.kcard .kh{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.05rem;color:var(--kc);margin-bottom:10px}
+.kcard .kst{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.kcard .kst div{text-align:center;padding:8px 2px;border-radius:12px;background:color-mix(in srgb,var(--kc) 8%,transparent)}
+.kcard .kst b{display:block;font-size:1.3rem;line-height:1.2}
+.kcard .kst small{display:block;font-size:.72rem;color:var(--mute);line-height:1.3}
+.kcard .ka{display:flex;gap:8px}
+.kcard .ka .btn{flex:1;min-height:46px}
+.fal{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;margin:0 0 12px;background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn);font-weight:700}
+.fal svg{width:20px;height:20px;flex:none}
+.kgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kln{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;border-inline-start:5px solid var(--kcol,var(--line))}
+.kln.busy{--kcol:#C0502B}.kln.free{--kcol:var(--ok)}.kln.off{--kcol:var(--mute);opacity:.65}
+.kln b{display:block;margin-bottom:4px}
+.kln .nums{margin-top:4px}
+@media(min-width:760px){.kcards{grid-template-columns:1fr 1fr}.kgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.rpv{position:fixed;inset:0;z-index:120;background:#3a3a3e;display:flex;flex-direction:column}
+.rpv-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card);border-bottom:1px solid var(--line);padding-top:max(10px,env(safe-area-inset-top))}
+.rpv-bar b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rpv-fr{flex:1;width:100%;border:0;background:#e9e9ec}
+
+/* ===== 4.6: تبويبات، لوحة، تقارير ===== */
+#ftabs{display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap;padding:2px 2px 8px;margin-bottom:6px;scrollbar-width:thin}
+#ftabs .btn{flex:0 0 auto;white-space:nowrap;min-height:42px;padding:6px 14px;font-weight:700}
+.kpg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.kp{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 10px;text-align:center;border-top:4px solid var(--kc,var(--pri));cursor:pointer}
+.kp b{display:block;font-size:1.8rem;line-height:1.2;color:var(--kc,var(--pri))}.kp small{display:block;color:var(--mute);font-size:.82rem;line-height:1.4;margin-top:2px}
+@media(min-width:760px){.kpg{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.chips{display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap}
+.chips .chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:6px 16px;font:inherit;font-weight:700;cursor:pointer;min-height:38px}
+.chips .chip.on{background:var(--pri);color:var(--on-pri);border-color:var(--pri)}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.ftb.lg{min-width:640px;margin:0}.ftb.lg td,.ftb.lg th{padding:8px 8px;white-space:nowrap}
+.ftb.lg tbody tr:hover{background:color-mix(in srgb,var(--pri) 6%,transparent)}
+.pt.kk-biscuit{background:color-mix(in srgb,#8A5A3C 22%,transparent);color:#8A5A3C}.pt.kk-glaze{background:color-mix(in srgb,#2E6F80 22%,transparent);color:#2E6F80}.pt.kk-none{background:color-mix(in srgb,var(--warn) 22%,transparent);color:var(--warn)}
+[data-theme=dark] .pt.kk-biscuit{color:#d9a47f}[data-theme=dark] .pt.kk-glaze{color:#7fc0d3}
+.fseg button.on{color:var(--ink)}
+.fc.au-insert{--fcol:var(--ok)}.fc.au-update{--fcol:#B8862B}.fc.au-delete{--fcol:var(--bad)}
+.adt td.old{color:var(--bad)}.adt td.new{color:var(--ok);font-weight:700}
+.rpv-bar .btn{white-space:nowrap}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
+<script src="reports.js"></script>
 <script>
-/* ===== قسم الحريق: شحن وحريق عربيات البسكوت والجليز + صور العداد ===== */
-let tab="dash",Q="",K=[],L=[],O=[],loaded=false,loadErr="";
+/* ===== قسم الحريق والشحن (4.6): الحريق مستقل عن الشحن + تخصصات العمال + سجل مراجعة ===== */
+let tab="dash",Q="",K=[],L=[],O=[],OI=[],AUD=[],loaded=false,loadErr="",V2=true;
 const KIND={bl:"biscuit",bf:"biscuit",gl:"glaze",gf:"glaze"};
 const KAR={biscuit:"بسكوت",glaze:"جليز"};
 const LST={draft:"قيد التجهيز",approved:"معتمد"};
 const OST={preparing:"قيد التجهيز",in_kiln:"داخل الفرن",done:"مكتملة"};
+const TABS=[["dash","لوحة التحكم"],["bf","حريق البسكوت"],["gf","حريق الجليز"],["bl","شحن البسكوت"],["gl","شحن الجليز"],["kil","الأفران"],["run","جارية"],["dn","مكتملة"],["log","السجل"],["prt","التقارير والطباعة"],["prod","تقارير القسم"],["aud","المراجعة"]];
 const BUCKET="firing-meters",HOUR=60*60e3;
 const CAM='<svg class="ui" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 const FLAME='<svg class="ui" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s5 4.5 5 9.5a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-.5-5.5 1-8z"/></svg>';
 const PLUS='<svg class="ui" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
 
+/* ---------- الصلاحيات (نفس منطق السيرفر؛ السيرفر هو اللي بيفرضها فعليًا) ---------- */
+const FR=()=>(ME&&ME.fire_role)||"";
+const isSup=()=>!!ME&&!isOwner()&&(ME.role==="admin"||((ME.role==="manager"||FR()==="fire_supervisor")&&secList(ME).includes("fire")));
+const isMgr=isSup;
+// act: "fire" حريق | "ship" شحن
+const canDo=(act,kind)=>{if(!ME||isOwner())return false;if(isSup())return true;if(!secList(ME).includes("fire"))return false;const r=FR();return !r||(act==="fire"&&r===kind+"_kiln")||(act==="ship"&&r===kind+"_loader")};
+const canEditRec=(r,act)=>!!r&&!!ME&&(isSup()||(r.created_by===ME.id&&canDo(act,r.kind)&&dayOf(r.created_at)===today()));
+const canDelRec=()=>isSup();
+const canAudit=()=>isSup()||isOwner()||!!(ME&&ME.view_all);
+
 /* ---------- أدوات ---------- */
 const Lk=id=>L.find(x=>x.id===id)||null, Kk=id=>K.find(x=>x.id===id)||null;
 const itemsOf=l=>((l&&l.firing_load_items)||[]).slice().sort((a,b)=>(a.sort||0)-(b.sort||0)||a.id-b.id);
+// أصناف العملية: بتاعتها هي لو متسجلة، وإلا أصناف الشحنة المرتبطة (للسجلات القديمة)
+const opItemsOnly=o=>OI.filter(x=>x.op_id===o.id).sort((a,b)=>(a.sort||0)-(b.sort||0)||a.id-b.id);
+const opItems=o=>{const own=opItemsOnly(o);if(own.length)return own;return o.load_id?itemsOf(Lk(o.load_id)):[]};
+const opTotal=o=>opItems(o).reduce((a,i)=>a+(+i.qty||0),0);
+const opCart=o=>o.cart_code||(Lk(o.load_id)||{}).cart_code||"";
 const opOfLoad=id=>O.find(o=>o.load_id===id)||null;
-const isMgr=()=>!!ME&&(ME.role==="admin"||(ME.role==="manager"&&secList(ME).includes("fire")));
-const canEditLoad=l=>!!ME&&(isMgr()||l.created_by===ME.id);
+const kindOfKiln=k=>k&&k.kind?KAR[k.kind]:"غير محدد";
+const kilnLbl=k=>k?k.name+" ("+kindOfKiln(k)+")":"—";
 const fmtT=t=>{if(!t)return"—";const d=new Date(t);return isNaN(d)?"—":d.toLocaleString("ar-EG",{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})};
 const fmtHM=t=>{const d=new Date(t);return isNaN(d)?"—":d.toLocaleTimeString("ar-EG",{hour:"numeric",minute:"2-digit"})};
 const localDT=(d=new Date())=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
 const dayOf=t=>{if(!t)return"";const d=new Date(t);return isNaN(d)?"":new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 const toISO=v=>{if(!v)return null;const d=new Date(v);return isNaN(d)?null:d.toISOString()};
-function dur(ms){ms=Math.max(0,ms);const m=Math.floor(ms/60000),h=Math.floor(m/60),r=m%60;return h?nf(h)+" ساعة"+(r?" و"+nf(r)+" دقيقة":""):nf(r)+" دقيقة"}
 const ago=t=>t?"منذ "+dur(Date.now()-new Date(t).getTime()):"—";
 const qtyOf=l=>itemsOf(l).reduce((a,i)=>a+(+i.qty||0),0);
-const itemsTbl=l=>{const it=itemsOf(l);return it.length?`<table class="ftb"><thead><tr><th>الصنف</th><th>الكمية</th></tr></thead><tbody>${it.map(i=>`<tr><td>${esc(i.item)}</td><td><b>${nf(i.qty)}</b></td></tr>`).join("")}</tbody><tfoot><tr><td>الإجمالي</td><td>${nf(l.total_qty||qtyOf(l))}</td></tr></tfoot></table>`:'<div class="nums">مفيش أصناف</div>'};
-const itemsTxt=l=>itemsOf(l).map(i=>i.item+" ("+i.qty+")").join("، ");
+const rowsTbl=(it,tot)=>it.length?`<table class="ftb"><thead><tr><th>الصنف</th><th>الكمية</th></tr></thead><tbody>${it.map(i=>`<tr><td>${esc(i.item)}</td><td><b>${nf(i.qty)}</b></td></tr>`).join("")}</tbody><tfoot><tr><td>الإجمالي</td><td>${nf(tot!=null?tot:it.reduce((a,i)=>a+(+i.qty||0),0))}</td></tr></tfoot></table>`:'<div class="nums">مفيش أصناف مسجّلة</div>';
+const itemsTbl=l=>rowsTbl(itemsOf(l),l&&(l.total_qty||qtyOf(l)));
+const itemsLine=it=>it.map(i=>i.item+" ("+nf(i.qty)+")").join("، ");
+const itemsTxt=l=>itemsLine(itemsOf(l));
+const hitQ=(...a)=>!Q||norm(a.join(" ")).includes(norm(Q));
+const kilnBusy=id=>O.find(o=>o.kiln_id===id&&o.status==="in_kiln")||null;
+const kilnsFor=kind=>K.filter(k=>k.active&&k.kind===kind);
+const unsetKilns=()=>K.filter(k=>k.active&&!k.kind);
+const dlFile=(name,txt,type)=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+txt],{type:type||"text/csv;charset=utf-8"}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
+
+function dur(ms){ms=Math.max(0,ms);const m=Math.floor(ms/60000),h=Math.floor(m/60),r=m%60;return h?nf(h)+" ساعة"+(r?" و"+nf(r)+" دقيقة":""):nf(r)+" دقيقة"}
+
 function errMsg(e){
   const m=String((e&&e.message)||e||"");
   if(!navigator.onLine||/failed to fetch|networkerror|load failed|network request/i.test(m))return"مفيش إنترنت أو الاتصال ضعيف — ما اتحفظش حاجة، حاول تاني لما النت يرجع";
-  const T=[["kiln busy","الفرن ده فيه عربية داخلة دلوقتي — اختار فرن تاني أو أنهِ الحريق الحالي الأول"],["unknown item","فيه صنف مش مسجّل في الأصناف — اختار الصنف من القائمة"],["load locked","الشحن اتعتمد ومبقاش ينفع يتعدّل أو يتحذف"],["load not approved","لازم تعتمد شحن العربية الأول"],["load already fired","العربية دي اتعملها حريق قبل كده"],["kiln not found","الفرن مش موجود أو موقوف"],["entered before loaded","موعد الدخول قبل موعد الشحن"],["future time","الموعد في المستقبل"],["finish before entry","موعد الإطفاء قبل موعد الدخول"],["invalid tubes","عدد الأنابيب غير صحيح"],["not entered","العربية لسه ما دخلتش الفرن"],["operation finished","الحريق خلّص — مينفعش تضيف صور جديدة"],["invalid state","حالة العملية مش بتسمح بالإجراء ده"],["owner read only","صاحب المصنع: عرض فقط"],["not allowed","مش مسموح لك بالعملية دي"],["kiln name exists","اسم الفرن موجود قبل كده"],["invalid qty","كمية غير صحيحة"],["items required","ضيف صنف واحد على الأقل"],["cart code required","اكتب رقم أو كود العربية"],["worker required","اختار اسم العامل"],["photo already replaced","الصورة دي اتعاد رفعها قبل كده"],["invalid path","مسار الصورة غير صحيح"],["load not found","سجل الشحن مش موجود"],["operation not found","العملية مش موجودة"]];
+  const T=[["kiln kind mismatch","نوع الفرن مش مناسب لنوع العملية — اختار فرن من نفس النوع (بسكوت أو جليز)"],["kiln kind unset","الفرن ده لسه نوعه ماتحددش — المدير لازم يحدد نوعه من «الأفران»"],["kiln kind required","اختار نوع الفرن (بسكوت أو جليز)"],["kiln has history","مينفعش تغيّر نوع فرن عليه عمليات سابقة من نوع تاني"],["load kind mismatch","الشحنة المرتبطة من نوع مختلف عن نوع الحريق"],["kiln busy","الفرن ده فيه عربية داخلة دلوقتي — اختار فرن تاني أو أنهِ الحريق الحالي الأول"],["unknown item","فيه صنف مش مسجّل في الأصناف — اختار الصنف من القائمة"],["load locked","الشحن اتعتمد ومبقاش ينفع يتعدّل أو يتحذف بالطريقة القديمة"],["load not approved","لازم تعتمد شحن العربية الأول"],["load already fired","الشحنة دي مربوطة بعملية حريق تانية"],["kiln not found","الفرن مش موجود أو موقوف"],["entered before loaded","موعد الدخول قبل موعد الشحن"],["future time","الموعد في المستقبل"],["finish before entry","موعد الإطفاء قبل موعد الدخول"],["invalid tubes","عدد الأنابيب غير صحيح"],["not entered","العربية لسه ما دخلتش الفرن"],["operation finished","الحريق خلّص — مينفعش تضيف صور جديدة"],["invalid state","حالة العملية مش بتسمح بالإجراء ده"],["owner read only","صاحب المصنع: عرض فقط"],["not allowed","مش مسموح لك بالعملية دي (تخصصك أو صلاحياتك)"],["kiln name exists","اسم الفرن موجود قبل كده"],["invalid qty","كمية غير صحيحة"],["items required","ضيف صنف واحد على الأقل"],["cart code required","اكتب رقم أو كود العربية"],["worker required","اختار اسم العامل"],["photo already replaced","الصورة دي اتعاد رفعها قبل كده"],["invalid path","مسار الصورة غير صحيح"],["load not found","سجل الشحن مش موجود"],["operation not found","العملية مش موجودة"],["invalid kind","نوع غير صحيح"]];
   for(const [k,v] of T)if(m.includes(k))return v;
-  if(/firing_|schema cache|does not exist|could not find|bucket not found/i.test(m))return"قسم الحريق لسه مش متفعّل — شغّل ملف setup_firing.sql من Supabase الأول";
+  if(/firing_ship_save|firing_fire_save|firing_ship_delete|firing_fire_delete|firing_audit|firing_operation_items|fire_role|PGRST202/i.test(m))return"التحديث الجديد لقسم الحريق مش متفعّل — شغّل ملف setup_fire_v2.sql من Supabase (SQL Editor ← Run) الأول";
+  if(/firing_|schema cache|does not exist|could not find|bucket not found/i.test(m))return"قسم الحريق لسه مش متفعّل — شغّل ملف setup_firing.sql ثم setup_fire_v2.sql من Supabase الأول";
   if(/row-level security|violates|permission denied|unauthorized|jwt/i.test(m))return"مش مسموح لك بالعملية دي (الصلاحيات)";
   return"خطأ: "+m;
 }
 const fail_=e=>{toast(errMsg(e),"bad")};
 const rpc=async(n,a)=>{if(!navigator.onLine)throw new Error("failed to fetch");const r=await db.rpc(n,a);if(r.error)throw r.error;return r.data};
+
+/* ---------- تحميل البيانات ---------- */
+let _lp=null;
+function load(){if(_lp)return _lp.then(()=>load());_lp=_load().finally(()=>{_lp=null});return _lp}
+async function _load(){
+  try{
+    const[k,l,o,oi]=await Promise.all([
+      db.from("firing_kilns").select("*").order("name"),
+      db.from("firing_loads").select("*,firing_load_items(*)").order("loaded_at",{ascending:false}).limit(1000),
+      db.from("firing_operations").select("*").order("created_at",{ascending:false}).limit(1000),
+      db.from("firing_operation_items").select("*").limit(5000)]);
+    const e=k.error||l.error||o.error;
+    if(e){loadErr=errMsg(e);if(!loaded){document.getElementById("view").innerHTML=`<div class="card empty err-state">${esc(loadErr)}<br><button class="btn" id="rt" style="margin-top:12px">إعادة المحاولة</button></div>`;document.getElementById("rt").onclick=()=>load()}return}
+    V2=!oi.error;
+    K=k.data||[];L=l.data||[];O=o.data||[];OI=oi.error?[]:(oi.data||[]);loaded=true;loadErr="";
+    catReady();wkLoad();
+    render();
+  }catch(e){if(!loaded)document.getElementById("view").innerHTML=`<div class="card empty err-state">${esc(errMsg(e))}<br><button class="btn" id="rt" style="margin-top:12px">إعادة المحاولة</button></div>`;document.getElementById("rt")&&(document.getElementById("rt").onclick=()=>load())}
+}
+async function loadAudit(){
+  const r=await db.from("firing_audit").select("*").order("at",{ascending:false}).limit(400);
+  if(r.error)throw r.error;AUD=r.data||[];
+}
+let repEl=null;
+function drawTabs(){
+  const el=document.getElementById("ftabs");
+  el.innerHTML=TABS.filter(t=>(t[0]!=="aud"||canAudit())&&(t[0]!=="prod"||can("reports"))).map(t=>`<button type="button" class="btn ${t[0]===tab?"on":"ghost"}" data-t="${t[0]}">${t[1]}</button>`).join("");
+  const on=el.querySelector(".on");if(on&&on.scrollIntoView)try{on.scrollIntoView({block:"nearest",inline:"center"})}catch(e){}
+}
+function setTab(){
+  drawTabs();
+  document.getElementById("fsearch").style.display=["bf","gf","bl","gl","run","dn"].includes(tab)?"block":"none";
+  if(loaded)render();
+}
+function render(){
+  const v=document.getElementById("view");if(!v)return;
+  if(tab==="prod"){
+    if(!repEl){repEl=document.createElement("div");repEl.id="frep";try{Reports.mount(repEl,"fire")}catch(e){repEl.innerHTML='<div class="card empty err-state">تعذّر تحميل التقارير</div>'}}
+    if(v.firstChild!==repEl||v.childNodes.length!==1){v.innerHTML="";v.appendChild(repEl)}
+    if(typeof markSub==="function")markSub();return;
+  }
+  if(tab==="aud"){auditPage(v);if(typeof markSub==="function")markSub();return}
+  let h="";
+  if(tab==="dash")h=dashView();
+  else if(tab==="bf"||tab==="gf")h=opsView(KIND[tab],["preparing","in_kiln","done"]);
+  else if(tab==="bl"||tab==="gl")h=loadsView(KIND[tab]);
+  else if(tab==="run")h=opsView("",["preparing","in_kiln"]);
+  else if(tab==="dn")h=opsView("",["done"]);
+  else if(tab==="kil")h=kilnsView();
+  else if(tab==="log")h=logView();
+  else if(tab==="prt")h=prtView();
+  v.innerHTML=(V2?"":`<div class="fal noprint">${errTxtV2}</div>`)+h;wire(v);
+  if(typeof markSub==="function")markSub();
+}
+const errTxtV2="التحديث الجديد لقسم الحريق مش متفعّل بعد — شغّل ملف setup_fire_v2.sql من Supabase عشان الحفظ والتخصصات تشتغل.";
+
 function panel(title,body,onClose){
   closeModal();Snd.play("open");
   const d=document.createElement("div");d.className="ov";d.id="ov";
@@ -122,175 +250,258 @@ function panel(title,body,onClose){
   return d;
 }
 
-/* ---------- تحميل البيانات ---------- */
-let _lp=null;
-function load(){if(_lp)return _lp.then(()=>load());_lp=_load().finally(()=>{_lp=null});return _lp}
-async function _load(){
-  try{
-    const[k,l,o]=await Promise.all([
-      db.from("firing_kilns").select("*").order("name"),
-      db.from("firing_loads").select("*,firing_load_items(*)").order("loaded_at",{ascending:false}).limit(1000),
-      db.from("firing_operations").select("*").order("created_at",{ascending:false}).limit(1000)]);
-    const e=k.error||l.error||o.error;
-    if(e){loadErr=errMsg(e);if(!loaded){document.getElementById("view").innerHTML=`<div class="card empty err-state">${esc(loadErr)}<br><button class="btn" id="rt" style="margin-top:12px">إعادة المحاولة</button></div>`;document.getElementById("rt").onclick=()=>load()}return}
-    K=k.data||[];L=l.data||[];O=o.data||[];loaded=true;loadErr="";
-    catReady();wkLoad();
-    render();
-  }catch(e){if(!loaded)document.getElementById("view").innerHTML=`<div class="card empty err-state">${esc(errMsg(e))}<br><button class="btn" id="rt" style="margin-top:12px">إعادة المحاولة</button></div>`;document.getElementById("rt")&&(document.getElementById("rt").onclick=()=>load())}
-}
-function setTab(){
-  document.querySelectorAll("#ftabs button").forEach(b=>b.className="btn "+(b.dataset.t===tab?"on":"ghost"));
-  document.getElementById("fsearch").style.display=(tab==="dash")?"none":"block";
-  if(loaded)render();
-}
-function render(){
-  const v=document.getElementById("view");if(!v)return;
-  const f=tab==="dash"?dashView:tab==="log"?logView:(tab==="bl"||tab==="gl")?()=>loadsView(KIND[tab]):()=>opsView(KIND[tab]);
-  v.innerHTML=f();wire(v);
-  if(typeof markSub==="function")markSub();
-}
-
-/* ---------- اللوحة ---------- */
+/* ---------- لوحة التحكم ---------- */
+function kpiBox(n,l,col,go){return `<div class="kp" style="--kc:${col||"var(--pri)"}" ${go?`data-go="${go}" role="button" tabindex="0"`:""}><b>${nf(n)}</b><small>${l}</small></div>`}
 function dashView(){
-  const kil=K.filter(k=>k.active),busyK=new Set(O.filter(o=>o.status==="in_kiln").map(o=>o.kiln_id));
-  const ld=k=>L.filter(l=>l.kind===k&&l.status==="approved"),inK=k=>O.filter(o=>o.kind===k&&o.status==="in_kiln");
-  const wait=k=>ld(k).filter(l=>!opOfLoad(l.id)).length;
-  const live=O.filter(o=>o.status==="in_kiln");
-  setTimeout(()=>{kpis("k1",[["عربيات بسكوت تم شحنها",ld("biscuit").length,"#8A5A3C",{},["",wait("biscuit")+" بانتظار الفرن"]],["بسكوت داخل الأفران",inK("biscuit").length,"#C0502B"],["عربيات جليز تم شحنها",ld("glaze").length,"#2E6F80",{},["",wait("glaze")+" بانتظار الفرن"]],["جليز داخل الأفران",inK("glaze").length,"#C0502B"]]);
-    kpis("k2",[["عمليات حريق مكتملة",O.filter(o=>o.status==="done").length,"var(--ok)"],["أفران مشغولة",[...busyK].filter(id=>kil.some(k=>k.id===id)).length,"#C0502B"],["أفران متاحة",kil.filter(k=>!busyK.has(k.id)).length,"var(--ok)"]])},0);
-  return `<div class="kpis" id="k1"></div><div class="kpis three mini" id="k2"></div>
-  <div class="fb noprint" style="margin:0 0 12px"><button class="btn" data-go="bl">${PLUS}<span>شحن عربية بسكوت</span></button><button class="btn" data-go="bf">${FLAME}<span>حريق بسكوت</span></button><button class="btn" data-go="gl">${PLUS}<span>شحن عربية جليز</span></button><button class="btn" data-go="gf">${FLAME}<span>حريق جليز</span></button></div>
-  <h3 style="margin:14px 0 8px">داخل الأفران الآن</h3>
-  ${live.length?live.map(opCard).join(""):'<div class="card empty">مفيش عربية داخل أي فرن دلوقتي</div>'}
-  <h3 style="margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>الأفران</span>${isMgr()&&!isOwner()?'<button class="btn ghost sm noprint" id="kmg">إدارة الأفران</button>':""}</h3>
-  <div class="card">${K.length?K.map(k=>{const o=O.find(x=>x.kiln_id===k.id&&x.status==="in_kiln");return `<div class="krow"><b>${esc(k.name)}${k.active?"":' <span class="pt">موقوف</span>'}</b><span>${o?`<span class="fst in_kiln">مشغول</span> <span class="nums">${esc(KAR[o.kind])} · عربية ${esc((Lk(o.load_id)||{}).cart_code||"")}</span>`:k.active?'<span class="fst done">متاح</span>':'<span class="nums">—</span>'}</span></div>`}).join(""):'<div class="empty" style="padding:14px">مفيش أفران مسجّلة'+(isMgr()?" — اضغط «إدارة الأفران» وضيف أفرانك":" — كلّم المدير يضيف الأفران")+'</div>'}</div>`;
+  const td=today(),run=O.filter(o=>o.status==="in_kiln"),prep=O.filter(o=>o.status==="preparing"),dn=O.filter(o=>o.status==="done");
+  const act=K.filter(k=>k.active&&k.kind),busyIds=new Set(run.map(o=>o.kiln_id)),busyK=act.filter(k=>busyIds.has(k.id)),freeK=act.filter(k=>!busyIds.has(k.id));
+  const shipTd=L.filter(l=>dayOf(l.loaded_at)===td);
+  const dnTd=dn.filter(o=>dayOf(o.finished_at)===td);
+  let h="";
+  if(isSup()&&unsetKilns().length)h+=`<div class="fal noprint">${unsetKilns().length} فرن لسه نوعه ماتحددش (${unsetKilns().map(k=>esc(k.name)).join("، ")}) — حدد نوعها من تبويب «الأفران» عشان تظهر في اختيارات الحريق والشحن.</div>`;
+  const need=run.filter(o=>(o.last_photo_at?Date.now()-new Date(o.last_photo_at).getTime():Date.now()-new Date(o.entered_at).getTime())>HOUR+5*60e3);
+  if(need.length)h+=`<div class="fal"><span>${FLAME}</span>${nf(need.length)} عملية محتاجة تصوير العداد</div>`;
+  h+=`<div class="kpg">${kpiBox(run.length,"عربيات داخل الأفران","#C0502B","run")}${kpiBox(shipTd.length,"عربيات اتشحنت النهارده","#2E6F80","bl")}${kpiBox(freeK.length,"أفران متاحة","var(--ok)","kil")}${kpiBox(busyK.length,"أفران مشغولة","#C0502B","kil")}${kpiBox(run.length+prep.length,"عمليات حريق جارية","#B8862B","run")}${kpiBox(dnTd.length,"حريق مكتمل النهارده","var(--ok)","dn")}</div>`;
+  h+=`<div class="kcards">${["biscuit","glaze"].map(k=>{
+    const kr=run.filter(o=>o.kind===k),kk=act.filter(x=>x.kind===k),kf=kk.filter(x=>!busyIds.has(x.id)),sh=shipTd.filter(l=>l.kind===k);
+    return `<div class="kcard ${k}"><div class="kh">${FLAME}<span>${KAR[k]}</span></div>
+      <div class="kst"><div><b>${nf(kr.length)}</b><small>داخل الفرن</small></div><div><b>${nf(kf.length)}</b><small>أفران متاحة</small></div><div><b>${nf(kk.length-kf.length)}</b><small>أفران مشغولة</small></div><div><b>${nf(sh.length)}</b><small>شحن النهارده</small></div></div>
+      <div class="ka noprint">${canDo("fire",k)?`<button class="btn" data-a="newfire" data-k="${k}">${FLAME}<span>بدء حريق</span></button>`:""}${canDo("ship",k)?`<button class="btn ghost" data-a="newship" data-k="${k}">${PLUS}<span>شحن عربية</span></button>`:""}</div></div>`}).join("")}</div>`;
+  h+=`<h3 class="fsec"><span>عمليات الحريق الجارية</span><span class="sp"></span><button class="btn ghost sm noprint" data-go="run">عرض الكل</button></h3>`;
+  const cur=[...run,...prep].sort((a,b)=>new Date(b.entered_at||b.created_at)-new Date(a.entered_at||a.created_at));
+  h+=cur.length?cur.slice(0,6).map(opCard).join(""):'<div class="card empty">مفيش عمليات حريق جارية دلوقتي</div>';
+  h+=`<h3 class="fsec"><span>الأفران</span><span class="sp"></span><button class="btn ghost sm noprint" data-go="kil">إدارة الأفران</button></h3>`;
+  h+=kilnGrid();
+  return h;
+}
+function kilnGrid(){
+  if(!K.length)return'<div class="card empty">مفيش أفران مسجّلة'+(isSup()?" — ضيف الأفران من تبويب «الأفران»":"")+"</div>";
+  return `<div class="kgrid">${K.map(k=>{const o=kilnBusy(k.id),st=!k.active?"off":o?"busy":"free";
+    return `<div class="kln ${st}"><b>${esc(k.name)}</b><span class="pt kk-${k.kind||"none"}">${k.kind?"فرن "+KAR[k.kind]:"نوعه غير محدد"}</span><div class="nums">${!k.active?"موقوف":o?`داخله: عربية ${esc(opCart(o)||"—")} · ${dur(Date.now()-new Date(o.entered_at).getTime())}`:"متاح"}</div></div>`}).join("")}</div>`;
 }
 
-/* ---------- شحن العربيات ---------- */
+/* ---------- بطاقات الشحن والحريق ---------- */
 function loadCard(l){
-  const op=opOfLoad(l.id),mine=canEditLoad(l);
-  return `<div class="fc ${l.status}" data-l="${l.id}"><div class="fh"><b>عربية ${esc(l.cart_code)} <span class="pt">شحن #${l.id}</span></b><span class="fst ${l.status}">${LST[l.status]}</span></div>
-  <div class="fm"><span>التاريخ والوقت: <b>${fmtT(l.loaded_at)}</b></span><span>الإجمالي: <b>${nf(l.total_qty)}</b> قطعة</span><span>العامل: <b>${esc(l.worker||"—")}</b></span><span>سجّل الشحن: <b>${esc(l.created_by_name||"—")}</b></span>${l.status==="approved"?`<span>اعتمد: <b>${esc(l.approved_by_name||"—")}</b></span>`:""}${l.note?`<span style="grid-column:1/-1">ملاحظة: <b>${esc(l.note)}</b></span>`:""}</div>
-  ${itemsTbl(l)}
-  <div class="fb noprint">${l.status==="draft"&&mine?`<button class="btn" data-a="ldedit" data-id="${l.id}">${ib("edit","تعديل / إضافة صنف")}</button><button class="btn" data-a="ldok" data-id="${l.id}">${ib("check","اعتماد الشحن")}</button><button class="btn ghost" data-a="lddel" data-id="${l.id}">${ib("trash","حذف")}</button>`:""}
-  ${l.status==="approved"?(op?`<button class="btn ghost" data-a="opview" data-id="${op.id}">${ib("eye","عملية الحريق #"+op.id+" — "+OST[op.status])}</button>`:`<button class="btn" data-a="opnew" data-id="${l.id}">${FLAME}<span>بدء حريق للعربية دي</span></button>`):""}</div></div>`;
+  const op=opOfLoad(l.id),k=Kk(l.kiln_id),it=itemsOf(l);
+  const ed=canEditRec(l,"ship"),del=canDelRec();
+  return `<div class="fc ${l.status}" data-l="${l.id}"><div class="fh"><b>شحن ${esc(KAR[l.kind])} #${l.id} — عربية ${esc(l.cart_code)}</b>${l.status==="draft"?`<span class="fst draft">${LST.draft}</span>`:""}</div>
+  <div class="fm"><span>نوع الشحنة: <b>${esc(KAR[l.kind])}</b></span><span>الفرن: <b>${k?esc(kilnLbl(k)):"غير محدد"}</b></span><span>الوقت: <b>${fmtT(l.loaded_at)}</b></span>${l.worker?`<span>المسؤول: <b>${esc(l.worker)}</b></span>`:""}<span>الإجمالي: <b>${nf(l.total_qty||qtyOf(l))} قطعة</b></span>${op?`<span>حريق مرتبط: <b>#${op.id} (${OST[op.status]})</b></span>`:""}</div>
+  <details><summary>الأصناف (${nf(it.length)})</summary>${itemsTbl(l)}</details>${l.note?`<div class="nums">ملاحظة: ${esc(l.note)}</div>`:""}
+  <div class="fb noprint"><button class="btn ghost" data-a="shipprt" data-id="${l.id}">${ib("print","طباعة")}</button>${ed?`<button class="btn ghost" data-a="shipedit" data-id="${l.id}">${ib("edit","تعديل")}</button>`:""}${l.status==="draft"&&ed?`<button class="btn" data-a="ldok" data-id="${l.id}">${ib("check","اعتماد")}</button>`:""}${del?`<button class="btn ghost dangerbtn" data-a="shipdel" data-id="${l.id}">${ib("trash","حذف")}</button>`:""}${isSup()?`<button class="btn ghost" data-a="hist" data-e="load" data-id="${l.id}">سجل التعديلات</button>`:""}</div></div>`;
 }
 function loadsView(kind){
-  const all=L.filter(l=>l.kind===kind),q=norm(Q);
-  const rs=all.filter(l=>!q||hit(q,l.cart_code,l.worker,l.created_by_name,itemsTxt(l)));
-  const tot=all.reduce((a,l)=>a+(l.total_qty||0),0);
-  setTimeout(()=>kpis("k3",[["عربيات",all.length],["إجمالي القطع",tot],["قيد التجهيز",all.filter(l=>l.status==="draft").length,"#B8862B"]]),0);
-  return `<div class="kpis three mini" id="k3"></div>
-  <button class="btn noprint" id="ldnew" style="width:100%;margin-bottom:12px">${PLUS}<span>شحن عربية ${KAR[kind]} جديدة</span></button>
-  ${rs.length?rs.map(loadCard).join(""):`<div class="card empty">${all.length?"مفيش نتائج للبحث":"لسه مفيش شحن عربيات "+KAR[kind]}</div>`}`;
+  const list=L.filter(l=>l.kind===kind&&hitQ(l.cart_code,l.worker,l.note,(Kk(l.kiln_id)||{}).name,itemsTxt(l),l.id)).sort((a,b)=>new Date(b.loaded_at)-new Date(a.loaded_at));
+  const tot=list.reduce((a,l)=>a+(l.total_qty||qtyOf(l)),0);
+  return `<h3 class="fsec"><span>شحن عربيات ${KAR[kind]}</span><span class="sp"></span>${canDo("ship",kind)?`<button class="btn sm noprint" data-a="newship" data-k="${kind}">${PLUS}<span>شحن عربية</span></button>`:""}</h3>
+  <div class="nums" style="margin-bottom:8px">${nf(list.length)} شحنة · إجمالي القطع ${nf(tot)} — شحن ${KAR[kind]} مرتبط بأفران ${KAR[kind]} بس، وبيتسجّل من غير أي شرط على الحريق.</div>
+  ${list.length?list.slice(0,150).map(loadCard).join(""):'<div class="card empty">مفيش شحنات '+KAR[kind]+" مسجّلة</div>"}`;
 }
-function itemRow(it){
-  return `<div class="irow"><label>الصنف</label><input class="it" placeholder="اختار الصنف" autocomplete="off" maxlength="120" value="${esc(it?it.item:"")}"><label>الكمية</label><input class="iq" type="number" min="1" max="1000000" inputmode="numeric" value="${it?it.qty:""}"><button type="button" class="btn ghost sm irm" style="margin-top:6px">${ib("trash","حذف الصنف ده")}</button></div>`;
-}
-function loadForm(kind,id){
-  if(roBlock())return;
-  const rec=id?Lk(id):null;
-  if(rec&&rec.status!=="draft"){toast("الشحن اتعتمد ومبقاش ينفع يتعدّل","warn");return}
-  wkLoad();
-  openModal(rec?"تعديل شحن عربية":"شحن عربية "+KAR[kind]+" جديدة",
-    `<label>رقم أو كود العربية</label><input id="f-cart" maxlength="60" placeholder="مثال: 12" autocomplete="off" value="${rec?esc(rec.cart_code):""}">
-     <label>تاريخ ووقت الشحن</label><input type="datetime-local" id="f-at" value="${localDT(rec?new Date(rec.loaded_at):new Date())}">
-     ${XW(kind==="glaze")}
-     <label>الأصناف المحمّلة</label><div id="f-items"></div>
-     <button type="button" class="btn ghost sm" id="f-add" style="margin:6px 0 4px">${PLUS}<span>إضافة صنف</span></button>
-     <div class="nums" id="f-tot" style="margin:4px 0"></div>
-     <label>ملاحظة (اختياري)</label><input id="f-n" maxlength="300" value="${rec?esc(rec.note||""):""}">
-     <label class="chk" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="f-ap" style="width:auto;margin:0"><span>اعتماد الشحن دلوقتي (بعد الاعتماد مفيش تعديل)</span></label>`,
-    async()=>{
-      const cart=document.getElementById("f-cart").value.trim(),at=toISO(document.getElementById("f-at").value),x=xfRead(),ap=document.getElementById("f-ap").checked;
-      if(!cart){toast("اكتب رقم أو كود العربية");return false}
-      if(!at){toast("اكتب تاريخ ووقت الشحن");return false}
-      if(kind==="glaze"&&!x.worker){toast("اختار اسم العامل");return false}
-      const items=[...document.querySelectorAll("#f-items .irow")].map(r=>({item:r.querySelector(".it").value.trim(),qty:parseInt(r.querySelector(".iq").value)||0})).filter(i=>i.item||i.qty);
-      if(!items.length){toast("ضيف صنف واحد على الأقل");return false}
-      for(const i of items){
-        if(!i.item){toast("اختار اسم الصنف");return false}
-        if(i.qty<1){toast("اكتب كمية صحيحة لصنف: "+i.item);return false}
-        if(CAT&&CAT.item&&!CAT.item.some(n=>norm(n)===norm(i.item))){toast("الصنف «"+i.item+"» مش مسجّل في الأصناف — اختاره من القائمة");return false}
-      }
-      const tot=items.reduce((a,i)=>a+i.qty,0);
-      if(!await reviewSave({title:"راجع الشحن قبل الحفظ",meta:[["النوع",KAR[kind]],["العربية",cart],["الوقت",fmtT(at)],...(x.worker?[["العامل",x.worker]]:[]),["الحالة",ap?"اعتماد الشحن":"قيد التجهيز (مسودة)"]],items:items.map(i=>({title:i.item,rows:[["الكمية",nf(i.qty)]]})),total:tot}))return false;
-      try{await rpc("firing_save_load",{p_id:rec?rec.id:null,p_kind:kind,p_cart:cart,p_loaded_at:at,p_worker:x.worker||null,p_note:document.getElementById("f-n").value.trim()||null,p_items:items,p_approve:ap})}
-      catch(e){fail_(e);return false}
-      await load();toast(ap?"تم الشحن والاعتماد":"تم حفظ الشحن");
-    },"حفظ");
-  setTimeout(()=>{
-    const box=document.getElementById("f-items"),tot=document.getElementById("f-tot");
-    const upd=()=>{const t=[...box.querySelectorAll(".iq")].reduce((a,e)=>a+(parseInt(e.value)||0),0);tot.textContent=t?"إجمالي القطع: "+nf(t):""};
-    const add=it=>{box.insertAdjacentHTML("beforeend",itemRow(it));upd()};
-    box.addEventListener("input",upd);
-    box.addEventListener("click",e=>{const b=e.target.closest(".irm");if(!b)return;if(box.querySelectorAll(".irow").length<2){const r=b.closest(".irow");r.querySelector(".it").value="";r.querySelector(".iq").value="";upd();return}b.closest(".irow").remove();upd()});
-    document.getElementById("f-add").onclick=()=>add();
-    if(rec)itemsOf(rec).forEach(add);else add();
-    if(rec&&rec.worker){const w=document.getElementById("m-w");if(w)w.value=rec.worker}
-  },0);
-}
-
-/* ---------- عمليات الحريق ---------- */
 function photoWarn(o){
   if(o.status!=="in_kiln")return"";
   const last=o.last_photo_at||o.entered_at,age=Date.now()-new Date(last).getTime();
   return age>HOUR+5*60e3?`<div class="fw">${esc(o.last_photo_at?"آخر صورة "+ago(o.last_photo_at):"لسه مفيش صورة للعداد")} — محتاج تصوير العداد</div>`:"";
 }
 function opCard(o){
-  const l=Lk(o.load_id),k=Kk(o.kiln_id),mine=!isOwner();
-  return `<div class="fc ${o.status}" data-o="${o.id}"><div class="fh"><b>حريق ${esc(KAR[o.kind])} #${o.id} — عربية ${esc(l?l.cart_code:"؟")}</b><span class="fst ${o.status}">${OST[o.status]}</span></div>
-  <div class="fm"><span>الفرن: <b>${esc(k?k.name:"؟")}</b></span><span>العامل: <b>${esc(o.worker)}</b></span><span>الدخول: <b>${fmtT(o.entered_at)}</b></span>${o.status==="in_kiln"?`<span>بقاله في الفرن: <b>${dur(Date.now()-new Date(o.entered_at).getTime())}</b></span>`:""}${o.status==="done"?`<span>الإطفاء: <b>${fmtT(o.finished_at)}</b></span><span>الأنابيب: <b>${nf(o.tubes_used)}</b></span><span>المدة: <b>${dur(new Date(o.finished_at)-new Date(o.entered_at))}</b></span>`:""}<span>صور العداد: <b>${nf(o.photo_count)}</b>${o.last_photo_at?" · آخرها "+fmtHM(o.last_photo_at):""}</span></div>
-  ${photoWarn(o)}
-  ${l?`<details style="margin-top:6px"><summary>الأصناف في العربية (${nf(l.total_qty)} قطعة)</summary>${itemsTbl(l)}</details>`:""}
-  <div class="fb noprint">${o.status==="in_kiln"&&mine?`<button class="btn big" data-a="shot" data-id="${o.id}">${CAM}<span>تصوير العداد</span></button><button class="btn" data-a="fin" data-id="${o.id}">${ib("check","إنهاء الحريق")}</button>`:""}${o.status==="preparing"&&mine?`<button class="btn big" data-a="enter" data-id="${o.id}">${FLAME}<span>دخلت الفرن الآن</span></button>`:""}<button class="btn ghost" data-a="opview" data-id="${o.id}">${ib("eye","التفاصيل والصور")}</button></div></div>`;
+  const k=Kk(o.kiln_id),it=opItems(o),can_=canDo("fire",o.kind),ed=canEditRec(o,"fire"),cart=opCart(o);
+  return `<div class="fc ${o.status}" data-o="${o.id}"><div class="fh"><b>حريق ${esc(KAR[o.kind])} #${o.id}${cart?" — عربية "+esc(cart):""}</b><span class="fst ${o.status}">${OST[o.status]}</span></div>
+  <div class="fm"><span>الفرن: <b>${k?esc(k.name):"؟"}</b></span><span>العامل: <b>${esc(o.worker)}</b></span><span>الدخول: <b>${o.entered_at?fmtT(o.entered_at):"لسه"}</b></span>${o.status==="in_kiln"?`<span>بقاله في الفرن: <b>${dur(Date.now()-new Date(o.entered_at).getTime())}</b></span>`:""}${o.status==="done"?`<span>الإطفاء: <b>${fmtT(o.finished_at)}</b></span><span>الأنابيب: <b>${nf(o.tubes_used)}</b></span><span>المدة: <b>${dur(new Date(o.finished_at)-new Date(o.entered_at))}</b></span>`:""}<span>صور العداد: <b>${nf(o.photo_count)}</b>${o.last_photo_at?" · آخرها "+fmtHM(o.last_photo_at):""}</span></div>
+  ${photoWarn(o)}${it.length?`<details style="margin-top:6px"><summary>الأصناف (${nf(opTotal(o))} قطعة)</summary>${rowsTbl(it)}</details>`:""}
+  <div class="fb noprint">${o.status==="in_kiln"&&can_?`<button class="btn big" data-a="shot" data-id="${o.id}">${CAM}<span>تصوير العداد</span></button><button class="btn" data-a="fin" data-id="${o.id}">${ib("check","إنهاء الحريق")}</button>`:""}${o.status==="preparing"&&can_?`<button class="btn big" data-a="enter" data-id="${o.id}">${FLAME}<span>دخلت الفرن الآن</span></button>`:""}<button class="btn ghost" data-a="opview" data-id="${o.id}">${ib("eye","التفاصيل والصور")}</button>${ed?`<button class="btn ghost" data-a="opedit" data-id="${o.id}">${ib("edit","تعديل")}</button>`:""}</div></div>`;
 }
-function opsView(kind){
-  const all=O.filter(o=>o.kind===kind),q=norm(Q),ord={in_kiln:0,preparing:1,done:2};
-  const rs=all.filter(o=>{const l=Lk(o.load_id),k=Kk(o.kiln_id);return !q||hit(q,l&&l.cart_code,k&&k.name,o.worker,l&&itemsTxt(l),"#"+o.id)}).sort((a,b)=>ord[a.status]-ord[b.status]||new Date(b.created_at)-new Date(a.created_at));
-  setTimeout(()=>kpis("k3",[["داخل الفرن",all.filter(o=>o.status==="in_kiln").length,"#C0502B"],["قيد التجهيز",all.filter(o=>o.status==="preparing").length,"#B8862B"],["مكتملة",all.filter(o=>o.status==="done").length,"var(--ok)"]]),0);
-  return `<div class="kpis three mini" id="k3"></div>
-  <button class="btn noprint" id="opnew" style="width:100%;margin-bottom:12px">${FLAME}<span>+ بدء حريق عربية ${KAR[kind]}</span></button>
-  ${rs.length?rs.map(opCard).join(""):`<div class="card empty">${all.length?"مفيش نتائج للبحث":"لسه مفيش عمليات حريق "+KAR[kind]}</div>`}`;
+function opsView(kind,sts){
+  const list=O.filter(o=>(!kind||o.kind===kind)&&sts.includes(o.status)&&hitQ(opCart(o),o.worker,(Kk(o.kiln_id)||{}).name,itemsLine(opItems(o)),o.id,o.note)).sort((a,b)=>sts.includes("done")&&sts.length===1?new Date(b.finished_at)-new Date(a.finished_at):new Date(b.entered_at||b.created_at)-new Date(a.entered_at||a.created_at));
+  const ttl=kind?"حريق "+KAR[kind]:sts.includes("done")&&sts.length===1?"عمليات الحريق المكتملة":"عمليات الحريق الجارية";
+  const nb=kind&&canDo("fire",kind)?`<button class="btn sm noprint" data-a="newfire" data-k="${kind}">${FLAME}<span>بدء حريق</span></button>`:"";
+  const chips=kind?`<div class="chips noprint" id="ofil">${[["","الكل"],["live","جارية"],["done","مكتملة"]].map(c=>`<button type="button" class="chip ${(OF||"")===c[0]?"on":""}" data-of="${c[0]}">${c[1]}</button>`).join("")}</div>`:"";
+  const sh=kind&&OF?list.filter(o=>OF==="done"?o.status==="done":o.status!=="done"):list;
+  return `<h3 class="fsec"><span>${ttl}</span><span class="sp"></span>${nb}</h3>${chips}<div class="nums" style="margin-bottom:8px">${nf(sh.length)} عملية — الحريق مستقل: بيتسجّل من غير شحن ولا اشتراط عربية.</div>
+  ${sh.length?sh.slice(0,150).map(opCard).join(""):'<div class="card empty">مفيش عمليات حريق هنا</div>'}`;
 }
-function startForm(kind,loadId){
+let OF="";
+
+/* ---------- الأفران ---------- */
+function kilnsView(){
+  const sup=isSup()&&!isOwner();
+  const grp=k=>{const ks=K.filter(x=>x.kind===k);return `<h3 class="fsec"><span>أفران ${KAR[k]}</span></h3>${ks.length?`<div class="kgrid">${ks.map(kilnCard).join("")}</div>`:'<div class="card empty">مفيش أفران '+KAR[k]+"</div>"}`};
+  const un=K.filter(x=>!x.kind);
+  return `<h3 class="fsec"><span>الأفران</span><span class="sp"></span>${sup?`<button class="btn sm noprint" data-a="kadd">${PLUS}<span>إضافة فرن</span></button>`:""}</h3>
+  <div class="nums" style="margin-bottom:8px">كل فرن له نوع (بسكوت أو جليز) وبيظهر في اختيارات نوعه بس. الفرن المشغول مينفعش يتوقّف.</div>
+  ${un.length?`<div class="fal">${isSup()?"أفران نوعها غير محدد — اضغط «تعديل» وحدد النوع:":"أفران لسه المدير ما حددش نوعها:"}</div><div class="kgrid">${un.map(kilnCard).join("")}</div>`:""}${grp("biscuit")}${grp("glaze")}`;
+}
+function kilnCard(k){
+  const o=kilnBusy(k.id),st=!k.active?"off":o?"busy":"free";
+  return `<div class="kln ${st}"><b>${esc(k.name)}</b><span class="pt kk-${k.kind||"none"}">${k.kind?"فرن "+KAR[k.kind]:"نوعه غير محدد"}</span><div class="nums">${!k.active?"موقوف":o?`مشغول: عربية ${esc(opCart(o)||"—")} · حريق #${o.id}`:"متاح"}${k.note?" · "+esc(k.note):""}</div>${isSup()&&!isOwner()?`<button class="btn ghost sm noprint" data-a="kedit" data-id="${k.id}" style="margin-top:6px">تعديل</button>`:""}${o?`<button class="btn ghost sm noprint" data-a="opview" data-id="${o.id}" style="margin-top:6px">العملية</button>`:""}</div>`;
+}
+
+/* ---------- نماذج الإدخال ---------- */
+function itemRow(it){
+  return `<div class="irow"><label>الصنف</label><input class="it" placeholder="اختار الصنف" autocomplete="off" maxlength="120" value="${esc(it?it.item:"")}"><label>الكمية</label><input class="iq" type="number" min="1" max="1000000" inputmode="numeric" value="${it?it.qty:""}"><button type="button" class="btn ghost sm irm" style="margin-top:6px">${ib("trash","حذف الصنف ده")}</button></div>`;
+}
+const kilnOpts=(kind,sel,ownOp)=>{
+  const ks=kilnsFor(kind);if(!ks.length)return"";
+  return ks.map(k=>{const b=kilnBusy(k.id),mine=b&&ownOp&&b.id===ownOp;return `<option value="${k.id}" ${k.id===sel?"selected":""}>${esc(k.name)}${b&&!mine?" (مشغول)":""}</option>`}).join("");
+};
+const readItems=()=>[...document.querySelectorAll("#f-items .irow")].map(r=>({item:r.querySelector(".it").value.trim(),qty:parseInt(r.querySelector(".iq").value)||0})).filter(i=>i.item||i.qty);
+function checkItems(items,req){
+  if(req&&!items.length){toast("ضيف صنف واحد على الأقل");return false}
+  for(const i of items){
+    if(!i.item){toast("اختار اسم الصنف");return false}
+    if(i.qty<1){toast("اكتب كمية صحيحة لصنف: "+i.item);return false}
+    if(CAT&&CAT.item&&!CAT.item.some(n=>norm(n)===norm(i.item))){toast("الصنف «"+i.item+"» مش مسجّل في الأصناف — اختاره من القائمة");return false}
+  }
+  return true;
+}
+function wireItems(start){
+  const box=document.getElementById("f-items"),tot=document.getElementById("f-tot");
+  const upd=()=>{const t=[...box.querySelectorAll(".iq")].reduce((a,e)=>a+(parseInt(e.value)||0),0);tot.textContent=t?"إجمالي القطع: "+nf(t):""};
+  const add=it=>{box.insertAdjacentHTML("beforeend",itemRow(it));upd()};
+  box.addEventListener("input",upd);
+  box.addEventListener("click",e=>{const b=e.target.closest(".irm");if(!b)return;if(box.querySelectorAll(".irow").length<2){const r=b.closest(".irow");r.querySelector(".it").value="";r.querySelector(".iq").value="";upd();return}b.closest(".irow").remove();upd()});
+  document.getElementById("f-add").onclick=()=>add();
+  box.innerHTML="";(start&&start.length?start:[null]).forEach(add);
+  return {add,upd,box,reset:its=>{box.innerHTML="";(its&&its.length?its:[null]).forEach(add)}};
+}
+const kindPick=(kind,locked)=>locked?`<div class="nums" style="margin:4px 0 8px">النوع: <b>${KAR[kind]}</b></div>`:`<div class="fseg" id="f-kind" style="margin:4px 0 8px"><button type="button" data-k="biscuit" class="${kind==="biscuit"?"on":""}">${KAR.biscuit}</button><button type="button" data-k="glaze" class="${kind==="glaze"?"on":""}">${KAR.glaze}</button></div>`;
+const kindSel=(def,locked)=>locked?def:((document.querySelector("#f-kind .on")||{}).dataset||{}).k||def;
+const noKilnTxt=kind=>isSup()?"مفيش أفران "+KAR[kind]+" — ضيف فرن أو حدد نوع فرن من تبويب «الأفران»":"مفيش أفران "+KAR[kind]+" متاحة — كلّم المسؤول";
+
+/* ----- شحن عربية (إنشاء/تعديل) — نوع الشحنة بيحدد الأفران المناسبة تلقائيًا ----- */
+function shipForm(kind,id){
   if(roBlock())return;
-  const ready=L.filter(l=>l.kind===kind&&l.status==="approved"&&!opOfLoad(l.id));
-  const kil=K.filter(k=>k.active),busyK=new Set(O.filter(o=>o.status==="in_kiln").map(o=>o.kiln_id));
-  if(!ready.length){toast("مفيش عربية "+KAR[kind]+" معتمدة وجاهزة للحريق — اشحن واعتمد عربية الأول","warn");return}
-  if(!kil.length){toast(isMgr()?"ضيف الأفران الأول من اللوحة (إدارة الأفران)":"مفيش أفران مسجّلة — كلّم المدير","warn");return}
+  const rec=id?Lk(id):null;if(rec)kind=rec.kind;
+  if(!kind||!canDo("ship",kind)){toast("مش مسموح لك بتسجيل شحن "+(kind?KAR[kind]:"")+" (تخصصك)","warn");return}
   wkLoad();
-  openModal("بدء حريق عربية "+KAR[kind],
-    `<label>العربية المشحونة</label><select id="s-load">${ready.map(l=>`<option value="${l.id}" ${l.id===loadId?"selected":""}>عربية ${esc(l.cart_code)} — ${nf(l.total_qty)} قطعة — ${esc(fmtT(l.loaded_at))}</option>`).join("")}</select>
-     <div class="nums" id="s-items" style="margin:4px 0"></div>
-     <label>الفرن</label><select id="s-kiln">${kil.map(k=>`<option value="${k.id}" ${busyK.has(k.id)?"disabled":""}>${esc(k.name)}${busyK.has(k.id)?" (مشغول)":""}</option>`).join("")}</select>
-     <label>موعد دخول العربية للفرن</label><input type="datetime-local" id="s-at" value="${localDT()}">
-     <div class="hint" style="margin:2px 0 6px">لو لسه ما دخلتش الفرن امسح الموعد وهتتسجّل «قيد التجهيز».</div>
-     ${XW(true)}`,
+  openModal(rec?"تعديل شحن عربية "+KAR[kind]:"شحن عربية جديدة",
+    `${kindPick(kind,!!rec)}
+     <label>رقم أو كود العربية</label><input id="f-cart" maxlength="60" placeholder="مثال: 12" autocomplete="off" value="${rec?esc(rec.cart_code):""}">
+     <label>الفرن (من نفس نوع الشحنة)</label><select id="f-kiln"></select><div class="hint" id="f-kh" style="margin:0 0 6px"></div>
+     <label>تاريخ ووقت الشحن</label><input type="datetime-local" id="f-at" value="${localDT(rec?new Date(rec.loaded_at):new Date())}">
+     ${XW(kind==="glaze")}
+     <label>الأصناف المحمّلة</label><div id="f-items"></div>
+     <button type="button" class="btn ghost sm" id="f-add" style="margin:6px 0 4px">${PLUS}<span>إضافة صنف</span></button>
+     <div class="nums" id="f-tot" style="margin:4px 0"></div>
+     <label>ملاحظة (اختياري)</label><input id="f-n" maxlength="300" value="${rec?esc(rec.note||""):""}">`,
     async()=>{
-      const lid=+document.getElementById("s-load").value,kid=+document.getElementById("s-kiln").value,at=toISO(document.getElementById("s-at").value),x=xfRead();
-      if(!lid){toast("اختار العربية");return false}
-      if(!kid||busyK.has(kid)){toast("اختار فرن متاح");return false}
-      if(!x.worker){toast("اختار اسم العامل");return false}
-      const l=Lk(lid);
-      if(!await reviewSave({title:"راجع بدء الحريق",meta:[["النوع",KAR[kind]],["العربية",l.cart_code],["الفرن",(Kk(kid)||{}).name],["الدخول",at?fmtT(at):"قيد التجهيز (لسه ما دخلتش)"],["العامل",x.worker]],items:itemsOf(l).map(i=>({title:i.item,rows:[["الكمية",nf(i.qty)]]})),total:l.total_qty}))return false;
-      try{await rpc("firing_start",{p_load:lid,p_kiln:kid,p_entered:at,p_worker:x.worker})}catch(e){fail_(e);await load();return false}
-      await load();toast(at?"تم تسجيل دخول العربية للفرن":"تم تسجيل العملية (قيد التجهيز)");
-    },"بدء الحريق");
-  setTimeout(()=>{const s=document.getElementById("s-load"),b=document.getElementById("s-items"),f=()=>{const l=Lk(+s.value);b.textContent=l?itemsTxt(l):""};s.onchange=f;f();
-    const ks=document.getElementById("s-kiln");const fr=[...ks.options].find(o=>!o.disabled);if(fr)ks.value=fr.value},0);
+      const k=kindSel(kind,!!rec);
+      const cart=document.getElementById("f-cart").value.trim(),at=toISO(document.getElementById("f-at").value),x=xfRead();
+      const kv=document.getElementById("f-kiln").value;
+      if(!cart){toast("اكتب رقم أو كود العربية");return false}
+      if(!at){toast("اكتب تاريخ ووقت الشحن");return false}
+      if(k==="glaze"&&!x.worker){toast("اختار اسم العامل");return false}
+      const items=readItems();if(!checkItems(items,true))return false;
+      const tot=items.reduce((a,i)=>a+i.qty,0),kl=kv?Kk(+kv):null;
+      if(!await reviewSave({title:"راجع الشحن قبل الحفظ",meta:[["نوع الشحنة",KAR[k]],["العربية",cart],["الفرن",kl?kilnLbl(kl):"من غير تحديد فرن"],["الوقت",fmtT(at)],...(x.worker?[["المسؤول",x.worker]]:[])],items:items.map(i=>({title:i.item,rows:[["الكمية",nf(i.qty)]]})),total:tot}))return false;
+      try{await rpc("firing_ship_save",{p_id:rec?rec.id:null,p_kind:k,p_cart:cart,p_at:at,p_worker:x.worker||null,p_note:document.getElementById("f-n").value.trim()||null,p_items:items,p_kiln:kv?+kv:null})}
+      catch(e){fail_(e);return false}
+      await load();toast(rec?"تم تعديل الشحن":"تم تسجيل الشحن");
+    },"حفظ");
+  setTimeout(()=>{
+    const w=wireItems(rec?itemsOf(rec):null);
+    const fill=()=>{const k=kindSel(kind,!!rec),ks=kilnsFor(k),sel=document.getElementById("f-kiln"),pre=rec&&rec.kiln_id&&Kk(rec.kiln_id)&&Kk(rec.kiln_id).kind===k?rec.kiln_id:0;
+      sel.innerHTML='<option value="">من غير تحديد فرن</option>'+kilnOpts(k,pre);
+      if(!pre&&ks.length){const fr=ks.find(x=>!kilnBusy(x.id))||ks[0];sel.value=fr.id}
+      document.getElementById("f-kh").textContent=ks.length?"أفران "+KAR[k]+" بس هي اللي بتظهر هنا.":noKilnTxt(k)};
+    fill();
+    const fk=document.getElementById("f-kind");if(fk)fk.onclick=e=>{const b=e.target.closest("button[data-k]");if(!b)return;fk.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));fill()};
+    if(rec&&rec.worker){const wv=document.getElementById("m-w");if(wv)wv.value=rec.worker}
+  },0);
 }
+
+/* ----- بدء/تعديل حريق — مستقل: مفيش شرط شحن ولا عربية ----- */
+function fireForm(kind,id,loadId){
+  if(roBlock())return;
+  const rec=id?O.find(x=>x.id===id):null;if(rec)kind=rec.kind;
+  if(!kind||!canDo("fire",kind)){toast("مش مسموح لك بتسجيل حريق "+(kind?KAR[kind]:"")+" (تخصصك)","warn");return}
+  wkLoad();
+  const hasFin=!!(rec&&rec.status==="done");
+  openModal(rec?"تعديل عملية حريق #"+rec.id:"بدء حريق جديد",
+    `${kindPick(kind,!!rec)}
+     <label>الفرن (من نفس نوع الحريق)</label><select id="s-kiln"></select><div class="hint" id="s-kh" style="margin:0 0 6px"></div>
+     <label>رقم أو كود العربية (اختياري)</label><input id="s-cart" maxlength="60" autocomplete="off" placeholder="مش شرط" value="${rec?esc(rec.cart_code||opCart(rec)):""}">
+     <label>ربط بشحنة (اختياري — للتتبع فقط)</label><select id="s-load"></select>
+     <label>موعد دخول العربية للفرن</label><input type="datetime-local" id="s-at" value="${localDT(rec&&rec.entered_at?new Date(rec.entered_at):new Date())}">
+     <div class="hint" style="margin:2px 0 6px">لو لسه ما دخلتش الفرن اضغط «مسح» وهتتسجّل «قيد التجهيز».</div>
+     <label class="chk" style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="s-fin" style="width:auto;margin:0" ${hasFin?"checked":""}><span>الحريق خلص (تسجيل الإطفاء وعدد الأنابيب)</span></label>
+     <div id="s-finbox" ${hasFin?"":"hidden"}><label>موعد إطفاء الفرن</label><input type="datetime-local" id="s-fat" value="${hasFin?localDT(new Date(rec.finished_at)):""}"><label>عدد الأنابيب المستهلكة</label><input type="number" id="s-tb" min="0" max="100000" inputmode="numeric" value="${hasFin?rec.tubes_used:""}"></div>
+     ${XW(true)}
+     <label>الأصناف والكميات (اختياري)</label><div id="f-items"></div>
+     <button type="button" class="btn ghost sm" id="f-add" style="margin:6px 0 4px">${PLUS}<span>إضافة صنف</span></button>
+     <div class="nums" id="f-tot" style="margin:4px 0"></div>
+     <label>ملاحظة (اختياري)</label><input id="f-n" maxlength="300" value="${rec?esc(rec.note||""):""}">`,
+    async()=>{
+      const k=kindSel(kind,!!rec),kid=+document.getElementById("s-kiln").value,x=xfRead();
+      const at=toISO(document.getElementById("s-at").value),fin=document.getElementById("s-fin").checked;
+      const fat=fin?toISO(document.getElementById("s-fat").value):null,tbv=document.getElementById("s-tb").value.trim(),tb=parseInt(tbv);
+      if(!kid){toast("اختار الفرن");return false}
+      if(!x.worker){toast("اختار اسم العامل");return false}
+      if(fin){if(!at){toast("الحريق خلص يعني لازم موعد الدخول");return false}if(!fat){toast("اكتب موعد الإطفاء");return false}if(tbv===""||!(tb>=0)||tb>100000){toast("اكتب عدد الأنابيب المستهلكة");return false}if(new Date(fat)<new Date(at)){toast("موعد الإطفاء قبل موعد الدخول");return false}}
+      const bo=kilnBusy(kid);
+      if(at&&!fin&&bo&&(!rec||bo.id!==rec.id)){toast("الفرن ده مشغول دلوقتي — اختار فرن تاني","warn");return false}
+      const items=readItems();if(!checkItems(items,false))return false;
+      const lv=document.getElementById("s-load").value,cart=document.getElementById("s-cart").value.trim();
+      if(!await reviewSave({title:"راجع الحريق قبل الحفظ",meta:[["نوع الحريق",KAR[k]],["الفرن",kilnLbl(Kk(kid))],...(cart?[["العربية",cart]]:[]),["الدخول",at?fmtT(at):"قيد التجهيز (لسه ما دخلتش)"],...(fin?[["الإطفاء",fmtT(fat)],["الأنابيب",nf(tb)]]:[]),["العامل",x.worker]],items:items.map(i=>({title:i.item,rows:[["الكمية",nf(i.qty)]]})),total:items.reduce((a,i)=>a+i.qty,0)}))return false;
+      try{await rpc("firing_fire_save",{p_id:rec?rec.id:null,p_kind:k,p_kiln:kid,p_cart:cart||null,p_entered:at,p_finished:fin?fat:null,p_tubes:fin?tb:null,p_worker:x.worker,p_note:document.getElementById("f-n").value.trim()||null,p_items:items,p_load:lv?+lv:null})}
+      catch(e){fail_(e);await load();return false}
+      await load();toast(rec?"تم تعديل العملية":at?"تم تسجيل دخول العربية للفرن":"تم تسجيل العملية (قيد التجهيز)");
+    },rec?"حفظ التعديل":"بدء الحريق");
+  setTimeout(()=>{
+    const own=rec?opItemsOnly(rec):[];const w=wireItems(own.length?own:(rec?opItems(rec):null));
+    const sk=document.getElementById("s-kiln"),sl=document.getElementById("s-load");
+    const fillK=()=>{const k=kindSel(kind,!!rec),ks=kilnsFor(k),pre=rec&&Kk(rec.kiln_id)&&Kk(rec.kiln_id).kind===k?rec.kiln_id:0;
+      sk.innerHTML=kilnOpts(k,pre,rec&&rec.id)||'<option value="">— مفيش أفران —</option>';
+      if(!pre&&ks.length){const fr=ks.find(x=>!kilnBusy(x.id));sk.value=(fr||ks[0]).id}
+      document.getElementById("s-kh").textContent=ks.length?"أفران "+KAR[k]+" بس هي اللي بتظهر هنا — اتحدد أول فرن متاح تلقائيًا.":noKilnTxt(k);
+      const ready=L.filter(l=>l.kind===k&&(!opOfLoad(l.id)||(rec&&rec.load_id===l.id)));
+      sl.innerHTML='<option value="">بدون ربط</option>'+ready.map(l=>`<option value="${l.id}" ${(rec&&rec.load_id===l.id)||l.id===loadId?"selected":""}>عربية ${esc(l.cart_code)} — ${nf(l.total_qty)} قطعة — ${esc(fmtT(l.loaded_at))}</option>`).join("")};
+    fillK();
+    const fk=document.getElementById("f-kind");if(fk)fk.onclick=e=>{const b=e.target.closest("button[data-k]");if(!b)return;fk.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));fillK()};
+    sl.onchange=()=>{const l=Lk(+sl.value);if(!l)return;const c=document.getElementById("s-cart");if(!c.value.trim())c.value=l.cart_code;if(!readItems().length)w.reset(itemsOf(l))};
+    if(loadId&&sl.value)sl.onchange();
+    document.getElementById("s-fin").onchange=e=>{document.getElementById("s-finbox").hidden=!e.target.checked;if(e.target.checked&&!document.getElementById("s-fat").value)document.getElementById("s-fat").value=localDT()};
+    if(rec&&rec.worker){const wv=document.getElementById("m-w");if(wv)wv.value=rec.worker}
+  },0);
+}
+
 function enterForm(id){
   if(roBlock())return;
   const o=O.find(x=>x.id===id);if(!o)return;
-  const kil=K.filter(k=>k.active),busyK=new Set(O.filter(x=>x.status==="in_kiln").map(x=>x.kiln_id));
-  openModal("دخول العربية للفرن",`<label>الفرن</label><select id="e-kiln">${kil.map(k=>`<option value="${k.id}" ${k.id===o.kiln_id?"selected":""} ${busyK.has(k.id)?"disabled":""}>${esc(k.name)}${busyK.has(k.id)?" (مشغول)":""}</option>`).join("")}</select>
+  openModal("دخول العربية للفرن",`<label>الفرن</label><select id="e-kiln">${kilnOpts(o.kind,o.kiln_id,o.id)||'<option value="">— مفيش أفران —</option>'}</select>
     <label>موعد الدخول</label><input type="datetime-local" id="e-at" value="${localDT()}">`,async()=>{
     const at=toISO(document.getElementById("e-at").value);if(!at){toast("اكتب موعد الدخول");return false}
     try{await rpc("firing_enter",{p_op:id,p_entered:at,p_kiln:+document.getElementById("e-kiln").value||null})}catch(e){fail_(e);await load();return false}
     await load();toast("تم تسجيل دخول العربية للفرن");
   },"تأكيد الدخول");
 }
+function kilnForm(id){
+  if(roBlock())return;if(!isSup()){toast("إدارة الأفران للمشرف فقط","warn");return}
+  const k=id?Kk(id):null;
+  openModal(k?"تعديل فرن":"إضافة فرن",`<label>اسم أو رقم الفرن</label><input id="k-n" maxlength="60" value="${k?esc(k.name):""}" autocomplete="off">
+    <label>نوع الفرن</label><div class="fseg" id="k-kind" style="margin:4px 0 8px"><button type="button" data-k="biscuit" class="${k&&k.kind==="biscuit"?"on":""}">فرن بسكوت</button><button type="button" data-k="glaze" class="${k&&k.kind==="glaze"?"on":""}">فرن جليز</button></div>
+    <label>ملاحظة (اختياري)</label><input id="k-t" maxlength="200" value="${k?esc(k.note||""):""}"><label class="chk" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="k-a" style="width:auto;margin:0" ${!k||k.active?"checked":""}><span>الفرن شغّال ومتاح للاستخدام</span></label>`,async()=>{
+    const n=document.getElementById("k-n").value.trim();if(!n){toast("اكتب اسم الفرن");return false}
+    const kb=document.querySelector("#k-kind .on"),kd=kb?kb.dataset.k:(k&&k.kind)||"";if(!kd){toast("اختار نوع الفرن (بسكوت أو جليز)");return false}
+    try{await rpc("firing_save_kiln",{p_id:k?k.id:null,p_name:n,p_note:document.getElementById("k-t").value.trim()||null,p_active:document.getElementById("k-a").checked,p_kind:kd})}catch(e){fail_(e);return false}
+    await load();toast("تم حفظ الفرن");
+  });
+  setTimeout(()=>{const b=document.getElementById("k-kind");if(b)b.onclick=e=>{const x=e.target.closest("button[data-k]");if(!x)return;b.querySelectorAll("button").forEach(y=>y.classList.toggle("on",y===x))}},0);
+}
+
+/* ---------- حذف ---------- */
+async function delShip(id){
+  if(roBlock())return;const l=Lk(id);if(!l)return;const op=opOfLoad(id);
+  if(!await ask("حذف شحنة عربية "+l.cart_code+" ("+KAR[l.kind]+") نهائيًا؟"+(op?" عملية الحريق المرتبطة بيها (#"+op.id+") هتفضل زي ما هي ومش هتتأثر.":"")+" العملية بتتسجّل في سجل المراجعة.","نعم، احذف الشحنة"))return;
+  try{await rpc("firing_ship_delete",{p_id:id});await load();toast("تم حذف الشحنة")}catch(e){fail_(e)}
+}
+async function delFire(id){
+  if(roBlock())return;const o=O.find(x=>x.id===id);if(!o)return;
+  if(!await ask("حذف عملية الحريق #"+o.id+" ("+KAR[o.kind]+") نهائيًا بكل صور العداد بتاعتها؟ الشحنة المرتبطة بيها (لو فيه) مش هتتحذف. العملية بتتسجّل في سجل المراجعة.","نعم، احذف العملية"))return;
+  try{
+    const paths=await rpc("firing_fire_delete",{p_id:id});
+    if(Array.isArray(paths)&&paths.length){try{await db.storage.from(BUCKET).remove(paths)}catch(x){}}
+    closeModal();await load();toast("تم حذف العملية");
+  }catch(e){fail_(e)}
+}
+
 function finForm(id){
   if(roBlock())return;
   const o=O.find(x=>x.id===id);if(!o)return;
@@ -354,106 +565,256 @@ async function photosFor(opId){
 }
 function photoGrid(ps,o,withBtn){
   if(!ps.length)return '<div class="empty" style="padding:14px">لسه مفيش صور للعداد</div>';
-  return `<div class="pgrid">${ps.map(p=>`<div class="pf ${p.replaced_by?"old":""}">${p.url?`<img src="${esc(p.url)}" alt="صورة العداد" loading="lazy" data-zoom="${esc(p.url)}">`:'<div class="empty" style="padding:30px 6px">تعذّر عرض الصورة</div>'}<div class="pc"><b>${fmtT(p.taken_at)}</b>${p.replaced_by?'<span class="pt">نسخة سابقة</span>':""}${p.replaces_id?'<span class="pt">بديلة</span>':""}<div class="nums">${esc(p.uploaded_by_name||"")}</div>${withBtn&&!p.replaced_by&&!isOwner()&&o.status!=="preparing"?`<button class="btn ghost sm noprint" data-a="reup" data-id="${o.id}" data-p="${p.id}">إعادة رفع</button>`:""}</div></div>`).join("")}</div>`;
-}
-async function openOp(id){
-  const o=O.find(x=>x.id===id);if(!o)return;
-  const l=Lk(o.load_id),k=Kk(o.kiln_id);
-  const d=panel("حريق "+esc(KAR[o.kind])+" #"+o.id,`<div class="empty">جاري تحميل الصور…</div>`);
-  const pb=d.querySelector("#pbody");pb.dataset.op=o.id;
-  let ps=[];try{ps=await photosFor(id)}catch(e){pb.innerHTML=`<div class="card empty err-state">${esc(errMsg(e))}</div>`;return}
-  if(!document.body.contains(pb))return;
-  const mine=!isOwner();
-  pb.innerHTML=`<div class="fh"><b>عربية ${esc(l?l.cart_code:"؟")}</b><span class="fst ${o.status}">${OST[o.status]}</span></div>
-  <div class="fm"><span>نوع الحريق: <b>${esc(KAR[o.kind])}</b></span><span>الفرن: <b>${esc(k?k.name:"؟")}</b></span><span>العامل: <b>${esc(o.worker)}</b></span><span>سجّل البدء: <b>${esc(o.created_by_name||"—")}</b></span><span>الدخول: <b>${fmtT(o.entered_at)}</b></span><span>الإطفاء: <b>${o.finished_at?fmtT(o.finished_at):"—"}</b></span>${o.status==="done"?`<span>الأنابيب المستهلكة: <b>${nf(o.tubes_used)}</b></span><span>المدة: <b>${dur(new Date(o.finished_at)-new Date(o.entered_at))}</b></span><span>سجّل الإنهاء: <b>${esc(o.finished_by_name||"—")}</b></span>`:""}</div>
-  ${l?itemsTbl(l):""}
-  <h4 style="margin:12px 0 4px">صور العداد (${nf(ps.filter(p=>!p.replaced_by).length)}) — من الأقدم للأحدث</h4>
-  ${photoGrid(ps,o,true)}
-  <div class="fb noprint">${o.status==="in_kiln"&&mine?`<button class="btn big" data-a="shot" data-id="${o.id}">${CAM}<span>تصوير العداد</span></button><button class="btn ghost" data-a="gal" data-id="${o.id}">اختيار صورة من الجهاز</button><button class="btn" data-a="fin" data-id="${o.id}">${ib("check","إنهاء الحريق")}</button>`:""}<button class="btn ghost" data-a="prt" data-id="${o.id}">${ib("print","طباعة التقرير")}</button></div>`;
-  pb._ps=ps;
+  return `<div class="pgrid">${ps.map(p=>`<div class="pf ${p.replaced_by?"old":""}">${p.url?`<img src="${esc(p.url)}" alt="صورة العداد" loading="lazy" data-zoom="${esc(p.url)}">`:'<div class="empty" style="padding:30px 6px">تعذّر عرض الصورة</div>'}<div class="pc"><b>${fmtT(p.taken_at)}</b>${p.replaced_by?'<span class="pt">نسخة سابقة</span>':""}${p.replaces_id?'<span class="pt">بديلة</span>':""}<div class="nums">${esc(p.uploaded_by_name||"")}</div>${withBtn&&!p.replaced_by&&canDo("fire",o.kind)&&o.status!=="preparing"?`<button class="btn ghost sm noprint" data-a="reup" data-id="${o.id}" data-p="${p.id}">إعادة رفع</button>`:""}</div></div>`).join("")}</div>`;
 }
 function zoom(url){
   const d=document.createElement("div");d.className="lbx";d.innerHTML=`<img src="${esc(url)}" alt="">`;
   d.onclick=()=>d.remove();document.body.appendChild(d);
 }
 
-/* ---------- تقرير العملية (طباعة / PDF) ---------- */
+/* ---------- تفاصيل العملية وصور العداد ---------- */
+async function openOp(id){
+  const o=O.find(x=>x.id===id);if(!o)return;
+  const l=Lk(o.load_id),k=Kk(o.kiln_id),it=opItems(o);
+  const d=panel("حريق "+esc(KAR[o.kind])+" #"+o.id,`<div class="empty">جاري تحميل الصور…</div>`);
+  const pb=d.querySelector("#pbody");pb.dataset.op=o.id;
+  let ps=[];try{ps=await photosFor(id)}catch(e){pb.innerHTML=`<div class="card empty err-state">${esc(errMsg(e))}</div>`;return}
+  if(!document.body.contains(pb))return;
+  const can_=canDo("fire",o.kind);
+  pb.innerHTML=`<div class="fh"><b>${opCart(o)?"عربية "+esc(opCart(o)):"حريق "+esc(KAR[o.kind])}</b><span class="fst ${o.status}">${OST[o.status]}</span></div>
+  <div class="fm"><span>نوع الحريق: <b>${esc(KAR[o.kind])}</b></span><span>الفرن: <b>${k?esc(kilnLbl(k)):"؟"}</b></span><span>العامل: <b>${esc(o.worker)}</b></span><span>سجّل العملية: <b>${esc(o.created_by_name||"—")}</b></span><span>الدخول: <b>${o.entered_at?fmtT(o.entered_at):"لسه"}</b></span><span>الإطفاء: <b>${o.finished_at?fmtT(o.finished_at):"—"}</b></span>${o.status==="done"?`<span>الأنابيب المستهلكة: <b>${nf(o.tubes_used)}</b></span><span>المدة: <b>${dur(new Date(o.finished_at)-new Date(o.entered_at))}</b></span><span>سجّل الإنهاء: <b>${esc(o.finished_by_name||"—")}</b></span>`:""}${l?`<span>شحنة مرتبطة: <b>#${l.id}</b></span>`:""}${o.updated_by_name?`<span>آخر تعديل: <b>${esc(o.updated_by_name)}</b></span>`:""}</div>
+  ${o.note?`<div class="nums">ملاحظة: ${esc(o.note)}</div>`:""}${rowsTbl(it)}
+  <h4 style="margin:12px 0 4px">صور العداد (${nf(ps.filter(p=>!p.replaced_by).length)}) — من الأقدم للأحدث</h4>
+  ${photoGrid(ps,o,true)}
+  <div class="fb noprint">${o.status==="in_kiln"&&can_?`<button class="btn big" data-a="shot" data-id="${o.id}">${CAM}<span>تصوير العداد</span></button><button class="btn ghost" data-a="gal" data-id="${o.id}">اختيار صورة من الجهاز</button><button class="btn" data-a="fin" data-id="${o.id}">${ib("check","إنهاء الحريق")}</button>`:""}<button class="btn ghost" data-a="prt" data-id="${o.id}">${ib("print","طباعة التقرير")}</button>${canEditRec(o,"fire")?`<button class="btn ghost" data-a="opedit" data-id="${o.id}">${ib("edit","تعديل")}</button>`:""}${canDelRec()?`<button class="btn ghost dangerbtn" data-a="opdel" data-id="${o.id}">${ib("trash","حذف العملية")}</button><button class="btn ghost" data-a="hist" data-e="operation" data-id="${o.id}">سجل التعديلات</button>`:""}</div>`;
+  pb._ps=ps;
+}
+
+/* ---------- سجل المراجعة ---------- */
+const ENT_AR={load:"شحنة",operation:"عملية حريق",kiln:"فرن",photo:"صورة عداد"};
+const ACT_AR={insert:"إضافة",update:"تعديل",delete:"حذف"};
+const FLD={cart_code:"رقم العربية",loaded_at:"وقت الشحن",entered_at:"وقت الدخول",finished_at:"وقت الإطفاء",tubes_used:"الأنابيب",worker:"العامل/المسؤول",note:"ملاحظة",kiln_id:"الفرن",status:"الحالة",total_qty:"الإجمالي",items:"الأصناف",name:"الاسم",kind:"النوع",active:"شغّال",load_id:"الشحنة المرتبطة",path:"المسار",operation_id:"العملية"};
+const SKIP=new Set(["id","created_at","updated_at","created_by","created_by_name","updated_by_name","photo_count","last_photo_at","approved_at","approved_by","approved_by_name","finished_by","finished_by_name","photos"]);
+function fv(k,v){
+  if(v===null||v===undefined||v==="")return"—";
+  if(k==="items")return Array.isArray(v)&&v.length?itemsLine(v):"—";
+  if(/_at$/.test(k))return fmtT(v);
+  if(k==="kiln_id"){const x=Kk(+v);return x?x.name:"فرن #"+v}
+  if(k==="kind")return KAR[v]||v;
+  if(k==="status")return OST[v]||LST[v]||v;
+  if(k==="active")return v?"نعم":"لا";
+  return String(v);
+}
+function diffHtml(e){
+  const b=e.before_data||{},a=e.after_data||{};
+  const keys=[...new Set([...Object.keys(b),...Object.keys(a)])].filter(k=>!SKIP.has(k));
+  if(e.action==="update"){
+    const rows=keys.filter(k=>JSON.stringify(b[k])!==JSON.stringify(a[k])).map(k=>`<tr><td>${FLD[k]||esc(k)}</td><td class="old">${esc(fv(k,b[k]))}</td><td class="new">${esc(fv(k,a[k]))}</td></tr>`);
+    return rows.length?`<table class="ftb adt"><thead><tr><th>الحقل</th><th>قبل</th><th>بعد</th></tr></thead><tbody>${rows.join("")}</tbody></table>`:'<div class="nums">مفيش تغيير في الحقول الظاهرة</div>';
+  }
+  const src=e.action==="insert"?a:b,rows=keys.filter(k=>src[k]!==null&&src[k]!==undefined&&src[k]!=="").map(k=>`<tr><td>${FLD[k]||esc(k)}</td><td colspan="2">${esc(fv(k,src[k]))}</td></tr>`);
+  return `<table class="ftb adt"><tbody>${rows.join("")}</tbody></table>`;
+}
+function auditCard(e){
+  return `<div class="fc au-${e.action}"><div class="fh"><b>${ACT_AR[e.action]||e.action} ${ENT_AR[e.entity]||e.entity} #${e.entity_id}</b><span class="nums">${esc(fmtF(e.at))}</span></div>
+  <div class="fm"><span>بواسطة: <b>${esc(e.user_name||"—")}</b></span>${e.summary?`<span>${esc(e.summary)}</span>`:""}</div><details><summary>التفاصيل (قبل / بعد)</summary>${diffHtml(e)}</details></div>`;
+}
+let AF={ent:"",act:"",q:""};
+async function auditPage(v){
+  v.innerHTML=`<h3 class="fsec"><span>سجل المراجعة</span></h3><div class="card" style="padding:10px 12px"><div class="two"><div><label>النوع</label><select id="af-e"><option value="">الكل</option>${Object.entries(ENT_AR).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select></div><div><label>الإجراء</label><select id="af-a"><option value="">الكل</option>${Object.entries(ACT_AR).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select></div></div><input type="search" id="af-q" placeholder="بحث باسم المستخدم أو رقم السجل…" autocomplete="off" style="margin:6px 0 0"></div><div id="af-l"><div class="empty">جاري التحميل…</div></div>`;
+  const draw=()=>{const l=AUD.filter(e=>(!AF.ent||e.entity===AF.ent)&&(!AF.act||e.action===AF.act)&&(!AF.q||norm((e.user_name||"")+" "+e.entity_id).includes(norm(AF.q))));
+    document.getElementById("af-l").innerHTML=l.length?l.slice(0,200).map(auditCard).join(""):'<div class="card empty">مفيش عمليات مسجّلة</div>'};
+  document.getElementById("af-e").value=AF.ent;document.getElementById("af-a").value=AF.act;document.getElementById("af-q").value=AF.q;
+  document.getElementById("af-e").onchange=e=>{AF.ent=e.target.value;draw()};document.getElementById("af-a").onchange=e=>{AF.act=e.target.value;draw()};document.getElementById("af-q").oninput=e=>{AF.q=e.target.value;draw()};
+  try{await loadAudit();draw()}catch(e){document.getElementById("af-l").innerHTML=`<div class="card empty err-state">${esc(errMsg(e))}</div>`}
+}
+async function showHist(ent,id){
+  const d=panel("سجل التعديلات — "+(ENT_AR[ent]||"")+" #"+id,'<div class="empty">جاري التحميل…</div>');
+  const b=d.querySelector("#pbody");
+  const r=await db.from("firing_audit").select("*").eq("entity",ent).eq("entity_id",id).order("at",{ascending:false}).limit(100);
+  if(!document.body.contains(b))return;
+  b.innerHTML=r.error?`<div class="card empty err-state">${esc(errMsg(r.error))}</div>`:(r.data&&r.data.length?r.data.map(auditCard).join(""):'<div class="empty">مفيش تعديلات مسجّلة على السجل ده</div>');
+}
+
+/* ---------- السجل (عمليات الحريق) ---------- */
+let LF={kind:"",kiln:"",st:"",from:"",to:"",item:""};
+const logList=()=>O.filter(o=>(!LF.kind||o.kind===LF.kind)&&(!LF.kiln||o.kiln_id===+LF.kiln)&&(!LF.st||o.status===LF.st)&&(!LF.from||dayOf(o.entered_at||o.created_at)>=LF.from)&&(!LF.to||dayOf(o.entered_at||o.created_at)<=LF.to)&&(!LF.item||norm(itemsLine(opItems(o))).includes(norm(LF.item)))).sort((a,b)=>new Date(b.entered_at||b.created_at)-new Date(a.entered_at||a.created_at));
+function logView(){
+  const l=logList();
+  return `<h3 class="fsec"><span>سجل العمليات السابقة</span></h3><div class="card noprint" style="padding:10px 12px"><div class="two"><div><label>النوع</label><select id="lf-kind"><option value="">الكل</option><option value="biscuit">بسكوت</option><option value="glaze">جليز</option></select></div><div><label>الفرن</label><select id="lf-kiln"><option value="">الكل</option>${K.map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join("")}</select></div></div><div class="two"><div><label>الحالة</label><select id="lf-st"><option value="">الكل</option>${Object.entries(OST).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select></div><div><label>صنف</label><input id="lf-item" autocomplete="off" placeholder="اسم الصنف"></div></div><div class="two"><div><label>من</label><input type="date" id="lf-from"></div><div><label>إلى</label><input type="date" id="lf-to"></div></div><div class="fb"><button class="btn ghost" id="lf-clr">مسح الفلاتر</button><button class="btn ghost" id="lf-csv">${ib("download","تصدير CSV")}</button><button class="btn" id="lf-pr">${ib("print","طباعة")}</button></div></div>
+  <div class="nums" style="margin:6px 0">${nf(l.length)} عملية</div>
+  ${l.length?`<div class="tblwrap"><table class="ftb lg"><thead><tr><th>#</th><th>النوع</th><th>العربية</th><th>الفرن</th><th>العامل</th><th>الدخول</th><th>الإطفاء</th><th>المدة</th><th>القطع</th><th>الحالة</th></tr></thead><tbody>${l.slice(0,300).map(o=>`<tr data-a="opview" data-id="${o.id}" style="cursor:pointer"><td>${o.id}</td><td>${KAR[o.kind]}</td><td>${esc(opCart(o)||"—")}</td><td>${esc((Kk(o.kiln_id)||{}).name||"—")}</td><td>${esc(o.worker)}</td><td>${fmtT(o.entered_at)}</td><td>${o.finished_at?fmtT(o.finished_at):"—"}</td><td>${o.status==="done"?dur(new Date(o.finished_at)-new Date(o.entered_at)):"—"}</td><td>${nf(opTotal(o))}</td><td>${OST[o.status]}</td></tr>`).join("")}</tbody></table></div>`:'<div class="card empty">مفيش عمليات مطابقة</div>'}`;
+}
+const csvCell=x=>'"'+String(x??"").replace(/"/g,'""')+'"';
+function exportCsv(){
+  const l=logList();if(!l.length){toast("مفيش بيانات للتصدير","warn");return}
+  const rows=[["رقم","النوع","العربية","الفرن","العامل","الدخول","الإطفاء","الأنابيب","القطع","الأصناف","الحالة","ملاحظة"],...l.map(o=>[o.id,KAR[o.kind],opCart(o),(Kk(o.kiln_id)||{}).name||"",o.worker,o.entered_at?fmtF(o.entered_at):"",o.finished_at?fmtF(o.finished_at):"",o.tubes_used??"",opTotal(o),itemsLine(opItems(o)),OST[o.status],o.note||""])];
+  dlFile("سجل-الحريق-"+today()+".csv",rows.map(r=>r.map(csvCell).join(",")).join("\r\n"));
+}
+
+/* ---------- التقارير المطبوعة A4 (معاينة ثم طباعة / حفظ PDF) ---------- */
+const fmtF=t=>{if(!t)return"—";const d=new Date(t);return isNaN(d)?"—":d.toLocaleString("ar-EG",{weekday:"long",day:"numeric",month:"long",year:"numeric",hour:"numeric",minute:"2-digit"})};
+const fmtDay=t=>{if(!t)return"—";const d=new Date(/^\d{4}-\d{2}-\d{2}$/.test(t)?t+"T12:00:00":t);return isNaN(d)?"—":d.toLocaleDateString("ar-EG",{weekday:"long",day:"numeric",month:"long",year:"numeric"})};
+const RPT_CSS=`@page{size:A4;margin:12mm 11mm 17mm;@bottom-center{content:"صفحة " counter(page) " من " counter(pages);font:12px Tajawal,Arial,sans-serif;color:#555}}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:Tajawal,"Segoe UI",Arial,sans-serif;color:#1c1c1f;margin:0;background:#fff;font-size:15px;line-height:1.65}
+.pg{max-width:190mm;margin:0 auto;padding:0 0 14mm}
+.hd{display:flex;align-items:center;gap:14px;border-bottom:3px solid #642631;padding-bottom:10px;margin-bottom:14px}
+.hd img{width:68px;height:68px;object-fit:contain}
+.br b{display:block;font-size:30px;line-height:1;color:#642631;letter-spacing:1px}.br span{font-size:14px;color:#555}
+.ti{flex:1;text-align:center}.ti h1{margin:0;font-size:27px;color:#642631;line-height:1.3}.ti div{font-size:15px;color:#333;margin-top:2px}
+.mt{font-size:12px;color:#555;text-align:end;line-height:1.5}.mt b{display:block;color:#1c1c1f;font-size:12.5px}
+h2{font-size:18px;margin:16px 0 8px;color:#642631;border-inline-start:5px solid #D7B96F;padding-inline-start:8px;break-after:avoid}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 10px}
+.cd{border:1px solid #d9cfd2;border-radius:10px;padding:8px 10px;background:#faf6f7;break-inside:avoid}
+.cd small{display:block;font-size:12.5px;color:#666}.cd b{font-size:19px;color:#1c1c1f}
+.tl{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px}.tl div{border:1px solid #d9cfd2;border-radius:10px;padding:7px 10px;break-inside:avoid}.tl small{display:block;font-size:12.5px;color:#666}.tl b{font-size:15.5px}
+table{width:100%;border-collapse:collapse;margin:6px 0 12px}
+th{background:#642631;color:#fff;font-size:14px;padding:8px 8px;text-align:start}
+td{padding:7px 8px;border-bottom:1px solid #e3dadd;font-size:14.5px;vertical-align:top}
+tbody tr:nth-child(even) td{background:#fbf8f9}
+thead{display:table-header-group}tfoot{display:table-footer-group}tr{break-inside:avoid;page-break-inside:avoid}
+tfoot td{font-weight:800;background:#f1e4e8;border-top:2px solid #642631;font-size:15.5px}
+table.kv td{border:1px solid #e3dadd;background:#fff}table.kv td:nth-child(odd){background:#f6eff1;font-weight:700;width:18%;color:#421B24}
+.bdg{display:inline-block;padding:2px 12px;border-radius:99px;color:#fff;font-weight:700;font-size:13.5px}.b-in_kiln{background:#C0502B}.b-preparing,.b-draft{background:#B8862B}.b-done,.b-approved{background:#2e7d4f}
+.ph{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.ph figure{margin:0;border:1px solid #d9cfd2;border-radius:10px;overflow:hidden;break-inside:avoid}.ph img{display:block;width:100%;height:62mm;object-fit:cover}.ph figcaption{padding:5px 8px;font-size:12.5px;color:#444;background:#faf6f7}
+.nt{border:1px dashed #b9a4aa;border-radius:10px;padding:8px 12px;background:#fdfbfb}
+.sg{display:grid;grid-template-columns:repeat(2,1fr);gap:30px;margin-top:26px;break-inside:avoid}.sg div{border-top:1px solid #333;padding-top:4px;text-align:center;font-size:13.5px;color:#444}
+.ft{position:fixed;bottom:0;inset-inline:0;display:flex;justify-content:space-between;font-size:11.5px;color:#666;border-top:1px solid #ccc;padding-top:3px;background:#fff}
+.sum{font-size:14px;color:#444;margin:0 0 6px}
+@media screen{body{background:#ececef}.pg{background:#fff;padding:14mm 11mm;box-shadow:0 2px 12px rgba(0,0,0,.2);margin:10px auto;width:210mm;max-width:none}.ft{position:static;margin-top:16px}}
+@media print{.pg{padding:0 0 12mm}}`;
+function rptDoc(title,body,landscape){
+  const logo=new URL("icon-512.png",location.href).href;
+  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${esc(title)}</title><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet"><style>${RPT_CSS}${landscape?"@page{size:A4 landscape;margin:10mm 10mm 16mm}.pg{max-width:277mm}@media screen{.pg{width:297mm}}.cards{grid-template-columns:repeat(4,1fr)}":""}</style></head><body><div class="pg">
+  <header class="hd"><img src="${esc(logo)}" alt="MAS"><div class="br"><b>MAS</b><span>الماس للخزف والصيني</span></div>${body.head}<div class="mt">تاريخ الطباعة<b>${esc(fmtF(new Date()))}</b>${ME&&ME.name?"طُبع بواسطة<b>"+esc(ME.name)+"</b>":""}</div></header>
+  ${body.main}
+  <div class="ft"><span>MAS — الماس للخزف والصيني · قسم الحريق والشحن</span><span>${esc(title)}</span></div></div></body></html>`;
+}
+function showReport(html,title){
+  const old=document.querySelector(".rpv");if(old)old.remove();
+  const d=document.createElement("div");d.className="rpv";
+  d.innerHTML=`<div class="rpv-bar noprint"><b>${esc(title)}</b><button class="btn sm" id="rpv-p">${ib("print","طباعة")}</button><button class="btn sm" id="rpv-d">${ib("download","تصدير PDF")}</button><button class="btn ghost sm" id="rpv-c">${ib("x","إغلاق")}</button></div><iframe class="rpv-fr" title="${esc(title)}"></iframe>`;
+  document.body.appendChild(d);
+  const fr=d.querySelector("iframe");fr.srcdoc=html;
+  // على الموبايل: بنصغّر المعاينة على الشاشة بس لتناسب العرض (الطباعة والـ PDF بتفضل بالحجم الحقيقي A4)
+  fr.onload=()=>{try{const dc=fr.contentDocument,pgw=dc.querySelector(".pg");if(!pgw)return;const z=Math.min(1,(fr.clientWidth-8)/(pgw.offsetWidth+24));if(z<1){const s=dc.createElement("style");s.media="screen";s.textContent="body{zoom:"+z.toFixed(3)+"}";dc.head.appendChild(s)}}catch(e){}};
+  const close=()=>{document.removeEventListener("keydown",esc_);d.remove()},esc_=e=>{if(e.key==="Escape")close()};
+  document.addEventListener("keydown",esc_);
+  d.querySelector("#rpv-c").onclick=close;
+  const go=async pdf=>{try{const w=fr.contentWindow;try{await w.document.fonts.ready}catch(x){}
+    await Promise.all([...w.document.images].map(im=>im.complete?1:new Promise(r=>{im.onload=im.onerror=r;setTimeout(r,6000)})));
+    if(pdf)toast("في نافذة الطباعة اختار «حفظ كملف PDF» — الملف هيطلع مطابق للمعاينة","warn");
+    w.focus();w.print()}catch(e){toast("تعذّرت الطباعة","bad")}};
+  d.querySelector("#rpv-p").onclick=()=>go(false);d.querySelector("#rpv-d").onclick=()=>go(true);
+}
+const kvRows=(pairs)=>{const p=pairs.filter(x=>x[1]!==null&&x[1]!==undefined&&x[1]!==""&&x[1]!=="—");let h="";for(let i=0;i<p.length;i+=2)h+=`<tr><td>${p[i][0]}</td><td>${p[i][1]}</td>${p[i+1]?`<td>${p[i+1][0]}</td><td>${p[i+1][1]}</td>`:"<td></td><td></td>"}</tr>`;return h?`<table class="kv">${h}</table>`:""};
+const itemsPrint=(it,tot)=>it.length?`<table><thead><tr><th style="width:8%">م</th><th>الصنف</th><th style="width:22%">الكمية</th></tr></thead><tbody>${it.map((i,n)=>`<tr><td>${nf(n+1)}</td><td>${esc(i.item)}</td><td><b>${nf(i.qty)}</b></td></tr>`).join("")}</tbody><tfoot><tr><td colspan="2">الإجمالي</td><td>${nf(tot)}</td></tr></tfoot></table>`:"";
+
 async function printOp(id){
   const o=O.find(x=>x.id===id);if(!o)return;
   const l=Lk(o.load_id),k=Kk(o.kiln_id);let ps=[];
   try{ps=(await photosFor(id)).filter(p=>!p.replaced_by)}catch(e){fail_(e);return}
-  const H=`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>تقرير حريق #${o.id}</title><style>body{font-family:Tajawal,Arial,sans-serif;margin:18px;color:#111}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:16px 0 6px}table{border-collapse:collapse;width:100%;font-size:13px}td,th{border:1px solid #bbb;padding:5px 8px;text-align:start}th{background:#f2f2f2}.g{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 16px;font-size:13px}.ph{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.ph figure{margin:0;border:1px solid #ccc;padding:4px;break-inside:avoid}.ph img{width:100%;height:150px;object-fit:cover}.ph figcaption{font-size:11px;padding-top:3px}</style></head><body>
-  <h1>تقرير عملية حريق #${o.id} — ${esc(KAR[o.kind])}</h1><div style="font-size:12px;color:#555">MAS — الماس للخزف والصيني · طُبع ${esc(fmtT(new Date()))}</div>
-  <h2>البيانات</h2><div class="g"><div>العربية: <b>${esc(l?l.cart_code:"")}</b></div><div>الفرن: <b>${esc(k?k.name:"")}</b></div><div>الحالة: <b>${OST[o.status]}</b></div><div>العامل المسؤول: <b>${esc(o.worker)}</b></div><div>موعد الدخول: <b>${esc(fmtT(o.entered_at))}</b></div><div>موعد الإطفاء: <b>${esc(o.finished_at?fmtT(o.finished_at):"—")}</b></div><div>الأنابيب المستهلكة: <b>${o.status==="done"?nf(o.tubes_used):"—"}</b></div><div>سجّل الإنهاء: <b>${esc(o.finished_by_name||"—")}</b></div></div>
-  <h2>الأصناف والكميات في العربية</h2><table><tr><th>الصنف</th><th>الكمية</th></tr>${itemsOf(l).map(i=>`<tr><td>${esc(i.item)}</td><td>${nf(i.qty)}</td></tr>`).join("")}<tr><th>الإجمالي</th><th>${nf(l?l.total_qty:0)}</th></tr></table>
-  <h2>صور العداد (${nf(ps.length)})</h2>${ps.length?`<div class="ph">${ps.map(p=>`<figure><img src="${esc(p.url)}" alt=""><figcaption>${esc(fmtT(p.taken_at))} — ${esc(p.uploaded_by_name||"")}</figcaption></figure>`).join("")}</div>`:"<div>لا توجد صور</div>"}</body></html>`;
-  const fr=document.createElement("iframe");fr.style.cssText="position:fixed;width:0;height:0;border:0;right:0;bottom:0";document.body.appendChild(fr);
-  const go=()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){toast("تعذّرت الطباعة","bad")}setTimeout(()=>fr.remove(),60000)};
-  fr.srcdoc=H;fr.onload=()=>{const im=[...fr.contentDocument.images];let n=im.filter(x=>!x.complete).length;if(!n)return setTimeout(go,200);const t=setTimeout(go,6000);im.forEach(x=>{if(!x.complete){const f=()=>{if(--n===0){clearTimeout(t);setTimeout(go,150)}};x.onload=x.onerror=f}})};
+  const it=opItems(o),tot=opTotal(o),done=o.status==="done",cart=opCart(o);
+  const span=done?dur(new Date(o.finished_at)-new Date(o.entered_at)):o.status==="in_kiln"?dur(Date.now()-new Date(o.entered_at).getTime())+" (لسه شغّال)":"";
+  const head=`<div class="ti"><h1>تقرير عملية حريق</h1><div>رقم العملية #${o.id} · حريق ${esc(KAR[o.kind])}</div></div>`;
+  const main=`<div class="cards"><div class="cd"><small>رقم العملية</small><b>#${o.id}</b></div><div class="cd"><small>نوع الحريق</small><b>${esc(KAR[o.kind])}</b></div><div class="cd"><small>الفرن</small><b>${esc(k?k.name:"—")}</b></div><div class="cd"><small>الحالة</small><b><span class="bdg b-${o.status}">${esc(OST[o.status])}</span></b></div></div>
+  ${kvRows([["رقم العربية",esc(cart)],["العامل المسؤول",esc(o.worker)],["نوع الفرن",k&&k.kind?esc("فرن "+KAR[k.kind]):""],["مدة الحريق",esc(span)],["عدد الأنابيب",done?nf(o.tubes_used):""],["صور العداد",o.photo_count?nf(ps.length)+" صورة":""],["الشحنة المرتبطة",l?"#"+l.id+" — عربية "+esc(l.cart_code):""],["سجّل العملية",esc(o.created_by_name||"")]])}
+  <h2>الجدول الزمني</h2><div class="tl"><div><small>بداية الحريق (دخول الفرن)</small><b>${esc(o.entered_at?fmtF(o.entered_at):"لسه ما دخلتش الفرن")}</b></div><div><small>نهاية الحريق (إطفاء الفرن)</small><b>${esc(o.finished_at?fmtF(o.finished_at):"لسه شغّال / لم ينتهِ")}</b></div></div>
+  ${it.length?`<h2>الأصناف والكميات</h2>${itemsPrint(it,tot)}`:""}
+  ${o.note?`<h2>الملاحظات</h2><div class="nt">${esc(o.note)}</div>`:""}
+  ${ps.length?`<h2>صور العداد (${nf(ps.length)})</h2><div class="ph">${ps.map(p=>p.url?`<figure><img src="${esc(p.url)}" alt="صورة العداد"><figcaption>${esc(fmtF(p.taken_at))}${p.uploaded_by_name?" — "+esc(p.uploaded_by_name):""}</figcaption></figure>`:"").join("")}</div>`:""}
+  <div class="sg"><div>توقيع العامل المسؤول</div><div>توقيع مشرف القسم</div></div>`;
+  showReport(rptDoc("تقرير حريق "+KAR[o.kind]+" #"+o.id+(cart?" — عربية "+cart:""),{head,main}),"تقرير حريق #"+o.id);
+}
+function printShip(id){
+  const l=Lk(id);if(!l)return;const k=Kk(l.kiln_id),it=itemsOf(l),tot=l.total_qty||qtyOf(l),op=opOfLoad(l.id);
+  const head=`<div class="ti"><h1>تقرير شحن ${esc(KAR[l.kind])}</h1><div>رقم الشحنة #${l.id} · عربية ${esc(l.cart_code)}</div></div>`;
+  const main=`<div class="cards"><div class="cd"><small>رقم الشحنة</small><b>#${l.id}</b></div><div class="cd"><small>رقم العربية</small><b>${esc(l.cart_code)}</b></div><div class="cd"><small>نوع الشحنة</small><b>${esc(KAR[l.kind])}</b></div><div class="cd"><small>إجمالي القطع</small><b>${nf(tot)}</b></div></div>
+  ${kvRows([["تاريخ ووقت الشحن",esc(fmtF(l.loaded_at))],["المسؤول",esc(l.worker||l.created_by_name||"")],["الفرن",k?esc(k.name):""],["نوع الفرن",k&&k.kind?esc("فرن "+KAR[k.kind]):""],["حريق مرتبط",op?"#"+op.id+" ("+esc(OST[op.status])+")":""],["الحالة",l.status==="draft"?esc(LST.draft):""]])}
+  ${it.length?`<h2>الأصناف والكميات</h2>${itemsPrint(it,tot)}`:""}
+  ${l.note?`<h2>الملاحظات</h2><div class="nt">${esc(l.note)}</div>`:""}
+  <div class="sg"><div>توقيع المسؤول</div><div>توقيع مشرف القسم</div></div>`;
+  showReport(rptDoc("تقرير شحن "+KAR[l.kind]+" #"+l.id+" — عربية "+l.cart_code,{head,main}),"تقرير شحن "+KAR[l.kind]+" #"+l.id);
 }
 
-/* ---------- السجل الموحّد ---------- */
-let LF={kind:"",kiln:"",st:"",from:"",to:"",item:""};
-function logRows(){
-  const q=norm(Q),qi=norm(LF.item);
-  return O.filter(o=>{
-    const l=Lk(o.load_id),k=Kk(o.kiln_id),d=dayOf(o.entered_at||o.created_at);
-    return (!LF.kind||o.kind===LF.kind)&&(!LF.kiln||String(o.kiln_id)===LF.kiln)&&(!LF.st||o.status===LF.st)&&(!LF.from||d>=LF.from)&&(!LF.to||d<=LF.to)
-      &&(!qi||(l&&norm(itemsTxt(l)).includes(qi)))&&(!q||hit(q,l&&l.cart_code,k&&k.name,o.worker,l&&itemsTxt(l),"#"+o.id,KAR[o.kind],OST[o.status]));
-  }).sort((a,b)=>new Date(b.entered_at||b.created_at)-new Date(a.entered_at||a.created_at));
+/* ---------- التقارير والطباعة (بحث + فترة + إجماليات) ---------- */
+let R={type:"biscuit",from:"",to:"",cart:"",worker:"",st:""};
+const RTY={fire:"عمليات الحريق",biscuit:"شحن البسكوت",glaze:"شحن الجليز"};
+function repData(){
+  const ty=R.type,inR=t=>{const d=dayOf(t);return(!R.from||d>=R.from)&&(!R.to||d<=R.to)};
+  const okC=c=>!R.cart||norm(c).includes(norm(R.cart)),okW=w=>!R.worker||norm(w||"").includes(norm(R.worker));
+  if(ty==="fire"){
+    const rows=O.filter(o=>inR(o.entered_at||o.created_at)&&okC(opCart(o))&&okW(o.worker)&&(!R.st||o.status===R.st)).sort((a,b)=>new Date(a.entered_at||a.created_at)-new Date(b.entered_at||b.created_at));
+    return {rows,tot:rows.reduce((a,o)=>a+opTotal(o),0),items:sumItems(rows.map(opItems))};
+  }
+  const rows=L.filter(l=>l.kind===ty&&inR(l.loaded_at)&&okC(l.cart_code)&&okW(l.worker||l.created_by_name)).sort((a,b)=>new Date(a.loaded_at)-new Date(b.loaded_at));
+  return {rows,tot:rows.reduce((a,l)=>a+(l.total_qty||qtyOf(l)),0),items:sumItems(rows.map(itemsOf))};
 }
-function logView(){
-  const rs=logRows();
-  return `<div class="card noprint"><div class="two"><div><label>النوع</label><select id="lf-kind"><option value="">الكل</option><option value="biscuit">بسكوت</option><option value="glaze">جليز</option></select></div><div><label>الفرن</label><select id="lf-kiln"><option value="">الكل</option>${K.map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join("")}</select></div></div>
-  <div class="two"><div><label>الحالة</label><select id="lf-st"><option value="">الكل</option><option value="preparing">قيد التجهيز</option><option value="in_kiln">داخل الفرن</option><option value="done">مكتملة</option></select></div><div><label>اسم الصنف</label><input id="lf-item" placeholder="ابحث بالصنف" autocomplete="off"></div></div>
-  <div class="two"><div><label>من تاريخ</label><input type="date" id="lf-from"></div><div><label>إلى تاريخ</label><input type="date" id="lf-to"></div></div>
-  <div class="row"><button class="btn ghost" id="lf-csv">تصدير Excel</button><button class="btn ghost" onclick="window.print()">طباعة / PDF</button><button class="btn ghost" id="lf-clr">مسح الفلاتر</button></div></div>
-  <div class="total">عدد العمليات: ${nf(rs.length)}</div>
-  <div class="scroll"><table><thead><tr><th>رقم</th><th>النوع</th><th>العربية</th><th>الفرن</th><th>الأصناف</th><th>الدخول</th><th>الإطفاء</th><th>الأنابيب</th><th>العامل</th><th>الحالة</th><th>الصور</th></tr></thead><tbody>${rs.length?rs.map(o=>{const l=Lk(o.load_id),k=Kk(o.kiln_id);return `<tr data-a="opview" data-id="${o.id}" style="cursor:pointer"><td><b>#${o.id}</b></td><td>${esc(KAR[o.kind])}</td><td>${esc(l?l.cart_code:"؟")}</td><td>${esc(k?k.name:"؟")}</td><td style="max-width:260px">${esc(l?itemsTxt(l):"")}</td><td>${fmtT(o.entered_at)}</td><td>${o.finished_at?fmtT(o.finished_at):"—"}</td><td>${o.status==="done"?nf(o.tubes_used):"—"}</td><td>${esc(o.worker)}</td><td><span class="fst ${o.status}">${OST[o.status]}</span></td><td>${nf(o.photo_count)}</td></tr>`}).join(""):'<tr><td colspan="11" class="empty">مفيش عمليات</td></tr>'}</tbody></table></div>`;
+function sumItems(lists){const m=new Map();lists.forEach(it=>it.forEach(i=>m.set(i.item,(m.get(i.item)||0)+(+i.qty||0))));return[...m.entries()].map(([item,qty])=>({item,qty})).sort((a,b)=>b.qty-a.qty)}
+function prtView(){
+  const d=repData(),ty=R.type;
+  return `<h3 class="fsec"><span>التقارير والطباعة</span></h3><div class="card noprint" style="padding:10px 12px">
+  <div class="fseg" id="r-type" style="margin:0 0 8px">${Object.entries(RTY).map(([k,n])=>`<button type="button" data-k="${k}" class="${ty===k?"on":""}">${n}</button>`).join("")}</div>
+  <div class="two"><div><label>من تاريخ</label><input type="date" id="r-from" value="${R.from}"></div><div><label>إلى تاريخ</label><input type="date" id="r-to" value="${R.to}"></div></div>
+  <div class="two"><div><label>رقم العربية</label><input id="r-cart" autocomplete="off" value="${esc(R.cart)}" placeholder="بحث برقم العربية"></div><div><label>اسم العامل / المسؤول</label><input id="r-w" autocomplete="off" value="${esc(R.worker)}" placeholder="بحث بالاسم"></div></div>
+  ${ty==="fire"?`<label>الحالة</label><select id="r-st"><option value="">الكل</option>${Object.entries(OST).map(([k,n])=>`<option value="${k}" ${R.st===k?"selected":""}>${n}</option>`).join("")}</select>`:""}
+  <div class="fb"><button class="btn ghost" data-a="rtoday">النهارده</button><button class="btn ghost" data-a="rclr">مسح الفلاتر</button><button class="btn ghost" data-a="rcsv">${ib("download","CSV")}</button><button class="btn" data-a="rprint">${ib("print","طباعة التقرير")}</button><button class="btn" data-a="rpdf">${ib("download","تصدير PDF")}</button></div></div>
+  <div class="kpg" style="margin:10px 0">${kpiBox(d.rows.length,ty==="fire"?"عملية":"شحنة","var(--pri)")}${kpiBox(d.tot,"إجمالي القطع","var(--ok)")}</div>
+  ${d.rows.length?`<div class="tblwrap"><table class="ftb lg"><thead>${ty==="fire"?"<tr><th>#</th><th>النوع</th><th>العربية</th><th>الفرن</th><th>العامل</th><th>الدخول</th><th>الإطفاء</th><th>القطع</th></tr>":"<tr><th>#</th><th>العربية</th><th>الفرن</th><th>الوقت</th><th>المسؤول</th><th>القطع</th></tr>"}</thead><tbody>${d.rows.slice(0,300).map(r=>ty==="fire"?`<tr data-a="opview" data-id="${r.id}" style="cursor:pointer"><td>${r.id}</td><td>${KAR[r.kind]}</td><td>${esc(opCart(r)||"—")}</td><td>${esc((Kk(r.kiln_id)||{}).name||"—")}</td><td>${esc(r.worker)}</td><td>${fmtT(r.entered_at)}</td><td>${r.finished_at?fmtT(r.finished_at):"—"}</td><td>${nf(opTotal(r))}</td></tr>`:`<tr><td>${r.id}</td><td>${esc(r.cart_code)}</td><td>${esc((Kk(r.kiln_id)||{}).name||"—")}</td><td>${fmtT(r.loaded_at)}</td><td>${esc(r.worker||r.created_by_name||"—")}</td><td>${nf(r.total_qty||qtyOf(r))}</td></tr>`).join("")}</tbody></table></div>
+  ${d.items.length?`<h3 class="fsec"><span>إجمالي الكميات حسب الصنف</span></h3>${rowsTbl(d.items,d.tot)}`:""}`:'<div class="card empty">مفيش بيانات مطابقة للفلاتر</div>'}`;
 }
-function exportCsv(){
-  const q=s=>'"'+String(s??"").replace(/"/g,'""')+'"';
-  const hdr=["رقم العملية","نوع الحريق","رقم العربية","الفرن","الأصناف والكميات","موعد الدخول","موعد الإطفاء","الأنابيب المستهلكة","العامل","الحالة","عدد الصور"];
-  const csv="﻿"+[hdr.map(q).join(","),...logRows().map(o=>{const l=Lk(o.load_id),k=Kk(o.kiln_id);return [o.id,KAR[o.kind],l?l.cart_code:"",k?k.name:"",l?itemsTxt(l):"",o.entered_at?new Date(o.entered_at).toLocaleString("en-GB"):"",o.finished_at?new Date(o.finished_at).toLocaleString("en-GB"):"",o.tubes_used??"",o.worker,OST[o.status],o.photo_count].map(q).join(",")})].join("\n");
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="سجل-الحريق.csv";a.click();
+function printPeriod(pdf){
+  const d=repData(),ty=R.type;if(!d.rows.length){toast("مفيش بيانات للطباعة","warn");return}
+  const per=R.from||R.to?`${R.from?"من "+fmtDay(R.from):""} ${R.to?"إلى "+fmtDay(R.to):""}`:"كل الفترات";
+  const flt=[R.cart?"العربية: "+R.cart:"",R.worker?"العامل: "+R.worker:"",R.st?"الحالة: "+OST[R.st]:""].filter(Boolean).join(" · ");
+  const ttl=ty==="fire"?"تقرير عمليات الحريق":"تقرير شحن "+KAR[ty];
+  const head=`<div class="ti"><h1>${ttl}</h1><div>${esc(per)}</div></div>`;
+  const rowsH=ty==="fire"?d.rows.map((r,n)=>`<tr><td>${nf(n+1)}</td><td>#${r.id}</td><td>${esc(KAR[r.kind])}</td><td>${esc(opCart(r)||"—")}</td><td>${esc((Kk(r.kiln_id)||{}).name||"—")}</td><td>${esc(r.worker)}</td><td>${esc(r.entered_at?fmtF(r.entered_at):"—")}</td><td>${esc(r.finished_at?fmtF(r.finished_at):"—")}</td><td>${r.status==="done"?esc(dur(new Date(r.finished_at)-new Date(r.entered_at))):"—"}</td><td>${esc(itemsLine(opItems(r))||"—")}</td><td><b>${nf(opTotal(r))}</b></td></tr>`).join(""):d.rows.map((r,n)=>`<tr><td>${nf(n+1)}</td><td>#${r.id}</td><td>${esc(r.cart_code)}</td><td>${esc((Kk(r.kiln_id)||{}).name||"—")}</td><td>${esc(fmtF(r.loaded_at))}</td><td>${esc(r.worker||r.created_by_name||"—")}</td><td>${esc(itemsLine(itemsOf(r))||"—")}</td><td><b>${nf(r.total_qty||qtyOf(r))}</b></td></tr>`).join("");
+  const th=ty==="fire"?"<th>م</th><th>رقم</th><th>النوع</th><th>العربية</th><th>الفرن</th><th>العامل</th><th>البداية</th><th>النهاية</th><th>المدة</th><th>الأصناف</th><th>القطع</th>":"<th>م</th><th>رقم</th><th>العربية</th><th>الفرن</th><th>التاريخ والوقت</th><th>المسؤول</th><th>الأصناف</th><th>القطع</th>";
+  const cs=ty==="fire"?10:7;
+  const main=`<div class="cards"><div class="cd"><small>${ty==="fire"?"عدد العمليات":"عدد الشحنات"}</small><b>${nf(d.rows.length)}</b></div><div class="cd"><small>إجمالي القطع</small><b>${nf(d.tot)}</b></div><div class="cd"><small>الفترة</small><b style="font-size:14px">${esc(per)}</b></div><div class="cd"><small>الفلاتر</small><b style="font-size:14px">${esc(flt||"بدون")}</b></div></div>
+  <table><thead><tr>${th}</tr></thead><tbody>${rowsH}</tbody><tfoot><tr><td colspan="${cs}">الإجمالي</td><td>${nf(d.tot)}</td></tr></tfoot></table>
+  ${d.items.length?`<h2>إجمالي الكميات حسب الصنف</h2>${itemsPrint(d.items,d.tot)}`:""}`;
+  showReport(rptDoc(ttl+" — "+per,{head,main},true),ttl);
 }
-
-/* ---------- إدارة الأفران ---------- */
-function kilnList(){
-  panel("إدارة الأفران",`<div class="nums" style="margin-bottom:6px">الفرن المشغول مينفعش يتوقّف.</div>${K.length?K.map(k=>`<div class="krow"><span><b>${esc(k.name)}</b>${k.active?"":' <span class="pt">موقوف</span>'}${k.note?`<div class="nums">${esc(k.note)}</div>`:""}</span><button class="btn ghost sm" data-a="kedit" data-id="${k.id}">تعديل</button></div>`).join(""):'<div class="empty">مفيش أفران</div>'}<button class="btn" id="kadd" style="width:100%;margin-top:12px">${PLUS}<span>إضافة فرن</span></button>`);
-  document.getElementById("kadd").onclick=()=>kilnForm(0);
+function repCsv(){
+  const d=repData(),ty=R.type;if(!d.rows.length){toast("مفيش بيانات للتصدير","warn");return}
+  const rows=ty==="fire"?[["رقم","النوع","العربية","الفرن","العامل","البداية","النهاية","الأنابيب","القطع","الأصناف","الحالة"],...d.rows.map(o=>[o.id,KAR[o.kind],opCart(o),(Kk(o.kiln_id)||{}).name||"",o.worker,o.entered_at?fmtF(o.entered_at):"",o.finished_at?fmtF(o.finished_at):"",o.tubes_used??"",opTotal(o),itemsLine(opItems(o)),OST[o.status]])]:[["رقم","العربية","الفرن","الوقت","المسؤول","القطع","الأصناف"],...d.rows.map(l=>[l.id,l.cart_code,(Kk(l.kiln_id)||{}).name||"",fmtF(l.loaded_at),l.worker||l.created_by_name||"",l.total_qty||qtyOf(l),itemsLine(itemsOf(l))])];
+  dlFile((ty==="fire"?"حريق":"شحن-"+KAR[ty])+"-"+today()+".csv",rows.map(r=>r.map(csvCell).join(",")).join("\r\n"));
 }
-function kilnForm(id){
-  if(roBlock())return;
-  const k=id?Kk(id):null;
-  openModal(k?"تعديل فرن":"إضافة فرن",`<label>اسم أو رقم الفرن</label><input id="k-n" maxlength="60" value="${k?esc(k.name):""}" autocomplete="off"><label>ملاحظة (اختياري)</label><input id="k-t" maxlength="200" value="${k?esc(k.note||""):""}"><label class="chk" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="k-a" style="width:auto;margin:0" ${!k||k.active?"checked":""}><span>الفرن شغّال ومتاح للاستخدام</span></label>`,async()=>{
-    const n=document.getElementById("k-n").value.trim();if(!n){toast("اكتب اسم الفرن");return false}
-    try{await rpc("firing_save_kiln",{p_id:k?k.id:null,p_name:n,p_note:document.getElementById("k-t").value.trim()||null,p_active:document.getElementById("k-a").checked})}catch(e){fail_(e);return false}
-    await load();toast("تم حفظ الفرن");setTimeout(kilnList,50);
-  });
-}
+function printLog(){R={...R,type:"fire",from:LF.from,to:LF.to,cart:"",worker:"",st:LF.st};printPeriod(false)}
 
 /* ---------- ربط الأزرار ---------- */
 function wire(root){
-  const q=document.getElementById("ldnew");if(q)q.onclick=()=>loadForm(KIND[tab]);
-  const o=document.getElementById("opnew");if(o)o.onclick=()=>startForm(KIND[tab]);
-  const k=document.getElementById("kmg");if(k)k.onclick=kilnList;
-  const lg={kind:"lf-kind",kiln:"lf-kiln",st:"lf-st",from:"lf-from",to:"lf-to",item:"lf-item"};
   if(tab==="log"){
+    const lg={kind:"lf-kind",kiln:"lf-kiln",st:"lf-st",from:"lf-from",to:"lf-to",item:"lf-item"};
     Object.entries(lg).forEach(([key,id])=>{const e=document.getElementById(id);if(!e)return;e.value=LF[key];e.addEventListener(e.tagName==="INPUT"&&e.type!=="date"?"input":"change",()=>{LF[key]=e.value;const pos=e.selectionStart;render();const n=document.getElementById(id);if(n&&e.tagName==="INPUT"&&e.type!=="date"){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}})});
-    document.getElementById("lf-csv").onclick=exportCsv;
+    document.getElementById("lf-csv").onclick=exportCsv;document.getElementById("lf-pr").onclick=printLog;
     document.getElementById("lf-clr").onclick=()=>{LF={kind:"",kiln:"",st:"",from:"",to:"",item:""};render()};
+  }
+  if(tab==="prt"){
+    const bind=(id,key,ev)=>{const e=document.getElementById(id);if(!e)return;e.addEventListener(ev||"change",()=>{R[key]=e.value;const pos=e.selectionStart;render();const n=document.getElementById(id);if(n&&e.tagName==="INPUT"&&e.type!=="date"){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}})};
+    bind("r-from","from");bind("r-to","to");bind("r-cart","cart","input");bind("r-w","worker","input");bind("r-st","st");
+    const t=document.getElementById("r-type");if(t)t.onclick=e=>{const b=e.target.closest("button[data-k]");if(!b)return;R.type=b.dataset.k;R.st="";render()};
   }
 }
 document.addEventListener("click",async e=>{
   const g=e.target.closest("[data-go]");if(g){location.hash="#"+g.dataset.go;return}
   const z=e.target.closest("[data-zoom]");if(z){zoom(z.dataset.zoom);return}
+  const of=e.target.closest("[data-of]");if(of){OF=of.dataset.of;render();return}
   const b=e.target.closest("[data-a]");if(!b)return;
   const a=b.dataset.a,id=+b.dataset.id;
-  if(a==="ldedit")return loadForm(Lk(id).kind,id);
-  if(a==="ldok"){if(roBlock())return;if(!await ask("اعتماد شحن العربية؟ بعد الاعتماد مفيش تعديل.","نعم، اعتمد"))return;try{await rpc("firing_approve_load",{p_id:id});await load();toast("تم اعتماد الشحن")}catch(x){fail_(x)}return}
-  if(a==="lddel"){if(roBlock())return;if(!await ask("حذف مسودة الشحن دي؟"))return;try{await rpc("firing_delete_load",{p_id:id});await load();toast("تم الحذف")}catch(x){fail_(x)}return}
-  if(a==="opnew")return startForm(Lk(id).kind,id);
+  if(a==="newfire"){closeModal();return fireForm(b.dataset.k)}
+  if(a==="newship"){return shipForm(b.dataset.k)}
+  if(a==="shipedit")return shipForm(null,id);
+  if(a==="shipdel")return delShip(id);
+  if(a==="shipprt")return printShip(id);
+  if(a==="opedit"){closeModal();return fireForm(null,id)}
+  if(a==="opdel")return delFire(id);
+  if(a==="hist")return showHist(b.dataset.e,id);
+  if(a==="ldok"){if(roBlock())return;if(!await ask("اعتماد شحن العربية؟","نعم، اعتمد"))return;try{await rpc("firing_approve_load",{p_id:id});await load();toast("تم اعتماد الشحن")}catch(x){fail_(x)}return}
   if(a==="opview")return openOp(id);
   if(a==="shot")return pickPhoto(id,null,false);
   if(a==="gal")return pickPhoto(id,null,true);
@@ -462,12 +823,20 @@ document.addEventListener("click",async e=>{
   if(a==="enter")return enterForm(id);
   if(a==="prt")return printOp(id);
   if(a==="kedit"){closeModal();return kilnForm(id)}
+  if(a==="kadd")return kilnForm(0);
+  if(a==="rprint")return printPeriod(false);
+  if(a==="rpdf")return printPeriod(true);
+  if(a==="rcsv")return repCsv();
+  if(a==="rtoday"){R.from=R.to=today();render();return}
+  if(a==="rclr"){R={...R,from:"",to:"",cart:"",worker:"",st:""};render();return}
 });
-document.getElementById("ftabs").addEventListener("click",e=>{const b=e.target.closest("button[data-t]");if(!b)return;if(location.hash==="#"+b.dataset.t){tab=b.dataset.t;setTab()}else location.hash="#"+b.dataset.t});
+const goTab=t=>{if(location.hash==="#"+t){tab=t;setTab()}else location.hash="#"+t};
+document.getElementById("ftabs").addEventListener("click",e=>{const b=e.target.closest("button[data-t]");if(!b)return;goTab(b.dataset.t)});
 document.getElementById("fq").addEventListener("input",e=>{Q=e.target.value;render()});
 setInterval(()=>{if(document.hidden||document.getElementById("ov")||_up)return;load()},60000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!document.getElementById("ov"))load()});
-(async()=>{if(await requireAuth("fire.html")){renderNav("fire.html");load().finally(settle)}})();
+(async()=>{if(await requireAuth("fire.html")){renderNav("fire.html");drawTabs();load().finally(settle)}})();
+
 </script>
 <script src="install.js" defer></script>
 </body>
