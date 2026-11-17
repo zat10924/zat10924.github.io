@@ -287,6 +287,124 @@ const SUBS={
 const ROLE_AR={admin:"مدير",owner:"صاحب المصنع",manager:"مسؤول قسم",worker:"مسجّل إنتاج"};
 const initialOf=()=>((ME&&(ME.name||ME.email))||"?").trim().charAt(0).toUpperCase();
 const MENU='<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+/* ===== اختصارات الكيبورد (للّاب والكمبيوتر) =====
+   بتشتغل بمكان الحرف على الكيبورد (e.code) فتمشي مع الكيبورد العربي والإنجليزي من غير تبديل لغة.
+   مفيش أي اختصار بيشتغل وانت بتكتب في خانة، أو وفيه نافذة مفتوحة (غير Ctrl+Enter للحفظ). */
+// جهاز بماوس/تاتش باد (لاب أو كمبيوتر) — الموبايل والتابلت بيرجعوا false
+const IS_PC=(()=>{try{return matchMedia("(hover:hover) and (pointer:fine)").matches}catch(e){return false}})();
+function initShortcuts(ctx){
+  if(window.__kbd)return;window.__kbd=1;
+  const M=()=>SET.get("kbd",true),on=k=>M()&&SET.get("kbd_"+k,true); // الإعدادات › الكيبورد (بتتطبق فورًا)
+  const {subs,mnB}=ctx;
+  const go=f=>{if(f&&location.pathname.split("/").pop()!==f)location.href=f;else if(f&&f==="index.html")scrollTo(0,0)};
+  const NAV=[
+    ["KeyH","h","ا","الرئيسية",()=>"index.html"],
+    ["KeyP","p","ح","تسجيل الإنتاج",()=>canSee(PROD[0])?PROD[0]:null],
+    ["KeyO","o","خ","الطلبيات",()=>canSee(ORDERS[0])?ORDERS[0]:null],
+    ["KeyR","r","ق","التقارير",()=>canSee(REPORTS[0])?REPORTS[0]:null],
+    ["KeyS","s","س","بحث شامل",()=>canSee(SEARCH[0])?SEARCH[0]:null],
+    ["KeyW","w","ص","العمال",()=>canSee(WORKERS[0])?WORKERS[0]:null],
+    ["KeyC","c","ؤ","الأصناف والأكواد",()=>canSee(CATALOG[0])?CATALOG[0]:null],
+    ["KeyA","a","ش","سجل النشاط",()=>canSee(ACTIVITY[0])?ACTIVITY[0]:null],
+    ["KeyU","u","ع","المستخدمين",()=>canSee(USERS[0])?USERS[0]:null],
+    ["KeyF","f","ب","ملفي الشخصي",()=>"profile.html"],
+    ["KeyE","e","ث","الإعدادات",()=>"settings.html"]
+  ];
+  const typing=t=>{
+    if(!t)return false;
+    if(t.isContentEditable)return true;
+    const n=t.tagName;
+    if(n==="TEXTAREA"||n==="SELECT")return true;
+    if(n==="INPUT")return!/^(checkbox|radio|button|submit|reset|range|file|image|color)$/i.test(t.type||"text");
+    return false;
+  };
+  const modalOpen=()=>!!document.querySelector(".ov")||!!document.getElementById("kbh");
+  // شريط صغير بيظهر بعد الضغط على g
+  let pend=false,pt=null,hint=null;
+  const endPend=()=>{pend=false;clearTimeout(pt);if(hint){hint.remove();hint=null}};
+  const startPend=()=>{
+    pend=true;clearTimeout(pt);pt=setTimeout(endPend,1500);
+    if(!hint){hint=document.createElement("div");hint.className="kbhint";hint.textContent="انتقال إلى… (اضغط حرف الصفحة · ؟ للقائمة)";document.body.appendChild(hint)}
+  };
+  const focusSearch=()=>{
+    const cand=[...document.querySelectorAll('input[type="search"],#q')].find(x=>x.offsetParent!==null&&!x.disabled);
+    if(cand){cand.focus();try{cand.select()}catch(e){}return true}
+    return false;
+  };
+  const secs=()=>visibleSections();
+  function help(){
+    if(document.getElementById("kbh")){closeHelp();return}
+    const k=(a)=>`<kbd>${a}</kbd>`;
+    const row=(keys,t)=>`<div class="kbr"><span>${keys}</span><b>${t}</b></div>`;
+    const nav=!on("nav")?[]:NAV.filter(n=>{try{return n[4]()}catch(e){return false}}).map(n=>row(`${k("g")} ${k(n[1].toUpperCase())} <small>/ ${n[2]}</small>`,n[3])).join("");
+    const sx=!on("nav")?[]:secs().slice(0,9).map((s,i)=>row(`${k("g")} ${k(i+1)}`,"قسم "+s[1])).join("");
+    const tb=on("tabs")&&subs.length>1?subs.slice(0,9).map((x,i)=>{const l=subsOf(ctx.active).find(y=>y[1]===x);return row(k(i+1),l?l[0]:x)}).join(""):"";
+    const o=document.createElement("div");o.id="kbh";o.className="kbh";o.setAttribute("role","dialog");o.setAttribute("aria-label","اختصارات الكيبورد");
+    o.innerHTML=`<div class="kbbox"><div class="kbtop"><b>اختصارات الكيبورد</b><button type="button" class="kbx" aria-label="إغلاق">✕</button></div>
+      <div class="kbcols">
+        <div><h4>عام</h4>
+          ${on("search")?row(k("/")+" أو "+k("Ctrl")+" "+k("K"),"البحث (أو فتح البحث الشامل)"):""}
+          ${row(k("?"),"إظهار / إخفاء هذه القائمة")}
+          ${on("quick")?row(k("M")+" <small>/ ة</small>","إظهار / إخفاء القائمة الجانبية")+row(k("T")+" <small>/ ف</small>","الوضع الليلي / النهاري")+row(k("R")+" <small>/ ق</small>","تحديث البيانات"):""}
+          ${row(k("Esc"),"إغلاق النافذة / القائمة")}
+          ${on("save")?row(k("Ctrl")+" "+k("Enter"),"حفظ داخل أي نافذة"):""}
+          ${tb?`<h4>تبويبات الصفحة دي</h4>${tb}`:""}
+        </div>
+        <div><h4>انتقال سريع <small>(اضغط g ثم الحرف)</small></h4>${nav}${sx?`<h4>الأقسام</h4>${sx}`:""}</div>
+      </div><p class="kbf">${M()?"":"الاختصارات مقفولة حاليًا. "}الاختصارات بتشتغل مع الكيبورد العربي والإنجليزي، ومش بتشتغل وانت بتكتب في خانة. تقدر تتحكم فيها من الإعدادات › الكيبورد.</p></div>`;
+    document.body.appendChild(o);
+    o.addEventListener("mousedown",e=>{if(e.target===o)closeHelp()});
+    o.querySelector(".kbx").onclick=closeHelp;
+  }
+  window.kbdHelp=help;
+  function closeHelp(){const o=document.getElementById("kbh");if(o)o.remove()}
+  if(!document.getElementById("kbcss")){
+    const st=document.createElement("style");st.id="kbcss";
+    st.textContent=`.kbhint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.kbh{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;display:flex;align-items:center;justify-content:center;padding:14px}
+.kbbox{background:var(--card,#fff);color:var(--ink,var(--text,#222));border-radius:16px;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:18px 20px;box-shadow:0 12px 48px rgba(0,0,0,.35)}
+.kbtop{display:flex;justify-content:space-between;align-items:center;font-size:17px;margin-bottom:6px}
+.kbx{background:none;border:0;font-size:18px;cursor:pointer;color:inherit;padding:4px 8px}
+.kbcols{display:grid;grid-template-columns:1fr 1fr;gap:6px 28px}@media(max-width:640px){.kbcols{grid-template-columns:1fr}}
+.kbbox h4{margin:12px 0 6px;font-size:13px;color:var(--pri,#642631)}.kbbox h4 small{font-weight:400;opacity:.7}
+.kbr{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line,#ddd);font-size:13.5px}.kbr b{font-weight:500}
+.kbbox kbd{display:inline-block;min-width:22px;text-align:center;padding:1px 7px;border:1px solid var(--line,#bbb);border-bottom-width:2px;border-radius:6px;background:var(--bg,#f6f6f6);font:600 12px/1.6 ui-monospace,Consolas,monospace;direction:ltr}
+.kbf{margin:12px 0 0;font-size:12px;opacity:.7}`;
+    document.head.appendChild(st);
+  }
+  // زر في قائمة الحساب
+  try{const out=IS_PC&&ctx.um&&ctx.um.querySelector("#umout");if(out){const b=document.createElement("button");b.type="button";b.innerHTML="<span>اختصارات الكيبورد (؟)</span>";b.onclick=()=>{ctx.um.hidden=true;help()};out.before(b)}}catch(e){}
+
+  document.addEventListener("keydown",e=>{
+    if(e.isComposing||e.defaultPrevented)return;
+    const code=e.code,mod=e.ctrlKey||e.metaKey;
+    // Ctrl+Enter: حفظ داخل النافذة المفتوحة
+    if(mod&&code==="Enter"){if(!on("save"))return;const sv=document.querySelector(".ov #mSave,#rv-ok");if(sv&&!sv.disabled){e.preventDefault();sv.click()}return}
+    // Ctrl+K: بحث (حتى وانت جوه خانة)
+    if(mod&&!e.altKey&&code==="KeyK"){if(!on("search"))return;e.preventDefault();if(!focusSearch()&&canSee(SEARCH[0]))go(SEARCH[0]);return}
+    if(mod||e.altKey)return;
+    if(typing(e.target)){return}
+    if(!M())return;
+    // ؟ أو Shift+/
+    if((code==="Slash"&&e.shiftKey)||e.key==="?"||e.key==="؟"){e.preventDefault();endPend();help();return}
+    if(modalOpen())return;
+    if(pend){
+      e.preventDefault();endPend();
+      if(/^(Digit|Numpad)[1-9]$/.test(code)){const s=secs()[+code.slice(-1)-1];if(s)go(s[0]);return}
+      const n=NAV.find(x=>x[0]===code);
+      if(n){const f=n[4]();if(f)go(f);else toast("الصفحة دي مش متاحة لحسابك","warn")}
+      return;
+    }
+    if(e.shiftKey)return;
+    if(code==="Slash"){if(!on("search"))return;e.preventDefault();if(!focusSearch()&&canSee(SEARCH[0]))go(SEARCH[0]);return}
+    if(code==="KeyG"){if(!on("nav"))return;e.preventDefault();startPend();return}
+    if(code==="KeyM"){if(!on("quick"))return;e.preventDefault();mnB&&mnB.click();return}
+    if(code==="KeyT"){if(!on("quick"))return;const b=document.getElementById("th");if(b){e.preventDefault();b.click()}return}
+    if(code==="KeyR"){if(!on("quick"))return;const b=document.getElementById("rf");if(b){e.preventDefault();b.click()}return}
+    if(/^(Digit|Numpad)[1-9]$/.test(code)){if(!on("tabs"))return;const i=+code.slice(-1)-1;if(subs.length>1&&subs[i]){e.preventDefault();location.hash=subs[i]}return}
+  });
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.getElementById("kbh")){e.stopPropagation();closeHelp()}},true);
+}
 function renderNav(active){
   if(active===""||active==="index.html")setTimeout(()=>{try{showWhatsNew()}catch(e){}},1200);
   const cur=SECTIONS.find(s=>s[0]===active)||(active===ORDERS[0]?ORDERS:active===REPORTS[0]?REPORTS:active===PROD[0]?PROD:active===ACTIVITY[0]?ACTIVITY:active===CATALOG[0]?CATALOG:active===WORKERS[0]?WORKERS:active===SEARCH[0]?SEARCH:active===WSEARCH[0]?WSEARCH:active===PROFILE[0]?PROFILE:active===USERS[0]?USERS:active===SETTINGS[0]?SETTINGS:null),acc=cur?cur[3]:"var(--pri)";
@@ -377,6 +495,7 @@ function renderNav(active){
   };
   const wrap=document.querySelector(".wrap");if(wrap&&cur)wrap.prepend(head);
   window.addEventListener("hashchange",()=>apply(false));apply(true);
+  try{initShortcuts({subs,mnB,side,um,active})}catch(e){}
   if(_today&&_today!==new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10))setTimeout(()=>toast("تاريخ تليفونك مختلف عن السيرفر، البرنامج هيستخدم تاريخ السيرفر","warn"),1200);
   applyPerms();hideSplash();updateBadge();
   setTimeout(()=>document.documentElement.classList.add("settled"),1600);
