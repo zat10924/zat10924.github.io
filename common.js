@@ -1791,17 +1791,17 @@ function wireWasteGood(upd,keepFirst){
   const it=document.getElementById("m-item"),d=document.getElementById("m-d"),g=document.getElementById("m-g");
   if(!it||!d||!g)return;
   const hint=document.createElement("div");hint.className="hint";hint.id="m-gh";g.parentElement.appendChild(hint);
-  let cache={d:null,m:new Map()},seq=0,first=!!keepFirst;
+  let cache={d:null,m:new Map()},seq=0,first=!!keepFirst,lastKey=null;
   const run=async()=>{
     const day=d.value||today(),my=++seq;
     if(cache.d!==day){const m=await glazeProducedByItem(day);if(my!==seq)return;cache={d:day,m}}
     const dl=document.getElementById("m-items");
     if(dl){const have=new Set([...dl.options].map(o=>o.value));cache.m.forEach((v,k)=>{if(!have.has(k)){const o=document.createElement("option");o.value=k;dl.prepend(o)}})}
-    const item=it.value.trim(),v=item?cache.m.get(item):0;
-    if(first){first=false;if(v>0)hint.textContent="إنتاج الجليز للصنف ده في اليوم ده: "+nf(v);return}
-    if(v>0){g.value=v;g.readOnly=true;hint.textContent="السليم من إنتاج الجليز في اليوم ده: "+nf(v)}
-    else{g.readOnly=false;hint.textContent=item?"مفيش إنتاج جليز مسجل للصنف ده في اليوم ده — اكتب السليم يدويًا":""}
-    upd();
+    const item=it.value.trim(),v=item?cache.m.get(item):0,key=day+"\0"+item;
+    if(first){first=false;lastKey=key;if(v>0){g.value=v;g.readOnly=true;g.dataset.auto="1";hint.textContent="السليم من إنتاج الجليز في اليوم ده: "+nf(v)}return}
+    if(v>0){g.value=v;g.readOnly=true;g.dataset.auto="1";hint.textContent="السليم من إنتاج الجليز في اليوم ده: "+nf(v)}
+    else{if(key!==lastKey||g.dataset.auto==="1")g.value="";g.readOnly=false;g.dataset.auto="0";hint.textContent=item?"مفيش إنتاج جليز مسجل للصنف ده في اليوم ده — اكتب السليم يدويًا":""}
+    lastKey=key;upd();
   };
   it.addEventListener("input",run);it.addEventListener("change",run);d.addEventListener("change",run);
   run();
