@@ -834,6 +834,39 @@ const isDark=()=>document.documentElement.dataset.theme?document.documentElement
 function syncThemeIcon(){const b=document.getElementById("th");if(b)b.innerHTML=ico(isDark()?"sun":"moon")}
 function toggleTheme(){const t=isDark()?"light":"dark";document.documentElement.dataset.theme=t;try{localStorage.setItem("theme",t)}catch(e){}syncThemeIcon()}
 
+/* ===== بحث مساعد للقوائم الطويلة (يحافظ على select الأصلي) ===== */
+(()=>{
+  const clean=v=>String(v||"").normalize("NFD").replace(/[\u064B-\u065F\u0670\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/\s+/g," ").trim().toLocaleLowerCase("ar");
+  const enhance=root=>{
+    const list=[];
+    if(root&&root.matches&&root.matches("select"))list.push(root);
+    if(root&&root.querySelectorAll)list.push(...root.querySelectorAll("select"));
+    list.forEach(sel=>{
+      if(sel.dataset.smartSearchReady||sel.multiple||sel.disabled)return;
+      const options=[...sel.options].filter(o=>!o.disabled&&o.value!=="");
+      if(options.length<12)return;
+      sel.dataset.smartSearchReady="1";
+      const search=document.createElement("input");search.type="search";search.className="smart-select-search";
+      search.placeholder="ابحث داخل الاختيارات…";search.setAttribute("aria-label","بحث داخل "+(sel.getAttribute("aria-label")||sel.id||"القائمة"));
+      search.autocomplete="off";search.spellcheck=false;
+      const hint=document.createElement("small");hint.className="smart-select-hint";hint.textContent="اكتب جزءًا من الاسم لتصفية الاختيارات؛ ويمكنك استخدام لوحة المفاتيح كالمعتاد.";
+      sel.insertAdjacentElement("beforebegin",hint);hint.insertAdjacentElement("beforebegin",search);
+      const userKey=()=>{const user=(typeof ME!=="undefined"&&ME&&ME.id)?ME.id:"local";return "mas_recent_select_"+user+"_"+(sel.id||sel.name||"list")};
+      const recent=document.createElement("div");recent.className="smart-select-recents";search.insertAdjacentElement("afterend",recent);
+      const paintRecent=()=>{let a=[];try{a=JSON.parse(localStorage.getItem(userKey())||"[]")}catch(e){};recent.replaceChildren();a.filter(v=>[...sel.options].some(o=>o.value===v&&!o.disabled)).slice(0,4).forEach(v=>{const o=[...sel.options].find(x=>x.value===v);const b=document.createElement("button");b.type="button";b.className="smart-select-recent";b.textContent=o.textContent;b.title=o.textContent;b.addEventListener("click",()=>{sel.value=v;sel.dispatchEvent(new Event("change",{bubbles:true}));search.value="";filter();sel.focus()});recent.appendChild(b)})};
+      const filter=()=>{const q=clean(search.value);[...sel.options].forEach(o=>{o.hidden=!!q&&o.value!==sel.value&&!clean(o.textContent).includes(q)});recent.hidden=!!q};
+      search.addEventListener("input",filter);paintRecent();
+      sel.addEventListener("change",()=>{
+        if(!sel.value)return;
+        try{let a=JSON.parse(localStorage.getItem(userKey())||"[]");a=[sel.value,...a.filter(v=>v!==sel.value)].slice(0,5);localStorage.setItem(userKey(),JSON.stringify(a))}catch(e){}
+        paintRecent();
+      });
+    });
+  };
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>enhance(document));else enhance(document);
+  if("MutationObserver" in window){const mo=new MutationObserver(records=>records.forEach(r=>r.addedNodes.forEach(n=>{if(n.nodeType===1)enhance(n)})));mo.observe(document.documentElement,{childList:true,subtree:true})}
+})();
+
 /* ===== تواريخ وأرقام ===== */
 const nf=n=>Number(n||0).toLocaleString(SET.get("digits","mix")==="arab"?"ar-EG":"en-US");
 function addDays(d,n){const x=new Date(d+"T00:00:00Z");x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)}
@@ -1086,6 +1119,12 @@ function smartFill(k,rec){
     if(b.dataset.z){q.value="";}else{const c=ch[+b.dataset.i];q.value=c[2]?(parseInt(q.value)||0)+c[0]:c[0]}
     q.dispatchEvent(new Event("input",{bubbles:true}))};
   q.insertAdjacentElement("afterend",row);
+  // إظهار أن التعبئة المسبقة مجرد اقتراح قابل للمراجعة والتعديل.
+  if(!rec&&(last.w||last.i||last.q>0)){
+    const hint=document.createElement("small");hint.className="smart-fill-hint";
+    hint.textContent="اقتراح من آخر تسجيل لك — راجع البيانات وعدّلها قبل الحفظ.";
+    row.insertAdjacentElement("beforebegin",hint);
+  }
 }
 let BRC=new Map();
 async function brcLoad(){
