@@ -126,30 +126,18 @@
   .loginpage::after { display: none !important; }
 }
 
-/* MAS Manager 4.8.6 — وضع الأداء الخفيف: إيقاف كل الحركة والمؤثرات على الهاتف والكمبيوتر */
-html,
-html * ,
-html *::before,
-html *::after {
-  animation: none !important;
-  transition: none !important;
-  scroll-behavior: auto !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
+/* MAS Manager 4.8.7 — إعادة الأنيميشن للهاتف مع الحفاظ على الأداء الهادئ للكمبيوتر */
+@media (min-width: 1024px) {
+  html, html *, html *::before, html *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    will-change: auto !important;
+  }
+  body { background-attachment: scroll !important; }
+  #splash .gears, #splash::after, .topbar::after,
+  .loginpage::after, .logoframe::after, .lbg, .tile::before {
+    animation: none !important;
+    display: none !important;
+  }
+  .sk { background: var(--line) !important; }
 }
-html { scroll-behavior: auto !important; }
-body { background-attachment: scroll !important; }
-/* إزالة الزخارف المتحركة واللمعان مع الإبقاء على المحتوى والوظائف */
-#splash .gears,
-#splash::after,
-.topbar::after,
-.loginpage::after,
-.logoframe::after,
-.lbg,
-.tile::before {
-  animation: none !important;
-  display: none !important;
-}
-#splash::after { animation: none !important; }
-.sk { animation: none !important; background: var(--line) !important; }
-*, *::before, *::after { will-change: auto !important; }
