@@ -96,8 +96,16 @@
 .rpv-fr{flex:1;width:100%;border:0;background:#e9e9ec}
 
 /* ===== 4.6: تبويبات، لوحة، تقارير ===== */
-#ftabs{display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap;padding:2px 2px 8px;margin-bottom:6px;scrollbar-width:thin}
-#ftabs .btn{flex:0 0 auto;white-space:nowrap;min-height:42px;padding:6px 14px;font-weight:700}
+#ftabs{margin-bottom:8px}
+#ftabs .ftop{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+#ftabs .ftop button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:58px;padding:6px 2px;border-radius:14px;font:inherit;font-size:12.5px;font-weight:700;line-height:1.2;text-align:center;cursor:pointer;border:1px solid var(--line,#0002);background:var(--card,transparent);color:inherit}
+#ftabs .ftop button .ui{width:22px;height:22px}
+#ftabs .ftop button.on{background:var(--pri,#7a2438);color:#fff;border-color:transparent}
+#ftabs .fsub{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#ftabs .fsub button{flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 12px;border-radius:999px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;border:1px solid var(--line,#0002);background:transparent;color:inherit}
+#ftabs .fsub button .ui{width:17px;height:17px}
+#ftabs .fsub button.on{background:var(--pri,#7a2438);color:#fff;border-color:transparent}
+@media(max-width:340px){#ftabs .ftop button{font-size:11.5px}}
 .kpg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px}
 .kp{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 10px;text-align:center;border-top:4px solid var(--kc,var(--pri));cursor:pointer}
 .kp b{display:block;font-size:1.8rem;line-height:1.2;color:var(--kc,var(--pri))}.kp small{display:block;color:var(--mute);font-size:.82rem;line-height:1.4;margin-top:2px}
@@ -175,9 +183,9 @@ function dur(ms){ms=Math.max(0,ms);const m=Math.floor(ms/60000),h=Math.floor(m/6
 function errMsg(e){
   const m=String((e&&e.message)||e||"");
   if(!navigator.onLine||/failed to fetch|networkerror|load failed|network request/i.test(m))return"مفيش إنترنت أو الاتصال ضعيف — ما اتحفظش حاجة، حاول تاني لما النت يرجع";
-  const T=[["kiln kind mismatch","نوع الفرن مش مناسب لنوع العملية — اختار فرن من نفس النوع (بسكوت أو جليز)"],["kiln kind unset","الفرن ده لسه نوعه ماتحددش — المدير لازم يحدد نوعه من «الأفران»"],["kiln kind required","اختار نوع الفرن (بسكوت أو جليز)"],["kiln has history","مينفعش تغيّر نوع فرن عليه عمليات سابقة من نوع تاني"],["load kind mismatch","الشحنة المرتبطة من نوع مختلف عن نوع الحريق"],["kiln busy","الفرن ده فيه عربية داخلة دلوقتي — اختار فرن تاني أو أنهِ الحريق الحالي الأول"],["unknown item","فيه صنف مش مسجّل في الأصناف — اختار الصنف من القائمة"],["load locked","الشحن اتعتمد ومبقاش ينفع يتعدّل أو يتحذف بالطريقة القديمة"],["load not approved","لازم تعتمد شحن العربية الأول"],["load already fired","الشحنة دي مربوطة بعملية حريق تانية"],["kiln not found","الفرن مش موجود أو موقوف"],["entered before loaded","موعد الدخول قبل موعد الشحن"],["future time","الموعد في المستقبل"],["finish before entry","موعد الإطفاء قبل موعد الدخول"],["invalid tubes","عدد الأنابيب غير صحيح"],["not entered","العربية لسه ما دخلتش الفرن"],["operation finished","الحريق خلّص — مينفعش تضيف صور جديدة"],["invalid state","حالة العملية مش بتسمح بالإجراء ده"],["owner read only","صاحب المصنع: عرض فقط"],["not allowed","مش مسموح لك بالعملية دي (تخصصك أو صلاحياتك)"],["kiln name exists","اسم الفرن موجود قبل كده"],["invalid qty","كمية غير صحيحة"],["items required","ضيف صنف واحد على الأقل"],["cart code required","اكتب رقم أو كود العربية"],["worker required","اختار اسم العامل"],["photo already replaced","الصورة دي اتعاد رفعها قبل كده"],["invalid path","مسار الصورة غير صحيح"],["load not found","سجل الشحن مش موجود"],["operation not found","العملية مش موجودة"],["invalid kind","نوع غير صحيح"]];
+  const T=[["kiln kind mismatch","نوع الفرن مش مناسب لنوع العملية — اختار فرن من نفس النوع (بسكوت أو جليز)"],["kiln kind unset","الفرن ده لسه نوعه ماتحددش — المدير لازم يحدد نوعه من «الأفران»"],["kiln kind required","اختار نوع الفرن (بسكوت أو جليز)"],["kiln has history","مينفعش تغيّر نوع فرن عليه عمليات سابقة من نوع تاني"],["load kind mismatch","الشحنة المرتبطة من نوع مختلف عن نوع الحريق"],["kiln busy","الفرن ده فيه عربية داخلة دلوقتي — اختار فرن تاني أو أنهِ الحريق الحالي الأول"],["unknown item","فيه صنف مش مسجّل في الأصناف — اختار الصنف من القائمة"],["load locked","الشحن اتعتمد ومبقاش ينفع يتعدّل أو يتحذف بالطريقة القديمة"],["load not approved","لازم تعتمد شحن العربية الأول"],["load already fired","الشحنة دي مربوطة بعملية حريق تانية"],["kiln not found","الفرن مش موجود أو موقوف"],["entered before loaded","موعد الدخول قبل موعد الشحن"],["future time","الموعد في المستقبل"],["finish before entry","موعد الإطفاء قبل موعد الدخول"],["invalid tubes","عدد الأنابيب غير صحيح"],["not entered","العربية لسه ما دخلتش الفرن"],["operation finished","الحريق خلّص — مينفعش تضيف صور جديدة"],["invalid state","حالة العملية مش بتسمح بالإجراء ده"],["owner read only","صاحب المصنع: عرض فقط"],["not allowed","مش مسموح لك بالعملية دي (تخصصك أو صلاحياتك)"],["kiln name exists","اسم الفرن موجود قبل كده"],["invalid qty","كمية غير صحيحة"],["items required","ضيف صنف واحد على الأقل"],["cart code required","اكتب رقم أو كود العربية"],["worker required","اختار اسم العامل"],["photo already replaced","الصورة دي اتعاد رفعها قبل كده"],["invalid path","مسار الصورة غير صحيح"],["load not found","سجل الشحن مش موجود"],["operation not found","العملية مش موجودة"],["invalid kind","نوع غير صحيح"],["already exists","السجل ده موجود بالفعل (اتسترجع قبل كده)"],["not latest","فيه تعديل أحدث على السجل ده — ارجع من آخر تعديل الأول"],["not restorable","السجل ده مينفعش يتسترجع"],["date too recent","التاريخ لازم يكون قبل النهارده بأسبوع على الأقل"],["date required","اختار التاريخ"],["audit not found","سجل المراجعة مش موجود"]];
   for(const [k,v] of T)if(m.includes(k))return v;
-  if(/firing_ship_save|firing_fire_save|firing_ship_delete|firing_fire_delete|firing_audit|firing_operation_items|fire_role|PGRST202/i.test(m))return"التحديث الجديد لقسم الحريق مش متفعّل — شغّل ملف setup_fire_v2.sql من Supabase (SQL Editor ← Run) الأول";
+  if(/firing_ship_save|firing_fire_save|firing_ship_delete|firing_fire_delete|firing_audit|firing_restore|firing_purge_old|firing_operation_items|fire_role|PGRST202/i.test(m))return"التحديث الجديد لقسم الحريق مش متفعّل — شغّل ملف setup_fire_v2.sql من Supabase (SQL Editor ← Run) الأول";
   if(/firing_|schema cache|does not exist|could not find|bucket not found/i.test(m))return"قسم الحريق لسه مش متفعّل — شغّل ملف setup_firing.sql ثم setup_fire_v2.sql من Supabase الأول";
   if(/row-level security|violates|permission denied|unauthorized|jwt/i.test(m))return"مش مسموح لك بالعملية دي (الصلاحيات)";
   return"خطأ: "+m;
@@ -208,10 +216,37 @@ async function loadAudit(){
   if(r.error)throw r.error;AUD=r.data||[];
 }
 let repEl=null;
+const I=d=>`<svg class="ui" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+const TI={
+  home:I('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
+  fire:FLAME,
+  ship:I('<path d="M3 5h2l2 10h10l2-7H7"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/>'),
+  kiln:I('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16"/><path d="M12 19c-2 0-3-1.2-3-2.8 0-1.6 1.5-2.2 1.5-3.7 1.2.7 1.5 1.6 1.5 2.3.6-.3.9-.900 1-1.5 1 1 1.5 2 1.5 3-.1 1.5-1.5 2.7-3 2.7z"/>'),
+  rec:I('<path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4M10 12h6M10 16h6"/>'),
+  run:I('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  done:I('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/>'),
+  biscuit:I('<rect x="4" y="6" width="16" height="12" rx="3"/><path d="M9 10h.01M14 9h.01M12 14h.01M16 14h.01"/>'),
+  glaze:I('<path d="M12 3s6 6 6 10.5a6 6 0 0 1-12 0C6 9 12 3 12 3z"/>'),
+  log:I('<path d="M5 6h14M5 12h14M5 18h14"/>'),
+  prt:I('<path d="M7 9V3h10v6M7 17H5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/>'),
+  prod:I('<path d="M5 20V10M12 20V4M19 20v-7"/>'),
+  aud:I('<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>')
+};
+/* القائمة مجمّعة: أزرار رئيسية (5) + أزرار فرعية للمجموعة المفتوحة */
+const TGROUPS=[
+  {id:"home",n:"الرئيسية",ic:"home",t:[["dash","لوحة التحكم","home"]]},
+  {id:"fire",n:"الحريق",ic:"fire",t:[["bf","بسكوت","biscuit"],["gf","جليز","glaze"],["run","جارية","run"],["dn","مكتملة","done"]]},
+  {id:"ship",n:"الشحن",ic:"ship",t:[["bl","شحن البسكوت","biscuit"],["gl","شحن الجليز","glaze"]]},
+  {id:"kil",n:"الأفران",ic:"kiln",t:[["kil","الأفران","kiln"]]},
+  {id:"rec",n:"السجلات",ic:"rec",t:[["log","السجل","log"],["prt","التقارير والطباعة","prt"],["prod","تقارير القسم","prod"],["aud","المراجعة","aud"]]}
+];
+const tabOk=t=>(t!=="aud"||canAudit())&&(t!=="prod"||can("reports"));
 function drawTabs(){
   const el=document.getElementById("ftabs");
-  el.innerHTML=TABS.filter(t=>(t[0]!=="aud"||canAudit())&&(t[0]!=="prod"||can("reports"))).map(t=>`<button type="button" class="btn ${t[0]===tab?"on":"ghost"}" data-t="${t[0]}">${t[1]}</button>`).join("");
-  const on=el.querySelector(".on");if(on&&on.scrollIntoView)try{on.scrollIntoView({block:"nearest",inline:"center"})}catch(e){}
+  const gs=TGROUPS.map(g=>({...g,t:g.t.filter(x=>tabOk(x[0]))})).filter(g=>g.t.length);
+  const cur=gs.find(g=>g.t.some(x=>x[0]===tab))||gs[0];
+  el.innerHTML=`<div class="ftop">${gs.map(g=>`<button type="button" data-t="${g.t[0][0]}" class="${g===cur?"on":""}" aria-label="${g.n}">${TI[g.ic]}<span>${g.n}</span></button>`).join("")}</div>`
+   +(cur&&cur.t.length>1?`<div class="fsub">${cur.t.map(x=>`<button type="button" data-t="${x[0]}" class="${x[0]===tab?"on":""}">${TI[x[2]]}<span>${x[1]}</span></button>`).join("")}</div>`:"");
 }
 function setTab(){
   drawTabs();
@@ -615,13 +650,38 @@ function diffHtml(e){
   const src=e.action==="insert"?a:b,rows=keys.filter(k=>src[k]!==null&&src[k]!==undefined&&src[k]!=="").map(k=>`<tr><td>${FLD[k]||esc(k)}</td><td colspan="2">${esc(fv(k,src[k]))}</td></tr>`);
   return `<table class="ftb adt"><tbody>${rows.join("")}</tbody></table>`;
 }
+const isAdminU=()=>!!ME&&ME.role==="admin"&&!isOwner();
+const purgeCard=()=>`<div class="card noprint" style="padding:10px 12px;margin-top:8px;border-color:#b3261e55"><b>حذف البيانات القديمة (للمدير فقط)</b><div class="nums" style="margin:4px 0">بيحذف الشحنات والعمليات المكتملة اللي قبل التاريخ ده. كل سجل بيتسجّل في المراجعة وتقدر تسترجعه (إلا صور العداد).</div><label>احذف كل اللي قبل تاريخ</label><input type="date" id="pg-d" max="${new Date(Date.now()-7*864e5).toISOString().slice(0,10)}"><button class="btn ghost dangerbtn" data-a="purge" style="margin-top:8px">معاينة ثم حذف</button></div>`;
+async function purgeOld(){
+  if(roBlock())return;if(!isAdminU())return toast("للمدير فقط","warn");
+  const d=(document.getElementById("pg-d")||{}).value;if(!d){toast("اختار التاريخ");return}
+  let pv;try{pv=await rpc("firing_purge_old",{p_before:d,p_dry:true})}catch(x){return fail_(x)}
+  if(!pv.loads&&!pv.operations){toast("مفيش بيانات قبل التاريخ ده");return}
+  if(!await ask("هيتحذف "+nf(pv.loads)+" شحنة و"+nf(pv.operations)+" عملية حريق مكتملة قبل "+d+". صور العداد هتتمسح نهائيًا. متأكد؟","نعم، احذف"))return;
+  try{
+    const r=await rpc("firing_purge_old",{p_before:d,p_dry:false});
+    const paths=Array.isArray(r.paths)?r.paths:[];
+    for(let i=0;i<paths.length;i+=100){try{await db.storage.from(BUCKET).remove(paths.slice(i,i+100))}catch(x){}}
+    await load();await loadAudit();render();toast("اتحذف "+nf(r.loads)+" شحنة و"+nf(r.operations)+" عملية");
+  }catch(x){fail_(x)}
+}
+const canRestore=e=>isSup()&&!isOwner()&&(e.entity==="load"||e.entity==="operation")&&e.before_data&&(e.action==="delete"||e.action==="update")&&!/استرجاع من سجل/.test(e.summary||"")
+  &&(e.action==="delete"?!(e.entity==="load"?Lk(+e.entity_id):O.find(o=>o.id===+e.entity_id))
+     :!AUD.some(x=>x.entity===e.entity&&x.entity_id===e.entity_id&&x.id>e.id)&&!!(e.entity==="load"?Lk(+e.entity_id):O.find(o=>o.id===+e.entity_id)));
+const restoreBtn=e=>canRestore(e)?`<div class="fb noprint"><button class="btn ghost" data-a="restore" data-id="${e.id}">${e.action==="delete"?"استرجاع السجل المحذوف":"رجوع للقيم القديمة (قبل التعديل)"}</button></div>`:"";
+async function restoreAud(id){
+  if(roBlock())return;const e=AUD.find(x=>x.id===id);if(!e)return;
+  const nm=(ENT_AR[e.entity]||"")+" #"+e.entity_id;
+  if(!await ask(e.action==="delete"?"استرجاع "+nm+" بنفس بياناته وأصنافه؟"+(e.entity==="operation"?" (صور العداد المحذوفة مش هترجع)":""):"إرجاع "+nm+" للقيم اللي كانت قبل التعديل ده؟ التعديل الحالي هيتسجّل في المراجعة.","نعم، استرجع"))return;
+  try{await rpc("firing_restore",{p_audit_id:id});await load();await loadAudit();render();toast("تم الاسترجاع")}catch(x){fail_(x)}
+}
 function auditCard(e){
   return `<div class="fc au-${e.action}"><div class="fh"><b>${ACT_AR[e.action]||e.action} ${ENT_AR[e.entity]||e.entity} #${e.entity_id}</b><span class="nums">${esc(fmtF(e.at))}</span></div>
-  <div class="fm"><span>بواسطة: <b>${esc(e.user_name||"—")}</b></span>${e.summary?`<span>${esc(e.summary)}</span>`:""}</div><details><summary>التفاصيل (قبل / بعد)</summary>${diffHtml(e)}</details></div>`;
+  <div class="fm"><span>بواسطة: <b>${esc(e.user_name||"—")}</b></span>${e.summary?`<span>${esc(e.summary)}</span>`:""}</div><details><summary>التفاصيل (قبل / بعد)</summary>${diffHtml(e)}</details>${restoreBtn(e)}</div>`;
 }
 let AF={ent:"",act:"",q:""};
 async function auditPage(v){
-  v.innerHTML=`<h3 class="fsec"><span>سجل المراجعة</span></h3><div class="card" style="padding:10px 12px"><div class="two"><div><label>النوع</label><select id="af-e"><option value="">الكل</option>${Object.entries(ENT_AR).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select></div><div><label>الإجراء</label><select id="af-a"><option value="">الكل</option>${Object.entries(ACT_AR).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select></div></div><input type="search" id="af-q" placeholder="بحث باسم المستخدم أو رقم السجل…" autocomplete="off" style="margin:6px 0 0"></div><div id="af-l"><div class="empty">جاري التحميل…</div></div>`;
+  v.innerHTML=`<h3 class="fsec"><span>سجل المراجعة</span></h3><div class="card" style="padding:10px 12px"><div class="two"><div><label>النوع</label><select id="af-e"><option value="">الكل</option>${Object.entries(ENT_AR).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select></div><div><label>الإجراء</label><select id="af-a"><option value="">الكل</option>${Object.entries(ACT_AR).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select></div></div><input type="search" id="af-q" placeholder="بحث باسم المستخدم أو رقم السجل…" autocomplete="off" style="margin:6px 0 0"></div>${isAdminU()?purgeCard():""}<div id="af-l"><div class="empty">جاري التحميل…</div></div>`;
   const draw=()=>{const l=AUD.filter(e=>(!AF.ent||e.entity===AF.ent)&&(!AF.act||e.action===AF.act)&&(!AF.q||norm((e.user_name||"")+" "+e.entity_id).includes(norm(AF.q))));
     document.getElementById("af-l").innerHTML=l.length?l.slice(0,200).map(auditCard).join(""):'<div class="card empty">مفيش عمليات مسجّلة</div>'};
   document.getElementById("af-e").value=AF.ent;document.getElementById("af-a").value=AF.act;document.getElementById("af-q").value=AF.q;
@@ -814,6 +874,8 @@ document.addEventListener("click",async e=>{
   if(a==="opedit"){closeModal();return fireForm(null,id)}
   if(a==="opdel")return delFire(id);
   if(a==="hist")return showHist(b.dataset.e,id);
+  if(a==="restore")return restoreAud(id);
+  if(a==="purge")return purgeOld();
   if(a==="ldok"){if(roBlock())return;if(!await ask("اعتماد شحن العربية؟","نعم، اعتمد"))return;try{await rpc("firing_approve_load",{p_id:id});await load();toast("تم اعتماد الشحن")}catch(x){fail_(x)}return}
   if(a==="opview")return openOp(id);
   if(a==="shot")return pickPhoto(id,null,false);
