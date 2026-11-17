@@ -302,7 +302,7 @@ function renderNav(active){
     return `<div class="sg dd${on?" cur open":""}" style="--c:${s[3]}"><button type="button" class="sh${on?" on":""} ddt" aria-expanded="${on}">${ico(s[2])}<span>${s[1]}</span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="sub">${links}</div></div>`;
   };
   const sg0=s=>`<div class="sg" style="--c:${s[3]}"><a class="sh ${s[0]===active?"on":""}" href="${s[0]}">${ico(s[2])}<span>${s[1]}</span></a></div>`;
-  const sg=s=>s[0]==="fire.html"&&subsOf("fire.html").length?ddSub(s):sg0(s);
+  const sg=sg0; // الحريق: من غير قائمة منسدلة جانبية — كل التبويبات جوه الصفحة نفسها
   const ddOrders=()=>{
     const on=active===ORDERS[0];
     const links=SUBS["orders.html"].map(x=>`<a href="orders.html#${x[1]}" data-h="${x[1]}">${x[0]}</a>`).join("")+'<a href="reports.html#orders">تقرير الطلبيات</a>';

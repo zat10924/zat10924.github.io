@@ -100,6 +100,7 @@
 #ftabs:empty{display:none}
 #ftabs .fn-sub{display:flex!important;flex-wrap:nowrap!important;gap:6px;width:100%!important;margin:0;padding:2px 0 4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 #ftabs .fn-sub::-webkit-scrollbar{display:none}
+#ftabs .fsep{flex:0 0 1px;align-self:stretch;margin:6px 2px;background:var(--line,#d9cfd2)}
 #ftabs .fn-sub>button{flex:0 0 auto!important;display:inline-flex!important;align-items:center;justify-content:center;gap:6px;width:auto!important;height:auto!important;min-height:40px;margin:0;padding:6px 14px;border-radius:999px;font:inherit;font-size:13.5px;font-weight:700;white-space:nowrap;cursor:pointer;border:1px solid var(--line,#0002);background:var(--card);color:var(--ink2,inherit);box-shadow:none}
 #ftabs .fn-sub>button .ui{width:17px;height:17px;flex:none}
 #ftabs .fn-sub>button.on{background:var(--pri,#7a2438);color:var(--on-pri,#fff);border-color:transparent}
@@ -242,8 +243,9 @@ const tabOk=t=>(t!=="aud"||canAudit())&&(t!=="prod"||can("reports"));
 function drawTabs(){
   const el=document.getElementById("ftabs");
   const gs=TGROUPS.map(g=>({...g,t:g.t.filter(x=>tabOk(x[0]))})).filter(g=>g.t.length);
-  const cur=gs.find(g=>g.t.some(x=>x[0]===tab))||gs[0];
-  el.innerHTML=cur&&cur.t.length>1?`<div class="fn-sub">${cur.t.map(x=>`<button type="button" data-t="${x[0]}" class="${x[0]===tab?"on":""}">${TI[x[2]]}<span>${x[1]}</span></button>`).join("")}</div>`:"";
+  /* كل التبويبات ظاهرة جوه الصفحة (مفيش قائمة جانبية): شريط واحد بيتحرك أفقيًا وفاصل بين كل مجموعة */
+  el.innerHTML=gs.length?`<div class="fn-sub">${gs.map((g,i)=>(i?'<span class="fsep" aria-hidden="true"></span>':"")+g.t.map(x=>`<button type="button" role="tab" aria-selected="${x[0]===tab}" data-t="${x[0]}" class="${x[0]===tab?"on":""}">${TI[x[2]]}<span>${x[1]}</span></button>`).join("")).join("")}</div>`:"";
+  const on=el.querySelector("button.on");if(on&&on.scrollIntoView)try{on.scrollIntoView({inline:"center",block:"nearest"})}catch(e){}
 }
 const PLUS_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
 const svgOf=h=>h.replace('class="ui" ','');

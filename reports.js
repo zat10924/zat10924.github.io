@@ -114,7 +114,7 @@ const mkCast=P=>({name:P.name,page:P.page,icon:P.key,color:P.color,noun:P.noun,s
       };
     }});
 SRC.casting=mkCast({key:"casting",name:"الصب اليدوي",page:"casting.html",color:"#8A5A3C",noun:"الصب",l:"casting_log",o:"casting_orders",d:"casting_date"});
-SRC.finish={name:"الفنش",page:"finish.html",icon:"finish",color:"#3E7C6B",noun:"الفنش",sub:"",
+SRC.finish={name:"الفنش",page:"finish.html",icon:"finish",color:"#3E7C6B",noun:"الفنش",sub:"",it:"الأداء",its:"الأداءات",
   async fetch(){
     const r=await all("finish_log","*").catch(()=>[]);
     return{prod:r.map(x=>({d:D(x.finish_date),item:x.task||"بدون أداء",sub:"",qty:+x.qty||0,sc:+x.scrap||0,w:x.worker||"",
@@ -236,7 +236,7 @@ function sectionInsights(c){
   }
   // 5) تركّز الإنتاج على صنف واحد
   const gi=groupSum(rows,"item",cfg);
-  if(gi.length>1&&gi[0][1]/total>=.5)I.push(["info",`<b>${esc(gi[0][0])}</b> لوحده ${pctOf(gi[0][1],total)}% من الإنتاج.`]);
+  if(gi.length>1&&gi[0][1]/total>=.5)I.push(["info",`<b>${esc(gi[0][0])}</b> لوحده ${pctOf(gi[0][1],total)}% من الإنتاج${cfg.it?" (أداء واحد مسيطر)":""}.`]);
   // 6) الألوان / الأكواد
   if(cfg.sub){
     const gc=groupSum(rows.filter(r=>r.sub),"col",cfg);
@@ -497,7 +497,7 @@ function mount(rootId,key){
   <div class="card noprint">
     <div class="chips rch">${chipsHtml(st.k)}</div>
     <div class="two"><div><label>من</label><input type="date" class="rf"></div><div><label>إلى</label><input type="date" class="rt"></div></div>
-    <label>الصنف</label><select class="ri"><option value="">الكل</option></select>
+    <label>${cfg.it||"الصنف"}</label><select class="ri"><option value="">الكل</option></select>
     <div class="two rflt" hidden><div class="rclw" hidden><label>${cfg.sub||""}</label><select class="rcl"><option value="">الكل</option></select></div><div class="rww" hidden><label>العامل</label><select class="rw"><option value="">الكل</option></select></div></div>
   </div>
   <div class="kpis rk" data-ps="kpi">${skelKpis(4)}</div>
@@ -509,7 +509,7 @@ function mount(rootId,key){
   <div class="card" data-ps="log"><div class="sec-head"><h3>سجل التفاصيل</h3></div><div class="scroll rlg"></div></div>
   <div class="actbar noprint"><button class="btn ib rx">${ib("download","تصدير Excel")}</button><button class="btn ghost ib rpr">${ib("print","طباعة")}</button><button class="btn ghost ib rsh">${ib("share","مشاركة")}</button></div>`;
   const $=s=>root.querySelector(s),$$=s=>root.querySelectorAll(s);
-  const subLbl=cfg.sub||"";
+  const subLbl=cfg.sub||"",IT=cfg.it||"الصنف",ITS=cfg.its||"الأصناف";
 
   function range(){return rangeOf(st.k,st.f,st.t)}
   function draw(){
@@ -527,7 +527,7 @@ function mount(rootId,key){
     const K=[[`إجمالي ${cfg.noun}`,total,null,{},deltaOf(total,prevTotal)],
       ["متوسط / يوم عمل",days?total/days:0,null,{}],
       [best?`أفضل يوم (${new Date(best[0]+"T00:00:00Z").toLocaleDateString("ar-EG",{weekday:"long",timeZone:"UTC"})} ${shortD(best[0])})`:"أفضل يوم",best?best[1]:0,null,{}],
-      ["عدد الأصناف",new Set(rows.map(r=>r.item)).size,null,{}]];
+      ["عدد "+ITS,new Set(rows.map(r=>r.item)).size,null,{}]];
     let open=[],bk=null;
     if(data.ord){
       open=data.ord.filter(o=>o.status==="open"&&(!st.item||o.item===st.item)&&(!st.col||key!=="spray"||o.sub===st.col));
@@ -552,12 +552,12 @@ function mount(rootId,key){
     $('[data-ps="insights"]').toggleAttribute("data-empty",!ins.length);
     drawChart($(".rc"),{f,t,series:[{name:cfg.name,color:cfg.color,rows}]});
     // التوزيع
-    const opts=[["item","حسب الصنف"]];
-    if(subLbl){opts.push(["sub","الصنف + "+subLbl]);opts.push(["col","حسب "+subLbl])}
+    const opts=[["item","حسب "+IT]];
+    if(subLbl){opts.push(["sub",IT+" + "+subLbl]);opts.push(["col","حسب "+subLbl])}
     if(!opts.some(o=>o[0]===st.by))st.by="item";
     $(".seg").innerHTML=opts.map(o=>`<button type="button" data-by="${o[0]}" class="${o[0]===st.by?"on":""}">${o[1]}</button>`).join("");
     const g=groupSum(rows,st.by,cfg),gl=showMore(g,st.moreB||st.printing);
-    $(".rb").innerHTML=g.length?`<table><thead><tr><th>${st.by==="sub"?"الصنف — "+subLbl:st.by==="col"?subLbl:"الصنف"}</th><th>الكمية</th><th>النسبة</th></tr></thead><tbody>${gl.map(([k,v])=>{const p=total?Math.round(v/total*100):0;return `<tr><td>${esc(k)}</td><td><b>${nf(v)}</b></td><td><div class="share"><div class="bar"><i style="width:${p}%;background:${cfg.color}"></i></div><span>${p}%</span></div></td></tr>`}).join("")}</tbody><tfoot><tr><th>الإجمالي</th><th>${nf(total)}</th><th></th></tr></tfoot></table>${g.length>10&&!st.printing?`<button class="btn ghost sm more noprint" data-m="b">${st.moreB?"عرض أقل":`عرض الكل (${g.length})`}</button>`:""}`:'<div class="empty">مفيش بيانات في الفترة دي</div>';
+    $(".rb").innerHTML=g.length?`<table><thead><tr><th>${st.by==="sub"?IT+" — "+subLbl:st.by==="col"?subLbl:IT}</th><th>الكمية</th><th>النسبة</th></tr></thead><tbody>${gl.map(([k,v])=>{const p=total?Math.round(v/total*100):0;return `<tr><td>${esc(k)}</td><td><b>${nf(v)}</b></td><td><div class="share"><div class="bar"><i style="width:${p}%;background:${cfg.color}"></i></div><span>${p}%</span></div></td></tr>`}).join("")}</tbody><tfoot><tr><th>الإجمالي</th><th>${nf(total)}</th><th></th></tr></tfoot></table>${g.length>10&&!st.printing?`<button class="btn ghost sm more noprint" data-m="b">${st.moreB?"عرض أقل":`عرض الكل (${g.length})`}</button>`:""}`:'<div class="empty">مفيش بيانات في الفترة دي</div>';
     // الطلبيات المفتوحة (مع التقدير والركود)
     if(hasOrd){
       const ol=open.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")),ov=showMore(ol,st.moreO||st.printing);
@@ -568,16 +568,16 @@ function mount(rootId,key){
     }
     // أداء العمال
     const ws=workerStats(rows);
-    const cw=isCast(key),pcs=o=>o.q+o.sc?(Math.round(o.sc/(o.q+o.sc)*1000)/10)+"%":"0%";
-    $(".rwk").innerHTML=ws.length?`<table><thead><tr><th>العامل</th><th>${cw?"السليم":"الكمية"}</th>${cw?"<th>الهالك</th><th>نسبة الهالك</th>":""}<th>أيام</th><th>متوسط/يوم</th><th>أصناف</th></tr></thead><tbody>${ws.map(o=>`<tr><td><b>${esc(o.w)}</b></td><td><b>${nf(o.q)}</b></td>${cw?`<td>${o.sc?'<b style="color:var(--bad,#c0392b)">'+nf(o.sc)+"</b>":"—"}</td><td>${pcs(o)}</td>`:""}<td>${o.days.size}</td><td>${o.days.size?nf(Math.round(o.q/o.days.size)):"—"}</td><td>${o.items.size}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">مفيش أسماء عمال مسجلة في الفترة دي</div>';
+    const cw=isCast(key)||key==="finish",pcs=o=>o.q+o.sc?(Math.round(o.sc/(o.q+o.sc)*1000)/10)+"%":"0%";
+    $(".rwk").innerHTML=ws.length?`<table><thead><tr><th>العامل</th><th>${cw?"السليم":"الكمية"}</th>${cw?"<th>الهالك</th><th>نسبة الهالك</th>":""}<th>أيام</th><th>متوسط/يوم</th><th>${ITS}</th></tr></thead><tbody>${ws.map(o=>`<tr><td><b>${esc(o.w)}</b></td><td><b>${nf(o.q)}</b></td>${cw?`<td>${o.sc?'<b style="color:var(--bad,#c0392b)">'+nf(o.sc)+"</b>":"—"}</td><td>${pcs(o)}</td>`:""}<td>${o.days.size}</td><td>${o.days.size?nf(Math.round(o.q/o.days.size)):"—"}</td><td>${o.items.size}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">مفيش أسماء عمال مسجلة في الفترة دي</div>';
     $('[data-ps="workers"]').toggleAttribute("data-empty",!ws.length);
     // سجل التفاصيل
     const lg=rows.slice().sort((a,b)=>b.d.localeCompare(a.d)),CAP=400,lv=st.printing?lg.slice(0,CAP):showMore(lg,st.moreL);
     st.lvRows=lv;const canAct=!st.printing&&(can("edit")||can("delete"));
     const subCell=r=>esc(r.sub||"—")+(key==="spray"&&r.oc?`<div class="nums" style="font-size:.78rem">لون الصنف: ${esc(r.oc)}</div>`:"");
-    $(".rlg").innerHTML=lg.length?`<table><thead><tr><th>التاريخ</th><th>الصنف</th>${subLbl?`<th>${subLbl}</th>`:""}<th>الكمية</th><th>العامل</th><th>ملاحظة</th>${canAct?'<th class="noprint"></th>':""}</tr></thead><tbody>${lv.map(r=>`<tr><td>${fmtDW(r.d)}</td><td>${esc(r.item)}${r.free?' <span class="tag">بدون طلبية</span>':""}</td>${subLbl?`<td>${subCell(r)}</td>`:""}<td><b>${nf(r.qty)}</b></td><td>${esc(r.w||"—")}</td><td>${esc(r.n||"—")}</td>${canAct?`<td class="noprint" style="white-space:nowrap">${r.id?actBtns(st.lvRows.indexOf(r),r):""}</td>`:""}</tr>`).join("")}</tbody></table>${st.printing?(lg.length>CAP?`<div class="hint">اتعرض أحدث ${CAP} تسجيل من ${nf(lg.length)} — الباقي في ملف Excel.</div>`:""):(lg.length>10?`<button class="btn ghost sm more noprint" data-m="l">${st.moreL?"عرض أقل":`عرض الكل (${lg.length})`}</button>`:"")}`:'<div class="empty">مفيش تسجيلات في الفترة دي</div>';
+    $(".rlg").innerHTML=lg.length?`<table><thead><tr><th>التاريخ</th><th>${IT}</th>${subLbl?`<th>${subLbl}</th>`:""}<th>الكمية</th><th>العامل</th><th>ملاحظة</th>${canAct?'<th class="noprint"></th>':""}</tr></thead><tbody>${lv.map(r=>`<tr><td>${fmtDW(r.d)}</td><td>${esc(r.item)}${r.free?' <span class="tag">بدون طلبية</span>':""}</td>${subLbl?`<td>${subCell(r)}</td>`:""}<td><b>${nf(r.qty)}</b></td><td>${esc(r.w||"—")}</td><td>${esc(r.n||"—")}</td>${canAct?`<td class="noprint" style="white-space:nowrap">${r.id?actBtns(st.lvRows.indexOf(r),r):""}</td>`:""}</tr>`).join("")}</tbody></table>${st.printing?(lg.length>CAP?`<div class="hint">اتعرض أحدث ${CAP} تسجيل من ${nf(lg.length)} — الباقي في ملف Excel.</div>`:""):(lg.length>10?`<button class="btn ghost sm more noprint" data-m="l">${st.moreL?"عرض أقل":`عرض الكل (${lg.length})`}</button>`:"")}`:'<div class="empty">مفيش تسجيلات في الفترة دي</div>';
     $('[data-ps="log"]').toggleAttribute("data-empty",!lg.length);
-    $(".rpd").textContent=fmtP(f,t)+(st.item?" · الصنف: "+st.item:"")+(st.col?" · "+subLbl+": "+st.col:"")+(st.wk?" · العامل: "+st.wk:"")+" · طُبع في "+fmtD(today());
+    $(".rpd").textContent=fmtP(f,t)+(st.item?" · "+IT+": "+st.item:"")+(st.col?" · "+subLbl+": "+st.col:"")+(st.wk?" · العامل: "+st.wk:"")+" · طُبع في "+fmtD(today());
     st.last={f,t,rows,total,g,open,best,ins,ws,bk};
   }
   async function refresh(force){
@@ -609,7 +609,7 @@ function mount(rootId,key){
   });
   $(".rx").onclick=()=>{
     if(!st.last)return;const{f,t,rows}=st.last,sp=key==="spray";
-    csvDownload(`${cfg.name}-تقرير-${f||"الكل"}${t&&t!==f?"-"+t:""}.csv`,["التاريخ","الصنف",cfg.sub||"-",...(sp?["لون الصنف"]:[]),"الكمية","العامل","ملاحظة"],rows.slice().sort((a,b)=>a.d.localeCompare(b.d)).map(r=>[r.d,r.item,r.sub,...(sp?[r.oc||""]:[]),r.qty,r.w||"",r.n||""]));
+    csvDownload(`${cfg.name}-تقرير-${f||"الكل"}${t&&t!==f?"-"+t:""}.csv`,["التاريخ",IT,cfg.sub||"-",...(sp?["لون الصنف"]:[]),"الكمية","العامل","ملاحظة"],rows.slice().sort((a,b)=>a.d.localeCompare(b.d)).map(r=>[r.d,r.item,r.sub,...(sp?[r.oc||""]:[]),r.qty,r.w||"",r.n||""]));
   };
   $(".rpr").onclick=()=>{
     if(!st.last)return;
@@ -623,7 +623,7 @@ function mount(rootId,key){
     if(!st.last)return;const{f,t,total,g,open,best,ins,ws}=st.last;
     const L=[`تقرير ${cfg.name}`,`الفترة: ${fmtP(f,t)}`+(st.item?` · ${st.item}`:"")+(st.col?` · ${st.col}`:"")+(st.wk?` · ${st.wk}`:""),`إجمالي ${cfg.noun}: ${nf(total)}`];
     if(best)L.push(`أفضل يوم: ${fmtDW(best[0])} (${nf(best[1])})`);
-    if(g.length)L.push("أعلى الأصناف:",...g.slice(0,5).map(([k,v])=>`• ${k}: ${nf(v)}`));
+    if(g.length)L.push("أعلى "+ITS+":",...g.slice(0,5).map(([k,v])=>`• ${k}: ${nf(v)}`));
     if(subLbl){const gc=groupSum(st.last.rows.filter(r=>r.sub),"col",cfg);if(gc.length)L.push(`أعلى ${subLbl}:`,...gc.slice(0,4).map(([k,v])=>`• ${k}: ${nf(v)}`))}
     if(ws.length)L.push(`أعلى عامل: ${ws[0].w} (${nf(ws[0].q)})`);
     if(hasOrd)L.push(`طلبيات مفتوحة: ${open.length} · متأخرة: ${open.filter(o=>isLate(o.status,o.date)).length}`);

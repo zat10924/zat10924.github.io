@@ -39,7 +39,9 @@ const SEC={
  glaze:{name:"جليز",color:"#2E6F80",o:"glaze_orders",l:"glaze_lines_status",p:"glaze_production",lab:x=>x.color},
  deco:{name:"زخرفة",color:"#5E5A8C",o:"deco_orders",l:"deco_lines_status",p:"deco_production",lab:x=>"كود "+x.code},
  spray:{name:"رش",color:"#B8862B"},
- casting:{name:"الصب اليدوي",color:"#8A5A3C"},brush:{name:"البرشر",color:"#A0522D"}};
+ casting:{name:"الصب اليدوي",color:"#8A5A3C"},brush:{name:"البرشر",color:"#A0522D"},finish:{name:"الفنش",color:"#3E7C6B"}};
+// الفنش: تسجيل بالأداء (مشرط/مياه/صنفرة) من غير طلبيات
+const FIN_TASKS=["مشرط","مياه","صنفرة"],FIN_TBL="finish_log";
 // أقسام الصب والبرشر: نفس النموذج (طلبيات بالكمية + وردية + هالك جودة) بجداول مختلفة
 const CAST={casting:{o:"casting_orders",l:"casting_log",d:"casting_date"},brush:{o:"brush_orders",l:"brush_log",d:"brush_date"}};
 /* صور أكواد الرسمات (زخرفة) */
@@ -80,6 +82,12 @@ async function load(){
       rows=[...CO.values()].filter(x=>x.st==="open"&&x.req-x.done>0).map(x=>({id:x.id,oid:x.id,title:x.item,sub:x.sub,req:x.req,done:x.done,date:x.date,due:x.due}));
       tod=(p.data||[]).map(e=>({k:"cast",tb:CT.l,id:e.id,qty:e.qty,date:e[CT.d],by:e.created_by||null,worker:e.worker||"",note:e.note||"",item:e.item||"",sh:e.shift||"",scrap:e.scrap||0,mo:e.molds==null?null:+e.molds,po:e.pours==null?null:+e.pours,oid:e.order_id||null,isw:!(+e.qty>0)&&+e.scrap>0,
         txt:(!(+e.qty>0)&&+e.scrap>0?"هالك جودة · ":"")+(e.item||"—")+(e.shift?" · "+e.shift:"")+(+e.qty>0&&e.scrap?" · هالك "+e.scrap:"")+(!(+e.qty>0)&&+e.scrap>0?"":(e.order_id?"":" · بدون طلبية"))}));
+    }else if(sec==="finish"){
+      const p=await db.from(FIN_TBL).select("*").eq("finish_date",t).order("id",{ascending:false});
+      if(p.error)throw new Error(/finish_log|relation|schema cache|does not exist/i.test(p.error.message||"")?"nofinish":"load");
+      tod=(p.data||[]).map(e=>({k:"fin",tb:FIN_TBL,id:e.id,qty:+e.qty||0,date:e.finish_date,by:e.created_by||null,worker:e.worker||"",note:e.note||"",task:e.task||"",sh:e.shift||"",scrap:+e.scrap||0,isw:!(+e.qty>0)&&+e.scrap>0,
+        txt:(!(+e.qty>0)&&+e.scrap>0?"هالك جودة · ":"")+(e.task||"—")+(e.shift?" · "+e.shift:"")+(+e.qty>0&&e.scrap?" · هالك "+e.scrap:"")}));
+      rows=FIN_TASKS.map(k=>({id:k,oid:null,title:k,sub:"أداء",req:0,done:tod.filter(e=>e.task===k&&!e.isw).reduce((a,e)=>a+e.qty,0),sc:tod.filter(e=>e.task===k).reduce((a,e)=>a+e.scrap,0),date:t}));
     }else if(c.o){
       const[o,l,p]=await Promise.all([db.from(c.o).select("*"),db.from(c.l).select("*").order("id"),
         db.from(c.p).select("*").eq("prod_date",t).order("id",{ascending:false})]);
@@ -96,7 +104,7 @@ async function load(){
       tod=(p.data||[]).map(e=>{const x=om.get(e.order_id),sc=e.spray_color||"";return{k:"line",tb:"spray_production",id:e.id,qty:e.qty,date:e.prod_date,by:e.created_by||null,worker:e.worker||"",note:e.note||"",design:"",sc,txt:x?x.item+" · "+x.color+(sc?" · لون الرش: "+sc:""):"—",max:x?x.qty_required-x.produced+e.qty:0,sync:x?{sv:"spray_status",o:"spray_orders",oid:x.id}:null}});
     }
     // الإنتاج بدون طلبية (لو الجدول موجود)
-    if(!CAST[sec])try{
+    if(!CAST[sec]&&sec!=="finish")try{
       const f=await db.from("free_production").select("*").eq("section",sec).eq("prod_date",t).order("id",{ascending:false});
       if(!f.error)tod.unshift(...(f.data||[]).map(e=>({k:"free",tb:"free_production",id:e.id,qty:e.qty,date:e.prod_date,by:e.created_by||null,item:e.item,sub:e.sub||"",sc:e.spray_color||"",worker:e.worker||"",note:e.note||"",design:e.design||"",txt:e.item+(e.sub?" · "+e.sub:"")+(e.spray_color?" · لون الرش: "+e.spray_color:"")+" · بدون طلبية"})));
     }catch(e){}
@@ -111,25 +119,33 @@ async function load(){
     stale=0;
   }catch(e){
     let ch=null;try{ch=JSON.parse(localStorage.getItem("pc_"+sec))}catch(x){}
+    if(e&&e.message==="nofinish"){document.getElementById("list").innerHTML='<div class="empty err-state">جدول الفنش غير موجود. شغّل ملف setup_finish.sql من Supabase (SQL Editor) مرة واحدة.</div>';return}
     if(!ch){fail("list",load);return}
     rows=ch.rows;tod=D===today()?ch.tod:[];stale=ch.at;
   }
   // التسجيلات اللي لسه ما اتبعتتش بتتحسب في الأرقام
-  Q_.get().filter(i=>i.sec===sec).forEach(i=>{const r=rows.find(x=>x.id===i.rid);if(r)r.done+=i.qty;if((i.row&&(i.row.prod_date||i.row.casting_date||i.row.brush_date)||today())===D)tod.unshift({qty:i.qty,txt:i.txt+" ⏳",pend:1})});
+  Q_.get().filter(i=>i.sec===sec).forEach(i=>{const r=rows.find(x=>x.id===i.rid);if(r&&sec!=="finish")r.done+=i.qty;if((i.row&&(i.row.prod_date||i.row.casting_date||i.row.brush_date||i.row.finish_date)||today())===D)tod.unshift({qty:i.qty,txt:i.txt+" ⏳",pend:1})});
   draw();
+}
+function drawFin(){
+  const q=Q.trim().toLowerCase(),prod=tod.filter(e=>!e.isw).reduce((a,e)=>a+e.qty,0),scr=tod.reduce((a,e)=>a+e.scrap,0);
+  kpis("stats",[[D===today()?"إنتاج النهارده":"إنتاج اليوم",prod,"var(--ok)"],["هالك الجودة",scr,scr?"var(--bad,#b3261e)":""],["عدد التسجيلات",tod.filter(e=>!e.pend).length]]);
+  const list=rows.filter(r=>!q||r.title.toLowerCase().includes(q));
+  document.getElementById("list").innerHTML=list.map(r=>`<div class="card pr" data-id="${esc(r.id)}" style="cursor:pointer"><div class="top"><b>${esc(r.title)}</b><span class="tag">اضغط للتسجيل</span></div><div class="nums">النهارده: <b>${nf(r.done)}</b> قطعة${r.sc?` · هالك <b style="color:var(--bad,#b3261e)">${nf(r.sc)}</b>`:""}</div></div>`).join("");
 }
 function draw(){
   const c=SEC[sec],q=Q.trim().toLowerCase();
   if(selSec!==sec){sel.clear();selSec=sec}
   const list=rows.filter(r=>!q||(r.title+" "+r.sub).toLowerCase().includes(q)).sort((a,b)=>String(a.due||a.date).localeCompare(String(b.due||b.date)));
-  kpis("stats",[["بنود مفتوحة",rows.length],["المتبقي",rows.reduce((a,r)=>a+Math.max(r.req-r.done,0),0)],[D===today()?"إنتاج النهارده":"إنتاج اليوم",tod.filter(e=>e.k!=="waste").reduce((a,e)=>a+e.qty,0),"var(--ok)"]]);
+  if(sec!=="finish")kpis("stats",[["بنود مفتوحة",rows.length],["المتبقي",rows.reduce((a,r)=>a+Math.max(r.req-r.done,0),0)],[D===today()?"إنتاج النهارده":"إنتاج اليوم",tod.filter(e=>e.k!=="waste").reduce((a,e)=>a+e.qty,0),"var(--ok)"]]);
+  if(sec==="finish")drawFin();else
   document.getElementById("list").innerHTML=list.length?list.map(r=>{
     const rem=Math.max(r.req-r.done,0),p=r.req>0?Math.min(100,Math.round(r.done/r.req*100)):0,late=r.due?today()>r.due:isLate("open",r.date);
     return `<div class="card pr ${multi&&sel.has(r.id)?"sel":""}" data-id="${r.id}" style="cursor:pointer"><div class="top"><span style="display:flex;gap:8px;align-items:center;min-width:0">${multi?`<span class="ck ${sel.has(r.id)?"on":""}"></span>`:""}${sec==="deco"?cthumb(r.code):""}<b>${esc(r.title)}</b></span><span>${late?'<span class="tag late">متأخرة</span> ':""}<span class="tag">${esc(r.sub)}</span></span></div>
       <div class="bar"><i style="width:${p}%"></i></div><div class="nums">تم <b>${nf(r.done)}</b> من <b>${nf(r.req)}</b> · متبقي <b>${nf(rem)}</b></div>${r.tsc?`<div class="nums">لون الرش المطلوب: <b>${esc(r.tsc)}</b></div>`:""}</div>`}).join(""):`<div class="empty">${q?"مفيش نتائج":"مفيش بنود مفتوحة"}</div>`;
   document.querySelectorAll(".pr").forEach(e=>e.onclick=()=>pickRow(rows.find(r=>String(r.id)===e.dataset.id),e));
   updBar();
-  wasteBtn.hidden=sec!=="glaze"&&!CAST[sec];mbtn.parentElement.hidden=!!CAST[sec];pbar();
+  wasteBtn.hidden=sec!=="glaze"&&!CAST[sec]&&sec!=="finish";mbtn.parentElement.hidden=!!CAST[sec]||sec==="finish";freeBtn.textContent=sec==="finish"?"＋ تسجيل إنتاج":"＋ إنتاج بدون طلبية";pbar();
   if(stale)document.getElementById("list").insertAdjacentHTML("afterbegin",`<div class="card" style="border-color:var(--warn)"><b class="ibt">${ui("wifioff")}لا يوجد اتصال</b><div class="nums">بيانات محفوظة من آخر اتصال (${new Date(stale).toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"})}). تسجيلاتك هتتحفظ وتتبعت لما النت يرجع.</div></div>`);
   const ce=!stale,cd=can("delete")&&!stale,lockedNote=!stale&&!can("edit")&&can("editown")&&dayClosed(D);
   document.getElementById("logh").textContent=D===today()?"تسجيلات النهارده":"تسجيلات يوم "+fmtD(D);
@@ -143,7 +159,7 @@ function pbar(){
   if(!allowed.length){Bar.mount([]);return}
   Bar.mount([
     {k:"today",label:"تسجيلات اليوم",svg:_S('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>')},
-    {k:"+",fab:true,label:"إنتاج بدون طلبية",svg:_S('<path d="M12 5v14M5 12h14"/>')},
+    {k:"+",fab:true,label:sec==="finish"?"تسجيل إنتاج":"إنتاج بدون طلبية",svg:_S('<path d="M12 5v14M5 12h14"/>')},
     {k:"waste",label:"تسجيل هالك",hide:wasteBtn.hidden,svg:_S('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>')}
   ],k=>{
     if(k==="+")return freeBtn.click();
@@ -205,8 +221,8 @@ function multiModal(){if(roBlock())return;
   },"تسجيل الكل");
 }
 mbtn.onclick=()=>{multi=!multi;sel.clear();draw()};
-freeBtn.onclick=()=>CAST[sec]?castForm(null,null):freeProduction(sec,load);
-wasteBtn.onclick=()=>CAST[sec]?castForm(null,null,true):quickWaste(load);
+freeBtn.onclick=()=>sec==="finish"?finForm(null):CAST[sec]?castForm(null,null):freeProduction(sec,load);
+wasteBtn.onclick=()=>sec==="finish"?finForm(null,true):CAST[sec]?castForm(null,null,true):quickWaste(load);
 // ===== تعديل / حذف تسجيل إنتاج اتسجّل بالغلط =====
 async function resync(e){
   const x=e.sync;if(!x)return;
@@ -242,6 +258,7 @@ function editEnt(i){
   if(!canEditEntry(e)){toast(dayClosed(e.date)?"التعديل مقفول — اليوم ده خلص":"تقدر تعدّل تسجيلاتك انت بس","warn");return}
   if(e.k==="waste")return editWaste(e);
   if(e.k==="cast")return castForm(e);
+  if(e.k==="fin")return finForm(e);
   const deco=sec==="deco",free=e.k==="free",lab=deco?"كود الرسمة":sec==="spray"?"لون الصنف":"اللون",sid=deco?"m-code":"m-color",sprayLine=sec==="spray";
   openModal("تعديل تسجيل الإنتاج",
     XT(deco)+(free?`<label>الصنف</label><input id="m-item" autocomplete="off"><label>${lab} (اختياري)</label><input id="${sid}" autocomplete="off">`
@@ -278,6 +295,7 @@ mgo.onclick=multiModal;
 logd.onchange=()=>{D=logd.value||today();skel("today",1);load()};
 function quick(r){if(roBlock())return;
   if(r&&typeof r!=="object")r=rows.find(x=>String(x.id)===String(r));
+  if(sec==="finish"&&r)return finForm(null,false,r.title);
   if(CAST[sec]&&r)return castForm(null,r.id);
   if(!r||!(r.req>=0)||typeof r.sub==="function"){toast("البند ده مش متحمّل صح — دوس «تحديث» وجرّب تاني","warn");return}
   const rem=r.req-r.done;
@@ -418,12 +436,58 @@ function castForm(rec,presetOid,waste){if(roBlock())return;
     mode.onchange=sync;sel.onchange=sync;sync();
   },0);
 }
+/* ===== الفنش: تسجيل بالأداء (مشرط · مياه · صنفرة) + وردية + هالك جودة ===== */
+async function finInsert(row){
+  const id=uuid(),r2={...row,client_id:id};
+  let res;try{res=await insertRow(FIN_TBL,r2)}catch(e){res={error:{message:String(e)}}}
+  if(res.error&&isNet(res.error)){
+    Q_.add({id,table:FIN_TBL,row:r2,sec:"finish",rid:"free",qty:row.qty,txt:(row.task||"—")+(row.shift?" · "+row.shift:"")+(row.scrap?" · هالك "+row.scrap:"")});
+    updateBadge();return{queued:true};
+  }
+  return res;
+}
+function finForm(rec,waste,presetTask){if(roBlock())return;
+  if(rec&&!canEditEntry(rec)){toast(dayClosed(rec.date)?"التعديل مقفول — اليوم ده خلص":"تقدر تعدّل تسجيلاتك انت بس","warn");return}
+  if(rec&&rec.isw)waste=true;
+  const legacySc=!waste&&rec&&rec.scrap>0,lockDate=!can("edit");
+  let ls="";try{ls=localStorage.getItem("fin_shift")||""}catch(e){}
+  const shDef=rec?rec.sh:ls,taskDef=rec?rec.task:(presetTask||"");
+  wkLoad();
+  openModal(waste?(rec?"تعديل هالك جودة · ":"تسجيل هالك جودة · ")+"الفنش":(rec?"تعديل تسجيل ":"تسجيل ")+"الفنش",`
+    <label>التاريخ</label><input type="date" id="m-d" value="${rec?rec.date:today()}" ${lockDate?"disabled":""}>
+    <label>الوردية</label><select id="m-sh">${SHIFTS.map(x=>`<option ${x===shDef?"selected":""}>${x}</option>`).join("")}</select>
+    ${XW(true)}
+    <label>الأداء</label><select id="m-item"><option value="">— اختار الأداء —</option>${FIN_TASKS.map(t=>`<option ${t===taskDef?"selected":""}>${t}</option>`).join("")}</select>
+    ${waste?`<label>عدد القطع الهالكة</label><input type="number" id="m-scrap" min="1" max="100000" inputmode="numeric" value="${rec&&rec.scrap?rec.scrap:""}">`
+      :`<label>عدد القطع</label><input type="number" id="m-q" min="${legacySc?0:1}" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">${legacySc?`<label>هالك الجودة (تسجيل قديم)</label><input type="number" id="m-scrap" min="0" max="100000" inputmode="numeric" value="${rec.scrap}">`:""}`}
+    <label>${waste?"السبب / ملاحظات (اختياري)":"ملاحظات (اختياري)"}</label><input id="m-n" maxlength="300" placeholder="أي تعليق على الشغل" value="${rec?esc(rec.note):""}">`,async()=>{
+    const qe=document.getElementById("m-q"),se=document.getElementById("m-scrap");
+    const q=qe?(parseInt(qe.value)||0):0,sc=se?(parseInt(se.value)||0):0;
+    if(waste?sc<1:(q<0||sc<0||q+sc<1||(!legacySc&&q<1))){toast(waste?"اكتب عدد القطع الهالكة":"اكتب عدد القطع");return false}
+    const task=document.getElementById("m-item").value;
+    if(!FIN_TASKS.includes(task)){toast("اختار الأداء (مشرط أو مياه أو صنفرة)");return false}
+    const sh=document.getElementById("m-sh").value,x=xfRead();
+    if(!x.worker){toast(waste?"اختار العامل اللي طلع منه الهالك":"اختار اسم العامل");return false}
+    const cd=lockDate?(rec?rec.date:today()):(document.getElementById("m-d").value||today());
+    if(!await reviewSave({title:waste?"راجع الهالك قبل الحفظ":"راجع الإنتاج قبل الحفظ",meta:[["التاريخ",fmtD(cd)],["الوردية",sh],...rvFields(x)],
+      items:[{title:task,rows:[[waste?"عدد القطع الهالكة":"عدد القطع",nf(waste?sc:q)]]}]}))return false;
+    const row={finish_date:cd,task,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null};
+    if(!se&&rec)delete row.scrap;
+    const res=rec?await db.from(FIN_TBL).update(row).eq("id",rec.id).select():await finInsert(row);
+    if(res.queued){try{localStorage.setItem("fin_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("finish",{w:x.worker,i:task,q:q});await load();toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
+    if(res.error){toast(/finish_log|schema cache/i.test(res.error.message||"")?"شغّل ملف setup_finish.sql من Supabase الأول":isNet(res.error)?"التعديل محتاج اتصال بالإنترنت":"خطأ: "+res.error.message,"bad");return false}
+    if(rec&&(!res.data||!res.data.length)){toast("لم يتم التعديل، راجع الصلاحيات","bad");return false}
+    try{localStorage.setItem("fin_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("finish",{w:x.worker,i:task,q:q});
+    await load();toast(rec?"تم التعديل":"تم التسجيل");
+  });
+  setTimeout(()=>{const w=document.getElementById("m-w");if(w&&rec)w.value=rec.worker;if(!waste)smartFill("finish",rec)},0);
+}
 function secs(){
   document.getElementById("secs").innerHTML=allowed.map(k=>`<button class="btn ${k===sec?"on":"ghost"}" data-s="${k}">${SEC[k].name}</button>`).join("");
   document.querySelectorAll("#secs button").forEach(b=>b.onclick=()=>{sec=b.dataset.s;history.replaceState(null,"","#"+sec);secs();skel("list",3);load()});
 }
 (async()=>{if(await requireAuth("production.html")){
-  allowed=ME.role==="admin"?["glaze","deco","spray","casting","brush"]:mySecs().filter(k=>SEC[k]);
+  allowed=ME.role==="admin"?["glaze","deco","spray","casting","brush","finish"]:mySecs().filter(k=>SEC[k]);
   renderNav("production.html");
   if(!allowed.length){document.querySelector(".prodact").hidden=true;document.getElementById("list").innerHTML='<div class="empty">تسجيل الإنتاج لقسمك من صفحة القسم نفسها (التصليح)</div>';settle();return}
   const h=location.hash.slice(1);sec=allowed.includes(h)?h:allowed[0];
