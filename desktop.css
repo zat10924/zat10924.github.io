@@ -6,7 +6,7 @@
   body.hasside { padding-inline-start:var(--desk-sidebar); transition:padding-inline-start .25s ease; }
   body.navhide.hasside { padding-inline-start:0; }
   .side { transform:none; visibility:visible; }
-  .side { width:var(--desk-sidebar); padding:22px 16px 18px; background:var(--card); border-inline-end:1px solid var(--line); box-shadow:4px 0 24px rgba(25,20,20,.055); }
+  .side { width:var(--desk-sidebar); padding:22px 16px 18px; background:linear-gradient(180deg,#5d2230 0%,#421B24 46%,#2c1218 100%); border-inline-end:1px solid rgba(215,185,111,.25); box-shadow:4px 0 24px rgba(25,20,20,.12); }
   .side-head { padding:8px 8px 20px; margin-bottom:12px; }
   .side-head img { width:48px;height:48px;border-radius:14px; }
   .side-head .wm { font-size:1.12rem; }
@@ -126,65 +126,76 @@
   .loginpage::after { display: none !important; }
 }
 
-/* Laptop light-mode surface corrections; dark mode is intentionally untouched. */
+/* MAS Manager 4.8.7 — إعادة الأنيميشن للهاتف مع الحفاظ على الأداء الهادئ للكمبيوتر */
 @media (min-width: 1024px) {
-  :root[data-theme="light"] {
-    --bg: #f3f1ed;
-    --card: #fbfaf8;
-    --card2: #f1eee9;
-    --ink: #29272a;
-    --mute: #625d60;
-    --line: #d9d4cd;
-    --pri: #642631;
-    --pri-d: #421b24;
-    --on-pri: #ffffff;
-    --ok: #247348;
-    --warn: #94520d;
-    --bad: #a52a25;
-    --hd1: #642631;
-    --hd2: #421b24;
-    --sh: 0 1px 2px rgba(45,35,30,.045), 0 7px 22px rgba(45,35,30,.055);
-    color-scheme: light;
+  html, html *, html *::before, html *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    will-change: auto !important;
   }
-  :root[data-theme="light"] body { background: #f3f1ed; color: #29272a; }
-  :root[data-theme="light"] .side { background: #fbfaf8; color: #29272a; border-color: #d9d4cd; }
-  :root[data-theme="light"] .side .sh { color: #29272a; }
-  :root[data-theme="light"] .side .sh.on { color: #642631; background: rgba(100,38,49,.09); }
-  :root[data-theme="light"] .side .sh svg { color: #642631; }
-  :root[data-theme="light"] .card,
-  :root[data-theme="light"] .kpi,
-  :root[data-theme="light"] .modal,
-  :root[data-theme="light"] .umenu,
-  :root[data-theme="light"] .tabs { color: #29272a; border-color: #d9d4cd; }
-  :root[data-theme="light"] input,
-  :root[data-theme="light"] select,
-  :root[data-theme="light"] textarea { background: #fffdfa; color: #29272a; border-color: #d9d4cd; }
-  :root[data-theme="light"] th { background: #642631; color: #fff; }
-  :root[data-theme="light"] td { color: #29272a; border-color: #d9d4cd; }
+  body { background-attachment: scroll !important; }
+  #splash .gears, #splash::after, .topbar::after,
+  .loginpage::after, .logoframe::after, .lbg, .tile::before {
+    animation: none !important;
+    display: none !important;
+  }
+  .sk { background: var(--line) !important; }
 }
-@media (min-width: 1024px) and (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg: #f3f1ed; --card: #fbfaf8; --card2: #f1eee9;
-    --ink: #29272a; --mute: #625d60; --line: #d9d4cd;
-    --pri: #642631; --pri-d: #421b24; --on-pri: #fff;
-    --ok: #247348; --warn: #94520d; --bad: #a52a25;
-    --hd1: #642631; --hd2: #421b24;
-    --sh: 0 1px 2px rgba(45,35,30,.045), 0 7px 22px rgba(45,35,30,.055);
-    color-scheme: light;
+
+/* MAS Manager 4.8.10 — إصلاح شحوب القائمة الجانبية في الوضع النهاري على اللابتوب.
+   سبب المشكلة: desktop.css كان يجعل خلفية .side فاتحة بينما theme.css يجعل نصوصها وأيقوناتها بيضاء/ذهبية. */
+@media (min-width: 1024px) {
+  .side, :root[data-theme=light] .side {
+    background: linear-gradient(180deg,#5d2230 0%,#421B24 46%,#2c1218 100%) !important;
+    color: #F7F5F1;
   }
-  :root:not([data-theme="dark"]) body { background: #f3f1ed; color: #29272a; }
-  :root:not([data-theme="dark"]) .side { background: #fbfaf8; color: #29272a; border-color: #d9d4cd; }
-  :root:not([data-theme="dark"]) .side .sh { color: #29272a; }
-  :root:not([data-theme="dark"]) .side .sh.on { color: #642631; background: rgba(100,38,49,.09); }
-  :root:not([data-theme="dark"]) .side .sh svg { color: #642631; }
-  :root:not([data-theme="dark"]) .card,
-  :root:not([data-theme="dark"]) .kpi,
-  :root:not([data-theme="dark"]) .modal,
-  :root:not([data-theme="dark"]) .umenu,
-  :root:not([data-theme="dark"]) .tabs { color: #29272a; border-color: #d9d4cd; }
-  :root:not([data-theme="dark"]) input,
-  :root:not([data-theme="dark"]) select,
-  :root:not([data-theme="dark"]) textarea { background: #fffdfa; color: #29272a; border-color: #d9d4cd; }
-  :root:not([data-theme="dark"]) th { background: #642631; color: #fff; }
-  :root:not([data-theme="dark"]) td { color: #29272a; border-color: #d9d4cd; }
+  .side .sh, .side .sub a { color: #fff; opacity: 1; }
+  .side .sh.on, .side .sub a.on { color: var(--gold-l, #F4E3A8); }
+  .side .sgt, .side-head small, .side .ver { color: var(--gold, #D7B96F); opacity: 1; }
+  .side .sh svg { opacity: 1; }
+}
+
+/* MAS Manager 4.9.0 — تحسينات اللابتوب (مع desktop.js) */
+@media (min-width: 1024px) {
+  /* جداول: شريط فلترة/تصدير، ترتيب بالضغط على العنوان، وعمود أول ثابت أثناء التمرير الأفقي */
+  .mdt-bar { display:flex; align-items:center; gap:12px; margin:0 0 10px; }
+  .mdt-bar .mdt-q { flex:0 1 320px; min-height:38px; }
+  .mdt-bar .mdt-n { color:var(--mute); font-size:.85rem; margin-inline-start:auto; }
+  .mdt-bar .mdt-x { min-height:38px; padding:6px 14px; white-space:nowrap; }
+  .mdt-more { display:flex; justify-content:center; margin:12px 0 0; }
+  .mdt-more[hidden] { display:none; }
+  tr[hidden] { display:none !important; }
+  table.mdt th.mdt-h { cursor:pointer; user-select:none; }
+  table.mdt th.mdt-h:hover { color:var(--pri); }
+  table.mdt th[aria-sort=ascending]::after { content:" \25B2"; font-size:.7em; }
+  table.mdt th[aria-sort=descending]::after { content:" \25BC"; font-size:.7em; }
+  table.mdt.mdt-sticky td:first-child, table.mdt.mdt-sticky th:first-child { position:sticky; inset-inline-start:0; z-index:1; }
+  table.mdt.mdt-sticky td:first-child { background:var(--card); }
+  table.mdt.mdt-sticky th:first-child { z-index:2; }
+
+  /* النوافذ اللي فيها حقول إدخال: تفتح كدرج جانبي عشان القائمة تفضل ظاهرة جنبها */
+  @supports selector(:has(a)) {
+    .ov:has(.modal :is(input:not([type=hidden]),select,textarea)):not(:has(.modal table)) {
+      align-items:stretch; justify-content:flex-end; background:rgba(25,15,18,.20);
+    }
+    .ov:has(.modal :is(input:not([type=hidden]),select,textarea)):not(:has(.modal table)) .modal {
+      width:min(540px,92vw); max-width:min(540px,92vw); height:100%; max-height:none;
+      border-radius:0; overflow-y:auto; box-shadow:0 0 40px rgba(0,0,0,.28);
+    }
+    .ov:has(.modal :is(input:not([type=hidden]),select,textarea)):not(:has(.modal table)) .modal::before { display:none; }
+  }
+}
+
+/* طباعة نظيفة بـ Ctrl+P: من غير القوائم والأزرار */
+@media print {
+  .side, .topbar, .tabbar, .fab, .tabs, #offline, #toast, #splash, .mdt-bar, .mdt-more, .iconbtn, .btn, .scrim { display:none !important; }
+  body, body.hasside { padding:0 !important; background:#fff !important; }
+  .wrap { padding:0 !important; max-width:none !important; }
+  .card { box-shadow:none !important; border:1px solid #ccc; break-inside:avoid; }
+  .scroll { overflow:visible !important; }
+  table, table.mdt { min-width:0 !important; width:100% !important; font-size:11px; }
+  thead { display:table-header-group; }
+  tr { break-inside:avoid; }
+  tr[hidden] { display:none !important; }
+  table.mdt td:first-child, table.mdt th:first-child { position:static !important; }
 }

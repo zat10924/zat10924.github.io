@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{const t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <meta name="theme-color" content="#642631">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -16,8 +15,9 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script>/* MAS_DESKTOP_LIGHT_MODE: استعادة الوضع النهاري على اللابتوب قبل تحميل التنسيقات */
+try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){document.documentElement.dataset.theme="light";localStorage.setItem("theme","light")}}catch(e){document.documentElement.dataset.theme="light"}</script>
 <link rel="stylesheet" href="theme.css">
-<link rel="stylesheet" href="light-mode.css">
 <link rel="stylesheet" href="desktop.css">
 </head>
 <body>
@@ -118,15 +118,15 @@ function finForm(id,waste){if(roBlock())return;
     <label>التاريخ</label><input type="date" id="m-d" value="${rec?rec.d:today()}" ${lockDate?"disabled":""}>
     <label>الوردية</label><select id="m-sh">${SHIFTS.map(s=>`<option ${s===shiftDef?"selected":""}>${s}</option>`).join("")}</select>
     ${XW(true)}
-    <label>الأداء</label><select id="m-item"><option value="">— اختار الأداء —</option>${TASKS.map(t=>`<option ${rec&&rec.task===t?"selected":""}>${t}</option>`).join("")}</select>
+    <label>الأداء</label><input id="m-task" list="finish-tasks" maxlength="60" autocomplete="off" placeholder="اكتب الأداء أو اختر اقتراحًا" value="${rec?esc(rec.task):""}" data-skip-catalog="true"><datalist id="finish-tasks">${TASKS.map(t=>`<option value="${t}">`).join("")}</datalist>
     ${waste?`<label>عدد القطع الهالكة</label><input type="number" id="m-scrap" min="1" max="100000" inputmode="numeric" value="${rec&&rec.sc?rec.sc:""}"><div class="nums" id="m-wh" style="margin:4px 0 0"></div>`
       :`<label>عدد القطع</label><input type="number" id="m-q" min="${legacySc?0:1}" max="100000" inputmode="numeric" value="${rec?rec.qty:""}">${legacySc?`<label>هالك الجودة (تسجيل قديم)</label><input type="number" id="m-scrap" min="0" max="100000" inputmode="numeric" value="${rec.sc}">`:""}`}
     <label>${waste?"السبب / ملاحظات (اختياري)":"ملاحظات (اختياري)"}</label><input id="m-n" maxlength="300" placeholder="أي تعليق على الشغل" value="${rec?esc(rec.n):""}">`,async()=>{
     const qe=document.getElementById("m-q"),se=document.getElementById("m-scrap");
     const q=qe?(parseInt(qe.value)||0):0,sc=se?(parseInt(se.value)||0):0;
     if(waste?sc<1:(q<0||sc<0||q+sc<1||(!legacySc&&q<1))){toast(waste?"اكتب عدد القطع الهالكة":"اكتب عدد القطع");return false}
-    const task=document.getElementById("m-item").value;
-    if(!TASKS.includes(task)){toast("اختار الأداء (مشرط أو مياه أو صنفرة)");return false}
+    const task=document.getElementById("m-task").value;
+    if(!task.trim()){toast("اكتب الأداء أو اختر اقتراحًا");return false}
     const sh=document.getElementById("m-sh").value,x=xfRead();
     if(!x.worker){toast(waste?"اختار العامل اللي طلع منه الهالك":"اختار اسم العامل");return false}
     const cd=lockDate?(rec?rec.d:today()):(document.getElementById("m-d").value||today());
@@ -135,14 +135,14 @@ function finForm(id,waste){if(roBlock())return;
     const row={finish_date:cd,task,qty:q,scrap:sc,shift:sh,worker:x.worker||null,note:x.note||null};
     if(!se&&rec)delete row.scrap; // نموذج الإنتاج ما بيلمسش الهالك
     const res=rec?await db.from(TBL).update(row).eq("id",id):await finInsert(row);
-    if(res.queued){try{localStorage.setItem("fin_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("finish",{w:x.worker,i:task,q:q});toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
+    if(res.queued){try{localStorage.setItem("fin_shift",sh)}catch(e){}toast("مفيش نت: اتحفظ على الجهاز وهيتسجل لوحده لما النت يرجع","warn");return}
     if(res.error){toast(/finish_log|schema cache/i.test(res.error.message||"")?"شغّل ملف setup_finish.sql من Supabase الأول":"خطأ: "+res.error.message);return false}
-    try{localStorage.setItem("fin_shift",sh)}catch(e){}if(!waste&&!rec)smartSave("finish",{w:x.worker,i:task,q:q});
+    try{localStorage.setItem("fin_shift",sh)}catch(e){}
     await load();toast(rec?"تم التعديل":"تم التسجيل");
   });
   setTimeout(()=>{
     const w=document.getElementById("m-w");if(w&&rec)w.value=rec.w;
-    if(!waste)smartFill("finish",rec);
+    if(!waste)addQuickQtyButtons();
     if(waste){ // سليم العامل وهالكه ونسبة الهالك في اليوم
       const h=document.getElementById("m-wh"),dEl=document.getElementById("m-d"),sEl=document.getElementById("m-scrap");
       const upd=()=>{const n=w.value.trim();if(!n){h.textContent="";return}
@@ -174,5 +174,6 @@ document.getElementById("t-prod").onclick=()=>{tab="prod";setTab()};
 (async()=>{if(await requireAuth("finish.html")){renderNav("finish.html");searchBox("tbl",q=>{Q=q;draw()},"بحث بالأداء أو العامل…");dateChips("f-from","f-to",draw);skel("body",4);if(tab==="prod")setTab();load().finally(settle)}})();
 </script>
 <script src="install.js" defer></script>
+<script src="desktop.js" defer></script>
 </body>
 </html>
