@@ -57,7 +57,7 @@ window.masCacheClear=()=>{try{localStorage.removeItem("masc_uid")}catch(e){}retu
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {global:{fetch:MASC.fetch}});
 
 /* ===== إصدار البرنامج (غيّر الرقم هنا عند كل تحديث) ===== */
-const APP_VERSION = "4.9.0";
+const APP_VERSION = "4.9.1";
 // مفتاح الإشعارات العام (آمن إنه يبقى ظاهر)
 const VAPID_PUBLIC = "BMI1dksSzpLuotH8TRjMLlwd53SaAltxeJkdfGYnb0GNTjQLbqXy-HDXbWZUlA5jtahNrND9TZRV7afcjnDfLhs";
 /* مستودع GitHub: منه بتتجاب «ما الجديد» تلقائيًا من رسائل الـ commit العربي */
@@ -65,6 +65,10 @@ const GH_REPO = "zat10924/zat10924.github.io";
 const APP_BUILD = "2026-11-17";
 // آخر التحديثات (الأحدث أولاً) — بتظهر في الإعدادات > البرنامج > «ما الجديد»
 const APP_CHANGES = [
+  ["4.9.1", "2026-11-18", [
+    "تطبيق ويندوز بدون إطار: شريط عنوان خاص بالبرنامج (تصغير/تكبير/إغلاق) بدل إطار ويندوز، ويظهر فقط داخل التطبيق.",
+    "لا تغيير في المتصفح ولا على الهاتف.",
+  ]],
   ["4.9.0", "2026-11-18", [
     "تحسينات اللابتوب: ترتيب الجداول بالضغط على العنوان، فلترة سريعة، تصدير Excel، وعرض الجداول الطويلة على دفعات.",
     "تسجيل أسرع: Enter ينقل للحقل التالي والأخير يحفظ، وزر «حفظ وإضافة آخر» (Ctrl+Shift+Enter) يبقي الصنف والوردية.",

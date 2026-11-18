@@ -3,6 +3,45 @@
    مفيش فيها اتصال بقاعدة البيانات ولا تعديل على منطق الصفحات: كلها تحسينات على الواجهة. */
 (() => {
   "use strict";
+  /* ---------- 0) شريط عنوان البرنامج (وضع بدون إطار ويندوز) ----------
+     بيشتغل فقط جوه تطبيق ويندوز اللي بيعرّف window.masWin (من preload.js). في المتصفح العادي ما بيعملش حاجة. */
+  (function frameless() {
+    const W = window.masWin;
+    if (!W || document.getElementById("mas-tb")) return;
+    const root = document.documentElement;
+    root.classList.add("mas-frameless");
+    const SV = {
+      min: '<svg viewBox="0 0 11 11"><path d="M0 5.5h11"/></svg>',
+      max: '<svg viewBox="0 0 11 11"><rect x=".5" y=".5" width="10" height="10"/></svg>',
+      res: '<svg viewBox="0 0 11 11"><path d="M2.5 2.5V.5h8v8h-2"/><rect x=".5" y="2.5" width="8" height="8"/></svg>',
+      x: '<svg viewBox="0 0 11 11"><path d="M0 0l11 11M11 0L0 11"/></svg>',
+    };
+    const bar = document.createElement("div");
+    bar.id = "mas-tb";
+    bar.innerHTML = '<img class="tb-ic" src="icon-192.png" alt=""><span class="tb-t"></span>' +
+      '<div class="tb-c"><button type="button" class="tb-m" aria-label="تصغير" title="تصغير">' + SV.min + '</button>' +
+      '<button type="button" class="tb-z" aria-label="تكبير" title="تكبير">' + SV.max + '</button>' +
+      '<button type="button" class="tb-x" aria-label="إغلاق" title="إغلاق">' + SV.x + '</button></div>';
+    const t = bar.querySelector(".tb-t"), z = bar.querySelector(".tb-z");
+    const title = () => { t.textContent = "MAS — الماس للخزف والصيني" + (document.title ? "  ·  " + document.title : ""); };
+    const state = st => {
+      st = st || {};
+      root.classList.toggle("mas-full", !!st.full);
+      const m = !!st.max;
+      z.innerHTML = m ? SV.res : SV.max;
+      z.title = z.ariaLabel = m ? "استعادة" : "تكبير";
+    };
+    bar.querySelector(".tb-m").onclick = () => W.minimize();
+    z.onclick = () => W.toggleMaximize();
+    bar.querySelector(".tb-x").onclick = () => W.close();
+    const mount = () => {
+      document.body.prepend(bar); title();
+      try { new MutationObserver(title).observe(document.querySelector("title"), { childList: true }); } catch (e) {}
+    };
+    if (document.body) mount(); else document.addEventListener("DOMContentLoaded", mount);
+    try { W.onState(state); Promise.resolve(W.getState && W.getState()).then(state); } catch (e) {}
+  })();
+
   const wide = () => !!(window.matchMedia && matchMedia("(min-width: 1024px)").matches);
   if (!wide()) return;
   const LS = {

@@ -18,6 +18,7 @@
 <script>/* MAS_DESKTOP_LIGHT_MODE: استعادة الوضع النهاري على اللابتوب قبل تحميل التنسيقات */
 try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){document.documentElement.dataset.theme="light";localStorage.setItem("theme","light")}}catch(e){document.documentElement.dataset.theme="light"}</script>
 <link rel="stylesheet" href="theme.css">
+<script>try{if(window.masWin)document.documentElement.classList.add("mas-frameless")}catch(e){}</script>
 <link rel="stylesheet" href="desktop.css">
 <style>
 .sf .sfr{margin-bottom:12px}.sf .sfr>label{display:block;margin-bottom:5px;font-weight:700}.sf label small{font-weight:400;opacity:.7}

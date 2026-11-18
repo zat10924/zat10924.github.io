@@ -199,3 +199,31 @@
   tr[hidden] { display:none !important; }
   table.mdt td:first-child, table.mdt th:first-child { position:static !important; }
 }
+
+/* MAS Manager 4.9.1 — وضع «بدون إطار ويندوز»: شريط العنوان الخاص بالبرنامج (بيظهر فقط جوه تطبيق ويندوز لما window.masWin موجود) */
+html.mas-frameless { --wtb: 34px; background:#421B24; }
+html.mas-frameless.mas-full { --wtb: 0px; }
+html.mas-frameless body { padding-top:var(--wtb); box-sizing:border-box; }
+html.mas-frameless .side { top:var(--wtb); }
+html.mas-frameless .topbar { top:var(--wtb); }
+html.mas-frameless .ov { top:var(--wtb); }
+#mas-tb { display:none; }
+html.mas-frameless #mas-tb {
+  display:flex; align-items:center; position:fixed; top:0; inset-inline:0; height:34px; z-index:300;
+  background:linear-gradient(180deg,#3a1720,#2c1218); color:#F4E3A8; border-bottom:1px solid rgba(215,185,111,.28);
+  -webkit-app-region:drag; user-select:none; direction:rtl; font-weight:600; font-size:12.5px; line-height:1; font-family:inherit;
+}
+html.mas-frameless.mas-full #mas-tb { display:none; }
+#mas-tb .tb-ic { width:18px; height:18px; margin-inline:12px 8px; border-radius:5px; pointer-events:none; }
+#mas-tb .tb-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:.92; pointer-events:none; }
+#mas-tb .tb-c { display:flex; height:100%; -webkit-app-region:no-drag; }
+#mas-tb .tb-c button {
+  all:unset; box-sizing:border-box; width:46px; height:100%; display:grid; place-items:center; cursor:default; color:#F4E3A8;
+  -webkit-app-region:no-drag;
+}
+#mas-tb .tb-c button:hover { background:rgba(255,255,255,.12); }
+#mas-tb .tb-c button:active { background:rgba(255,255,255,.18); }
+#mas-tb .tb-c button:focus-visible { outline:2px solid #D7B96F; outline-offset:-3px; }
+#mas-tb .tb-c button.tb-x:hover { background:#e81123; color:#fff; }
+#mas-tb svg { width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:1.1; }
+@media print { #mas-tb { display:none !important; } html.mas-frameless body { padding-top:0 !important; } }
