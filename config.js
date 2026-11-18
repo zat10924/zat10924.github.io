@@ -57,14 +57,21 @@ window.masCacheClear=()=>{try{localStorage.removeItem("masc_uid")}catch(e){}retu
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {global:{fetch:MASC.fetch}});
 
 /* ===== إصدار البرنامج (غيّر الرقم هنا عند كل تحديث) ===== */
-const APP_VERSION = "4.9.1";
+const APP_VERSION = "4.9.3";
 // مفتاح الإشعارات العام (آمن إنه يبقى ظاهر)
 const VAPID_PUBLIC = "BMI1dksSzpLuotH8TRjMLlwd53SaAltxeJkdfGYnb0GNTjQLbqXy-HDXbWZUlA5jtahNrND9TZRV7afcjnDfLhs";
 /* مستودع GitHub: منه بتتجاب «ما الجديد» تلقائيًا من رسائل الـ commit العربي */
 const GH_REPO = "zat10924/zat10924.github.io";
-const APP_BUILD = "2026-11-17";
+const APP_BUILD = "2026-11-18";
 // آخر التحديثات (الأحدث أولاً) — بتظهر في الإعدادات > البرنامج > «ما الجديد»
 const APP_CHANGES = [
+  ["4.9.3", "2026-11-18", [
+    "إضافة مساعد MAS AI HUB للقراءة والتحليل والتقارير وفق صلاحيات المستخدم الحالية.",
+    "Gemini أساسي وGroq احتياطي عبر Supabase Edge Function؛ لا مفاتيح مزودين في ملفات المتصفح.",
+  ]],
+  ["4.9.2", "2026-11-18", [
+    "شاشة فتح التطبيق على الهاتف: إزالة المربع الظاهر حول الشعار بتوحيد لون الخلفية مع لون الأيقونة.",
+  ]],
   ["4.9.1", "2026-11-18", [
     "تطبيق ويندوز بدون إطار: شريط عنوان خاص بالبرنامج (تصغير/تكبير/إغلاق) بدل إطار ويندوز، ويظهر فقط داخل التطبيق.",
     "لا تغيير في المتصفح ولا على الهاتف.",
