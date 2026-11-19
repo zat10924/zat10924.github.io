@@ -46,12 +46,12 @@ export const gemini: Provider = {
 export const groq: Provider = {
   id: "groq", label: "Groq", envKey: "GROQ_API_KEY",
   async call(key, o, f = fetch) {
-    const model = Deno_env("GROQ_MODEL") || "llama-3.3-70b-versatile";
+    const model = Deno_env("GROQ_MODEL")?.trim() || "qwen/qwen3.8-27b";
     const r = await post("https://api.groq.com/openai/v1/chat/completions", { Authorization: `Bearer ${key}` },
       { model, temperature: 0.2, messages: [{ role: "system", content: o.system }, { role: "user", content: o.prompt }] }, o.timeoutMs, f);
     if (!r.ok) throw new ProviderError(classifyHttp(r.status), r.status, await errMsg(r));
     const j = await r.json();
-    const text = String(j?.choices?.[0]?.message?.content ?? "").trim();
+    const text = String(j?.choices?.[0]?.message?.content ?? "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
     if (!text) throw new ProviderError("empty", 200, "empty response");
     return { text, model };
   },
