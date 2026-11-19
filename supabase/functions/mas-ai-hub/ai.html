@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#642631">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="الأقسام">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>المساعد الذكي</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>/* MAS_DESKTOP_LIGHT_MODE: استعادة الوضع النهاري على اللابتوب قبل تحميل التنسيقات */
+try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){document.documentElement.dataset.theme="light";localStorage.setItem("theme","light")}}catch(e){document.documentElement.dataset.theme="light"}</script>
+<link rel="stylesheet" href="theme.css">
+<script>try{if(window.masWin)document.documentElement.classList.add("mas-frameless")}catch(e){}</script>
+<link rel="stylesheet" href="desktop.css">
+</head>
+<body>
+<body>
+<div class="wrap">
+  <h1>المساعد الذكي</h1>
+  <div class="card">
+    <div class="hint">يجيب من بيانات المصنع الفعلية. الأرقام محسوبة داخل قاعدة البيانات، والمساعد للقراءة والتحليل فقط ولا يعدّل أي بيانات.</div>
+    <div id="ai_chips" class="line"></div>
+    <textarea id="ai_q" rows="3" maxlength="1500" placeholder="اسأل عن الإنتاج أو الهالك أو الألوان أو اطلب ملخصًا إداريًا…" style="width:100%"></textarea>
+    <div class="line fe"><label>من <input type="date" id="ai_from"></label><label>إلى <input type="date" id="ai_to"></label>
+      <select id="ai_sec"><option value="">كل الأقسام</option><option value="glaze">الجليز</option><option value="deco">الزخرفة</option><option value="spray">الرش</option><option value="casting">الصب</option><option value="brush">البرشر</option><option value="repair">التصليح</option></select></div>
+    <button class="btn" id="ai_go" type="button">اسأل</button>
+  </div>
+  <div class="card" id="ai_out" hidden>
+    <div id="ai_ans" class="ai-md"></div>
+    <small class="hint" id="ai_meta"></small>
+    <div class="line" id="ai_tools" hidden>
+      <button type="button" class="btn ghost sm" id="ai_copy">نسخ</button>
+      <button type="button" class="btn ghost sm" id="ai_pdf">PDF / طباعة</button>
+      <button type="button" class="btn ghost sm" id="ai_csv">Excel (جداول)</button>
+    </div>
+  </div>
+  <div class="card" id="ai_hist_card" hidden><b>آخر الأسئلة</b><div id="ai_hist"></div><button type="button" class="btn ghost sm" id="ai_hist_clear">مسح السجل</button></div>
+  <style>
+  .ai-md{line-height:1.9;font-size:14px;overflow-wrap:anywhere}
+  .ai-md h2{font-size:16px;margin:14px 0 6px;color:#642631;border-bottom:1px solid var(--line,#e5dce0);padding-bottom:4px}
+  .ai-md h3{font-size:14px;margin:10px 0 4px}
+  .ai-md ul{margin:4px 0;padding-inline-start:20px}
+  .ai-md p{margin:6px 0}
+  .ai-md .tw{overflow-x:auto;margin:8px 0}
+  .ai-md table{border-collapse:collapse;width:100%;font-size:13px;min-width:280px}
+  .ai-md th,.ai-md td{border:1px solid var(--line,#e5dce0);padding:6px 8px;text-align:right;white-space:nowrap}
+  .ai-md th{background:#642631;color:#fff}
+  .ai-md tr:nth-child(even) td{background:var(--soft,#f7f2f4)}
+  #ai_hist button{display:block;width:100%;text-align:right;background:none;border:0;border-bottom:1px dashed var(--line,#e5dce0);padding:9px 0;font:inherit;color:inherit;cursor:pointer}
+  @media print{body *{visibility:hidden}#ai_out,#ai_out *{visibility:visible}#ai_out{position:absolute;inset:0 auto auto 0;width:100%}#ai_tools{display:none}}
+  </style>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="ai.js"></script>
+<script>
+const CH=["ملخص إداري للفترة","قارن إنتاج الأقسام","تحليل الهالك","استهلاك الجليز والألوان","أعلى الأصناف إنتاجًا"];
+
+// ---- عرض Markdown بأمان: نهرّب HTML أولاً ثم نحوّل عناصر محدودة فقط ----
+function mdToHtml(src){
+  const lines=String(src||"").replace(/\r/g,"").split("\n");
+  const inl=t=>esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");
+  let out="",list=false,i=0;
+  const closeList=()=>{if(list){out+="</ul>";list=false}};
+  while(i<lines.length){
+    const l=lines[i].trim();
+    if(/^\|.*\|$/.test(l)&&i+1<lines.length&&/^\|[\s:|-]+\|$/.test(lines[i+1].trim())){
+      closeList();
+      const row=x=>x.trim().replace(/^\||\|$/g,"").split("|").map(c=>c.trim());
+      const head=row(l);i+=2;let body="";
+      while(i<lines.length&&/^\|.*\|$/.test(lines[i].trim())){body+="<tr>"+row(lines[i]).map(c=>"<td>"+inl(c)+"</td>").join("")+"</tr>";i++}
+      out+='<div class="tw"><table><thead><tr>'+head.map(c=>"<th>"+inl(c)+"</th>").join("")+"</tr></thead><tbody>"+body+"</tbody></table></div>";
+      continue;
+    }
+    let m;
+    if((m=l.match(/^#{1,2}\s+(.+)/))){closeList();out+="<h2>"+inl(m[1])+"</h2>"}
+    else if((m=l.match(/^#{3,}\s+(.+)/))){closeList();out+="<h3>"+inl(m[1])+"</h3>"}
+    else if((m=l.match(/^[-*•]\s+(.+)/))||(m=l.match(/^\d+[.)]\s+(.+)/))){if(!list){out+="<ul>";list=true}out+="<li>"+inl(m[1])+"</li>"}
+    else if(l===""){closeList()}
+    else{closeList();out+="<p>"+inl(l)+"</p>"}
+    i++;
+  }
+  closeList();return out;
+}
+let LAST="";
+function showAns(text){LAST=text||"";ai_ans.innerHTML=mdToHtml(LAST);ai_tools.hidden=!LAST}
+
+// ---- سجل الأسئلة (على هذا الجهاز فقط، آخر 15) ----
+const HK="mas_ai_hist_v1";
+function getHist(){try{return JSON.parse(localStorage.getItem(HK)||"[]")}catch(e){return[]}}
+function pushHist(it){try{const h=getHist().filter(x=>x.q!==it.q);h.unshift(it);localStorage.setItem(HK,JSON.stringify(h.slice(0,15)))}catch(e){}renderHist()}
+function renderHist(){
+  const h=getHist();ai_hist_card.hidden=!h.length;
+  ai_hist.innerHTML=h.map((x,n)=>`<button type="button" data-n="${n}">${esc(x.q)}<br><small class="hint">${esc(new Date(x.t).toLocaleString("ar-EG"))}</small></button>`).join("");
+}
+function exportCsv(){
+  const tbs=ai_ans.querySelectorAll("table");
+  if(!tbs.length){toast("لا توجد جداول في هذه الإجابة","bad");return}
+  let csv="";
+  tbs.forEach(t=>{t.querySelectorAll("tr").forEach(r=>{csv+=[...r.children].map(c=>'"'+c.textContent.replace(/"/g,'""')+'"').join(",")+"\n"});csv+="\n"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));
+  a.download="mas-ai-"+new Date().toISOString().slice(0,10)+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+(async()=>{
+  if(!await requireAuth("ai.html"))return;
+  renderHist();
+  ai_hist.onclick=e=>{const b=e.target.closest("button");if(!b)return;const x=getHist()[+b.dataset.n];if(!x)return;ai_q.value=x.q;ai_out.hidden=false;showAns(x.a);ai_meta.textContent=x.meta||"";window.scrollTo({top:ai_out.offsetTop-60,behavior:"smooth"})};
+  ai_hist_clear.onclick=()=>{try{localStorage.removeItem(HK)}catch(e){}renderHist()};
+  ai_copy.onclick=async()=>{try{await navigator.clipboard.writeText(LAST);toast("تم النسخ","ok")}catch(e){toast("تعذّر النسخ","bad")}};
+  ai_pdf.onclick=()=>window.print();
+  ai_csv.onclick=exportCsv;
+  renderNav("ai.html");
+  ai_chips.innerHTML=CH.map(c=>`<button type="button" class="btn ghost sm">${esc(c)}</button>`).join("");
+  ai_chips.onclick=e=>{const b=e.target.closest("button");if(b){ai_q.value=b.textContent;ai_q.focus()}};
+  ai_go.onclick=async()=>{
+    const q=ai_q.value.trim();if(q.length<2){toast("اكتب سؤالك","bad");return}
+    ai_go.disabled=true;ai_go.classList.add("loading");
+    const body={action:"ask",question:q};
+    if(ai_from.value)body.from=ai_from.value;if(ai_to.value)body.to=ai_to.value;if(ai_sec.value)body.sections=[ai_sec.value];
+    const r=await masAi(body);
+    ai_go.disabled=false;ai_go.classList.remove("loading");
+    ai_out.hidden=false;
+    if(!r.ok){ai_ans.textContent=r.msg;ai_meta.textContent="";ai_tools.hidden=true;return}
+    showAns(r.data.answer);
+    const meta="الفترة: "+r.data.period.from+" → "+r.data.period.to+" · المحرك: "+(r.data.provider==="gemini"?"Gemini":r.data.provider==="groq"?"Groq":r.data.provider)+(r.data.failover?" (تم التحويل تلقائيًا)":"");
+    ai_meta.textContent=meta;
+    pushHist({q,a:r.data.answer,meta,t:Date.now()});
+  };
+})();
+</script>
+</body>
+</html>

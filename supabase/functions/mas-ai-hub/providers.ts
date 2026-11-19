@@ -48,7 +48,7 @@ export const groq: Provider = {
   async call(key, o, f = fetch) {
     const model = Deno_env("GROQ_MODEL")?.trim() || "qwen/qwen3.8-27b";
     const r = await post("https://api.groq.com/openai/v1/chat/completions", { Authorization: `Bearer ${key}` },
-      { model, temperature: 0.2, messages: [{ role: "system", content: o.system }, { role: "user", content: o.prompt }] }, o.timeoutMs, f);
+      { model, temperature: 0.2, max_completion_tokens: 1500, messages: [{ role: "system", content: o.system }, { role: "user", content: o.prompt }] }, o.timeoutMs, f);
     if (!r.ok) throw new ProviderError(classifyHttp(r.status), r.status, await errMsg(r));
     const j = await r.json();
     const text = String(j?.choices?.[0]?.message?.content ?? "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
