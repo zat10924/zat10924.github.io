@@ -9,7 +9,9 @@
     const[{data:s,error:e1},r]=await Promise.all([db.from("ai_settings").select("*").eq("id",1).maybeSingle(),masAi({action:"status"})]);
     if(e1){$("ai_state").textContent=e1.code==="42P01"?"شغّل ملف الـ Migration أولاً (20261118_mas_ai_hub.sql).":"تعذر التحميل: "+e1.message;return}
     ST=s;
-    const prov=r.ok?r.data.providers:[];
+    const FALLBACK=[{id:"gemini",label:"Google Gemini",key_configured:null},{id:"groq",label:"Groq",key_configured:null}];
+    const okList=r.ok&&r.data&&Array.isArray(r.data.providers);
+    const prov=okList?r.data.providers:FALLBACK;
     const opts=(sel,withNone)=>(withNone?'<option value="">— بدون —</option>':"")+prov.map(p=>`<option value="${esc(p.id)}"${p.id===sel?" selected":""}>${esc(p.label)}</option>`).join("");
     $("ai_en").checked=!!s.enabled;
     $("ai_pri").innerHTML=opts(s.primary_provider);
@@ -17,8 +19,10 @@
     $("ai_auto").checked=!!s.auto_failover;
     $("ai_to").value=Math.round(s.timeout_ms/1000);
     $("ai_lu").value=s.daily_limit_user;$("ai_lt").value=s.daily_limit_total;
-    $("ai_state").textContent=r.ok?"":"تعذّر قراءة حالة المحركات: "+r.msg;
-    $("ai_eng").innerHTML=prov.map(p=>`<div class="line fe"><span>${esc(p.label)} <span class="nums">· ${p.key_configured?"المفتاح مضبوط":"المفتاح غير مضبوط"}</span></span><button class="btn ghost sm" data-t="${esc(p.id)}"${p.key_configured?"":" disabled"}>اختبار الاتصال</button><span class="nums" id="ai_r_${esc(p.id)}"></span></div>`).join("");
+    $("ai_state").textContent=okList?"":(r.ok||r.code==="unknown_action")
+      ?"⚠ نسخة الدالة mas-ai-hub على Supabase قديمة (لا تعرف أمر status). أعد نشرها من ملفات phase3b. القائمة المعروضة افتراضية."
+      :"⚠ تعذّر قراءة حالة المحركات: "+r.msg+" — القائمة المعروضة افتراضية.";
+    $("ai_eng").innerHTML=prov.map(p=>`<div class="line fe"><span>${esc(p.label)} <span class="nums">· ${p.key_configured===null?"الحالة غير معروفة":p.key_configured?"المفتاح مضبوط":"المفتاح غير مضبوط"}</span></span><button class="btn ghost sm" data-t="${esc(p.id)}"${p.key_configured===false?" disabled":""}>اختبار الاتصال</button><span class="nums" id="ai_r_${esc(p.id)}"></span></div>`).join("");
     logs();
   }
   async function logs(){
