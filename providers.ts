@@ -46,7 +46,7 @@ export const gemini: Provider = {
 export const groq: Provider = {
   id: "groq", label: "Groq", envKey: "GROQ_API_KEY",
   async call(key, o, f = fetch) {
-    const model = Deno_env("GROQ_MODEL")?.trim() || "qwen/qwen3.8-27b";
+    const model = Deno_env("GROQ_MODEL")?.trim() || "llama-3.3-70b-versatile";
     const r = await post("https://api.groq.com/openai/v1/chat/completions", { Authorization: `Bearer ${key}` },
       { model, temperature: 0.2, max_completion_tokens: 1500, messages: [{ role: "system", content: o.system }, { role: "user", content: o.prompt }] }, o.timeoutMs, f);
     if (!r.ok) throw new ProviderError(classifyHttp(r.status), r.status, await errMsg(r));

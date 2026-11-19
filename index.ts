@@ -1,6 +1,6 @@
 // mas-ai-hub — بوابة الذكاء الاصطناعي لـ MAS. المفاتيح من Secrets فقط، والبيانات بصلاحية المستخدم (RLS).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { buildPrompt, detectTask, SYSTEM_PROMPT, validateAsk } from "./policy.ts";
+import { buildPrompt, buildSsml, clampRate, detectTask, safeVoice, SYSTEM_PROMPT, validateAsk } from "./policy.ts";
 import { keyFor, REGISTRY } from "./providers.ts";
 import { runChain } from "./orchestrator.ts";
 
@@ -79,30 +79,32 @@ Deno.serve(async (req) => {
                           : { ok: false, provider: p.id, latency_ms: ms, error_class: r.error.cls, http_status: r.error.status });
   }
 
-  // ---- صوت المساعد (Groq Orpheus العربي السعودي) ----
+  // ---- صوت المساعد: Azure Speech بصوت مصري (ar-EG-SalmaNeural افتراضيًا) ----
   if (action === "speak") {
-    const key = keyFor(REGISTRY.groq);
-    if (!key) return json(req, { error: "no_key", message: "الصوت غير مفعّل." }, 502);
-    const text = String(body?.text ?? "").replace(/\s+/g, " ").trim().slice(0, 190);
+    const key = Deno.env.get("AZURE_SPEECH_KEY")?.trim();
+    const region = Deno.env.get("AZURE_SPEECH_REGION")?.trim() ?? "";
+    if (!key || !/^[a-z0-9-]{3,30}$/i.test(region)) return json(req, { error: "no_key", message: "الصوت المصري غير مفعّل بعد." }, 503);
+    const text = String(body?.text ?? "").replace(/\s+/g, " ").trim().slice(0, 600);
     if (text.length < 2) return json(req, { error: "bad_request", message: "لا يوجد نص." }, 400);
+    const voice = safeVoice(body?.voice ?? Deno.env.get("AZURE_TTS_VOICE"));
+    const ssml = buildSsml(text, voice, clampRate(body?.rate));
     const ctl = new AbortController();
-    const to = setTimeout(() => ctl.abort(), 20000);
+    const to = setTimeout(() => ctl.abort(), 15000);
     try {
-      const r = await fetch("https://api.groq.com/openai/v1/audio/speech", {
+      const r = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
         method: "POST", signal: ctl.signal,
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: Deno.env.get("GROQ_TTS_MODEL")?.trim() || "canopylabs/orpheus-arabic-saudi",
-          voice: Deno.env.get("GROQ_TTS_VOICE")?.trim() || "abdullah", response_format: "wav", input: text }),
+        headers: { "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/ssml+xml",
+          "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3", "User-Agent": "mas-ai-hub" },
+        body: ssml,
       });
       if (!r.ok) {
-        const m = (await r.text()).slice(0, 200);
-        await log("ai_error_log", { provider: "groq", error_class: "tts_" + r.status, http_status: r.status, message: m });
+        await log("ai_error_log", { provider: "azure", error_class: "tts_" + r.status, http_status: r.status, message: (await r.text()).slice(0, 200) });
         return json(req, { error: "tts_failed", message: "تعذّر توليد الصوت." }, 503);
       }
       const buf = new Uint8Array(await r.arrayBuffer());
       let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-      await log("ai_usage_log", { task: "tts", provider: "groq", status: "ok", response_chars: text.length });
-      return json(req, { audio: btoa(bin), mime: "audio/wav" });
+      await log("ai_usage_log", { task: "tts", provider: "azure", model: voice, status: "ok", response_chars: text.length });
+      return json(req, { audio: btoa(bin), mime: "audio/mpeg", voice });
     } catch (_) {
       return json(req, { error: "tts_failed", message: "تعذّر توليد الصوت." }, 503);
     } finally { clearTimeout(to); }
