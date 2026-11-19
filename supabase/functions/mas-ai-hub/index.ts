@@ -79,6 +79,35 @@ Deno.serve(async (req) => {
                           : { ok: false, provider: p.id, latency_ms: ms, error_class: r.error.cls, http_status: r.error.status });
   }
 
+  // ---- صوت المساعد (Groq Orpheus العربي السعودي) ----
+  if (action === "speak") {
+    const key = keyFor(REGISTRY.groq);
+    if (!key) return json(req, { error: "no_key", message: "الصوت غير مفعّل." }, 502);
+    const text = String(body?.text ?? "").replace(/\s+/g, " ").trim().slice(0, 190);
+    if (text.length < 2) return json(req, { error: "bad_request", message: "لا يوجد نص." }, 400);
+    const ctl = new AbortController();
+    const to = setTimeout(() => ctl.abort(), 20000);
+    try {
+      const r = await fetch("https://api.groq.com/openai/v1/audio/speech", {
+        method: "POST", signal: ctl.signal,
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: Deno.env.get("GROQ_TTS_MODEL")?.trim() || "canopylabs/orpheus-arabic-saudi",
+          voice: Deno.env.get("GROQ_TTS_VOICE")?.trim() || "abdullah", response_format: "wav", input: text }),
+      });
+      if (!r.ok) {
+        const m = (await r.text()).slice(0, 200);
+        await log("ai_error_log", { provider: "groq", error_class: "tts_" + r.status, http_status: r.status, message: m });
+        return json(req, { error: "tts_failed", message: "تعذّر توليد الصوت." }, 503);
+      }
+      const buf = new Uint8Array(await r.arrayBuffer());
+      let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+      await log("ai_usage_log", { task: "tts", provider: "groq", status: "ok", response_chars: text.length });
+      return json(req, { audio: btoa(bin), mime: "audio/wav" });
+    } catch (_) {
+      return json(req, { error: "tts_failed", message: "تعذّر توليد الصوت." }, 503);
+    } finally { clearTimeout(to); }
+  }
+
   if (action !== "ask") return json(req, { error: "unknown_action" }, 400);
 
   // ---- سؤال ----
@@ -89,7 +118,7 @@ Deno.serve(async (req) => {
   // حدود الاستهلاك
   const since = cairoToday() + "T00:00:00+02:00";
   const cnt = async (user?: string) => {
-    let q = admin.from("ai_usage_log").select("id", { count: "exact", head: true }).eq("status", "ok").neq("task", "test").gte("created_at", since);
+    let q = admin.from("ai_usage_log").select("id", { count: "exact", head: true }).eq("status", "ok").neq("task", "test").neq("task", "tts").gte("created_at", since);
     if (user) q = q.eq("user_id", user);
     return (await q).count ?? 0;
   };

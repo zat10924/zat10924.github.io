@@ -24,7 +24,13 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 <body>
 <body>
 <div class="wrap">
-  <h1>المساعد الذكي</h1>
+  <section class="ai-hero">
+    <div class="ai-av" aria-hidden="true">✦</div>
+    <div class="ai-id"><b id="ai_name">ماسي</b><small>المساعد الذكي لمصنع الماس للخزف والصيني</small>
+      <span class="ai-st"><i></i> متصل · يقرأ ويحلل فقط</span></div>
+    <button type="button" class="ai-auto" id="ai_auto" aria-pressed="false" title="قراءة الإجابة صوتيًا تلقائيًا">🔈 تلقائي</button>
+  </section>
+  <div class="ai-intro">أهلًا بك، أنا <b id="ai_name2">ماسي</b><span id="ai_dev"></span>. أقرأ بيانات الإنتاج والهالك والجليز والألوان وأحوّلها إلى ملخصات وتقارير إدارية، ولا أعدّل أي بيانات. اختر سؤالًا سريعًا أو اكتب سؤالك.</div>
   <div class="card">
     <div class="hint">يجيب من بيانات المصنع الفعلية. الأرقام محسوبة داخل قاعدة البيانات، والمساعد للقراءة والتحليل فقط ولا يعدّل أي بيانات.</div>
     <div id="ai_chips" class="line"></div>
@@ -37,6 +43,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
     <div id="ai_ans" class="ai-md"></div>
     <small class="hint" id="ai_meta"></small>
     <div class="line" id="ai_tools" hidden>
+      <button type="button" class="btn ghost sm" id="ai_speak">🔊 استماع</button>
       <button type="button" class="btn ghost sm" id="ai_copy">نسخ</button>
       <button type="button" class="btn ghost sm" id="ai_pdf">PDF / طباعة</button>
       <button type="button" class="btn ghost sm" id="ai_csv">Excel (جداول)</button>
@@ -44,6 +51,14 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
   </div>
   <div class="card" id="ai_hist_card" hidden><b>آخر الأسئلة</b><div id="ai_hist"></div><button type="button" class="btn ghost sm" id="ai_hist_clear">مسح السجل</button></div>
   <style>
+  .ai-hero{display:flex;align-items:center;gap:12px;padding:16px;border-radius:18px;background:linear-gradient(135deg,#6e2735,#35131e);color:#fff;box-shadow:0 10px 30px #25101830;margin-bottom:12px}
+  .ai-av{width:52px;height:52px;border-radius:16px;background:#ffffff1f;border:1px solid #ffffff40;display:grid;place-items:center;font-size:26px;flex:none}
+  .ai-id{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.ai-id b{font-size:18px}.ai-id small{opacity:.8;font-size:12px}
+  .ai-st{font-size:11px;opacity:.9;display:flex;align-items:center;gap:6px}.ai-st i{width:8px;height:8px;border-radius:50%;background:#46d483;box-shadow:0 0 0 3px #46d48333}
+  .ai-auto{border:1px solid #ffffff45;background:#ffffff18;color:#fff;border-radius:999px;padding:7px 12px;font:inherit;font-size:12px;cursor:pointer;flex:none}
+  .ai-auto[aria-pressed=true]{background:#d9b86a;color:#35131e;border-color:#d9b86a}
+  .ai-intro{background:var(--soft,#f7f2f4);border:1px solid var(--line,#e5dce0);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.8;margin-bottom:12px}
+  .ai-speaking{animation:aip 1s infinite alternate}@keyframes aip{to{opacity:.55}}
   .ai-md{line-height:1.9;font-size:14px;overflow-wrap:anywhere}
   .ai-md h2{font-size:16px;margin:14px 0 6px;color:#642631;border-bottom:1px solid var(--line,#e5dce0);padding-bottom:4px}
   .ai-md h3{font-size:14px;margin:10px 0 4px}
@@ -63,7 +78,9 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 <script src="common.js"></script>
 <script src="ai.js"></script>
 <script>
-const CH=["ملخص إداري للفترة","قارن إنتاج الأقسام","تحليل الهالك","استهلاك الجليز والألوان","أعلى الأصناف إنتاجًا"];
+// غيّر الاسمين هنا ليظهرا في الصفحة
+const AI_NAME="ماسي",AI_DEV="";
+const CH=["عرّف بنفسك","ملخص إداري للفترة","قارن إنتاج الأقسام","تحليل الهالك","استهلاك الجليز والألوان","أعلى الأصناف إنتاجًا"];
 
 // ---- عرض Markdown بأمان: نهرّب HTML أولاً ثم نحوّل عناصر محدودة فقط ----
 function mdToHtml(src){
@@ -94,6 +111,43 @@ function mdToHtml(src){
 let LAST="";
 function showAns(text){LAST=text||"";ai_ans.innerHTML=mdToHtml(LAST);ai_tools.hidden=!LAST}
 
+
+// ---- الصوت: صوت عربي سعودي من الخادم، وإن تعذّر نستخدم صوت المتصفح ----
+let AUDIO=null,SPK=0;
+function plainForSpeech(md){
+  let t=String(md||"");
+  const m=t.match(/##\s*الخلاصة\s*\n([\s\S]*?)(?=\n##|$)/);
+  if(m)t=m[1];
+  return t.replace(/\|[^\n]*\|/g," ").replace(/[*#>`_-]/g," ").replace(/\s+/g," ").trim().slice(0,600);
+}
+function chunks(t){
+  const parts=t.split(/(?<=[.!؟?،:؛])\s+/),out=[];let cur="";
+  for(const p of parts){if((cur+" "+p).length>180){if(cur)out.push(cur);cur=p.slice(0,180)}else cur=(cur+" "+p).trim()}
+  if(cur)out.push(cur);return out.slice(0,4);
+}
+function stopSpeak(){SPK++;try{AUDIO&&AUDIO.pause()}catch(e){}AUDIO=null;try{speechSynthesis.cancel()}catch(e){}ai_speak.textContent="🔊 استماع";ai_speak.classList.remove("ai-speaking")}
+async function speakText(md){
+  stopSpeak();const my=SPK;const txt=plainForSpeech(md);if(!txt)return;
+  ai_speak.textContent="⏹ إيقاف";ai_speak.classList.add("ai-speaking");
+  const done=()=>{if(my===SPK){ai_speak.textContent="🔊 استماع";ai_speak.classList.remove("ai-speaking")}};
+  let ok=true;
+  for(const c of chunks(txt)){
+    if(my!==SPK)return;
+    const r=await masAi({action:"speak",text:c});
+    if(my!==SPK)return;
+    if(!r.ok||!r.data?.audio){ok=false;break}
+    await new Promise(res=>{const a=new Audio("data:"+r.data.mime+";base64,"+r.data.audio);AUDIO=a;a.onended=res;a.onerror=res;a.play().catch(res)});
+  }
+  if(!ok&&my===SPK&&"speechSynthesis" in window){
+    const u=new SpeechSynthesisUtterance(txt);u.lang="ar-SA";u.rate=.95;
+    const v=speechSynthesis.getVoices().find(x=>/^ar/i.test(x.lang));if(v)u.voice=v;
+    u.onend=done;u.onerror=done;speechSynthesis.speak(u);return;
+  }
+  done();
+}
+const AK="mas_ai_auto_voice";
+function autoOn(){try{return localStorage.getItem(AK)==="1"}catch(e){return false}}
+
 // ---- سجل الأسئلة (على هذا الجهاز فقط، آخر 15) ----
 const HK="mas_ai_hist_v1";
 function getHist(){try{return JSON.parse(localStorage.getItem(HK)||"[]")}catch(e){return[]}}
@@ -113,7 +167,11 @@ function exportCsv(){
 }
 (async()=>{
   if(!await requireAuth("ai.html"))return;
+  ai_name.textContent=ai_name2.textContent=AI_NAME;if(AI_DEV)ai_dev.textContent=" ، طوّرني وأضافني للبرنامج المطوّر "+AI_DEV;
   renderHist();
+  const paintAuto=()=>{ai_auto.setAttribute('aria-pressed',autoOn());ai_auto.textContent=autoOn()?'🔊 تلقائي':'🔈 تلقائي'};paintAuto();
+  ai_auto.onclick=()=>{try{localStorage.setItem(AK,autoOn()?'0':'1')}catch(e){}paintAuto();if(!autoOn())stopSpeak()};
+  ai_speak.onclick=()=>{if(ai_speak.classList.contains('ai-speaking'))stopSpeak();else speakText(LAST)};
   ai_hist.onclick=e=>{const b=e.target.closest("button");if(!b)return;const x=getHist()[+b.dataset.n];if(!x)return;ai_q.value=x.q;ai_out.hidden=false;showAns(x.a);ai_meta.textContent=x.meta||"";window.scrollTo({top:ai_out.offsetTop-60,behavior:"smooth"})};
   ai_hist_clear.onclick=()=>{try{localStorage.removeItem(HK)}catch(e){}renderHist()};
   ai_copy.onclick=async()=>{try{await navigator.clipboard.writeText(LAST);toast("تم النسخ","ok")}catch(e){toast("تعذّر النسخ","bad")}};
@@ -135,6 +193,7 @@ function exportCsv(){
     const meta="الفترة: "+r.data.period.from+" → "+r.data.period.to+" · المحرك: "+(r.data.provider==="gemini"?"Gemini":r.data.provider==="groq"?"Groq":r.data.provider)+(r.data.failover?" (تم التحويل تلقائيًا)":"");
     ai_meta.textContent=meta;
     pushHist({q,a:r.data.answer,meta,t:Date.now()});
+    if(autoOn())speakText(r.data.answer);
   };
 })();
 </script>
