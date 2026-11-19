@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#642631">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="الأقسام">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>المساعد الذكي</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>/* MAS_DESKTOP_LIGHT_MODE: استعادة الوضع النهاري على اللابتوب قبل تحميل التنسيقات */
+try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){document.documentElement.dataset.theme="light";localStorage.setItem("theme","light")}}catch(e){document.documentElement.dataset.theme="light"}</script>
+<link rel="stylesheet" href="theme.css">
+<script>try{if(window.masWin)document.documentElement.classList.add("mas-frameless")}catch(e){}</script>
+<link rel="stylesheet" href="desktop.css">
+</head>
+<body>
+<body>
+<div class="wrap">
+  <h1>المساعد الذكي</h1>
+  <div class="card">
+    <div class="hint">يجيب من بيانات المصنع الفعلية. الأرقام محسوبة داخل قاعدة البيانات، والمساعد للقراءة والتحليل فقط ولا يعدّل أي بيانات.</div>
+    <div id="ai_chips" class="line"></div>
+    <textarea id="ai_q" rows="3" maxlength="1500" placeholder="اسأل عن الإنتاج أو الهالك أو الألوان أو اطلب ملخصًا إداريًا…" style="width:100%"></textarea>
+    <div class="line fe"><label>من <input type="date" id="ai_from"></label><label>إلى <input type="date" id="ai_to"></label>
+      <select id="ai_sec"><option value="">كل الأقسام</option><option value="glaze">الجليز</option><option value="deco">الزخرفة</option><option value="spray">الرش</option><option value="casting">الصب</option><option value="brush">البرشر</option><option value="repair">التصليح</option></select></div>
+    <button class="btn" id="ai_go" type="button">اسأل</button>
+  </div>
+  <div class="card" id="ai_out" hidden><div id="ai_ans" style="white-space:pre-wrap;line-height:1.9"></div><small class="hint" id="ai_meta"></small></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="ai.js"></script>
+<script>
+const CH=["ملخص إداري للفترة","قارن إنتاج الأقسام","تحليل الهالك","استهلاك الجليز والألوان","أعلى الأصناف إنتاجًا"];
+(async()=>{
+  if(!await requireAuth("ai.html"))return;
+  renderNav("ai.html");
+  ai_chips.innerHTML=CH.map(c=>`<button type="button" class="btn ghost sm">${esc(c)}</button>`).join("");
+  ai_chips.onclick=e=>{const b=e.target.closest("button");if(b){ai_q.value=b.textContent;ai_q.focus()}};
+  ai_go.onclick=async()=>{
+    const q=ai_q.value.trim();if(q.length<2){toast("اكتب سؤالك","bad");return}
+    ai_go.disabled=true;ai_go.classList.add("loading");
+    const body={action:"ask",question:q};
+    if(ai_from.value)body.from=ai_from.value;if(ai_to.value)body.to=ai_to.value;if(ai_sec.value)body.sections=[ai_sec.value];
+    const r=await masAi(body);
+    ai_go.disabled=false;ai_go.classList.remove("loading");
+    ai_out.hidden=false;
+    if(!r.ok){ai_ans.textContent=r.msg;ai_meta.textContent="";return}
+    ai_ans.textContent=r.data.answer; // نص فقط: ناتج النموذج لا يُحقن كـ HTML
+    ai_meta.textContent="الفترة: "+r.data.period.from+" → "+r.data.period.to+" · المحرك: "+(r.data.provider==="gemini"?"Gemini":r.data.provider==="groq"?"Groq":r.data.provider)+(r.data.failover?" (تم التحويل تلقائيًا)":"");
+  };
+})();
+</script>
+</body>
+</html>

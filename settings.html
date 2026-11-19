@@ -168,6 +168,24 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
       <div class="sethead"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><h3>منطقة الخطر</h3></div>
       <div class="alist"><button class="arow danger" id="s_rst" type="button"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></i><span class="at"><b>إعادة ضبط الإعدادات</b><small>الرجوع للإعدادات الافتراضية (مش بتمسح بيانات الإنتاج)</small></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button></div>
     </div>
+
+    <div class="card" id="ai_card" hidden>
+      <div class="sethead"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4M9 12h.01M15 12h.01M9 16h6"/></svg><h3>المساعد الذكي (MAS AI HUB)</h3></div>
+      <div class="hint">المفاتيح تُحفظ في Supabase Secrets على الخادم ولا تظهر هنا أبدًا. <a href="ai.html">فتح المساعد</a></div>
+      <small class="hint" id="ai_state"></small>
+      <label class="line fe"><span>تفعيل المساعد</span><input type="checkbox" id="ai_en"></label>
+      <label class="line fe"><span>المحرك الأساسي</span><select id="ai_pri"></select></label>
+      <label class="line fe"><span>المحرك الاحتياطي</span><select id="ai_fb"></select></label>
+      <label class="line fe"><span>التحويل التلقائي عند الأعطال المؤقتة</span><input type="checkbox" id="ai_auto"></label>
+      <label class="line fe"><span>مهلة الطلب (ثوانٍ)</span><input type="number" id="ai_to" min="3" max="60" style="width:80px"></label>
+      <label class="line fe"><span>حد يومي لكل مستخدم</span><input type="number" id="ai_lu" min="1" style="width:80px"></label>
+      <label class="line fe"><span>حد يومي إجمالي</span><input type="number" id="ai_lt" min="1" style="width:80px"></label>
+      <div class="line fe"><button class="btn" id="ai_save" type="button">حفظ</button><button class="btn ghost" id="ai_refresh" type="button">تحديث</button></div>
+      <h4>حالة المحركات</h4><div id="ai_eng"></div>
+      <h4>سجل الاستخدام</h4><div id="ai_ul"></div>
+      <h4>سجل الأخطاء</h4><div id="ai_el"></div>
+      <h4>سجل التحويلات</h4><div id="ai_fl"></div>
+    </div>
   </section>
 
   <!-- ============ 5) البرنامج ============ -->
@@ -193,6 +211,8 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
+<script src="ai.js"></script>
+<script src="ai-settings.js"></script>
 <script>
 const seg=(id,opts,cur,fn)=>{
   const el=document.getElementById(id);
@@ -405,7 +425,7 @@ function bkInit(){
 }
 (async()=>{
   if(await requireAuth("settings.html")){
-    renderNav("settings.html");bkInit();drawFonts();drawHero();netNow();drawPush();s_dev.textContent=matchMedia("(display-mode: standalone)").matches||navigator.standalone?"تطبيق مثبّت":"متصفح";
+    renderNav("settings.html");bkInit();aiSettingsInit();drawFonts();drawHero();netNow();drawPush();s_dev.textContent=matchMedia("(display-mode: standalone)").matches||navigator.standalone?"تطبيق مثبّت":"متصفح";
     s_ver.textContent="v"+APP_VERSION;
     try{const u=sessionStorage.getItem("upd_done");if(u){sessionStorage.removeItem("upd_done");const[l,o]=u.split("|");setTimeout(()=>toast(l===APP_VERSION?(l===o?"أنت على آخر إصدار":"تم التحديث إلى v"+l):"النسخة الجديدة v"+l+" لسه ما وصلتش، جرّب بعد دقيقة"),700)}}catch(e){}
     s_bld.textContent=new Date(APP_BUILD+"T00:00:00").toLocaleDateString("ar-EG",{day:"numeric",month:"long",year:"numeric"});
@@ -418,7 +438,5 @@ function bkInit(){
 </script>
 <script src="install.js" defer></script>
 <script src="desktop.js" defer></script>
-
-<script src="mas-ai.js"></script>
 </body>
 </html>
