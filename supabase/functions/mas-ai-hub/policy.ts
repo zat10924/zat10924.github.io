@@ -27,7 +27,7 @@ export function classifyHttp(status: number): ErrorClass {
 
 // التحويل مسموح فقط للأخطاء المؤقتة/المهلة/حد الطلبات.
 export function shouldFailover(cls: ErrorClass): boolean {
-  return cls === "transient" || cls === "timeout" || cls === "rate_limit";
+  return cls === "transient" || cls === "timeout" || cls === "rate_limit" || cls === "bad_request" || cls === "empty";
 }
 
 export const TASKS = ["production", "waste", "colors", "orders", "inventory", "compare", "summary", "general"] as const;
