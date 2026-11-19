@@ -270,7 +270,19 @@ async function requireAuth(file){
     ["t-done","o-closed"].forEach(i=>{const b=document.getElementById(i);if(b)b.style.display="none"});
     if(location.hash==="#done")history.replaceState(null,"",location.pathname+location.search);
   }
+  try{masAiMount()}catch(e){}
   return session;
+}
+/* المساعد العائم: بيتحمّل مرة واحدة بعد الدخول، لمن يملك صلاحية التقارير فقط (نفس شرط الخادم) */
+function masAiMount(){
+  if(window.__masAiMounting||!ME||!ME.role||ME.active===false)return;
+  if(!(ME.role==="admin"||ME.role==="owner"||(ME.role==="manager"&&canReports())))return;
+  window.__masAiMounting=1;
+  const load=src=>new Promise(res=>{const s=document.createElement("script");s.src=src;s.onload=s.onerror=()=>res();document.body.appendChild(s)});
+  (async()=>{
+    if(typeof masAi!=="function")await load("ai.js");
+    await load("ai-print.js");await load("mas-ai-core.js");await load("mas-ai.js");
+  })();
 }
 const SUBS={
  "glaze.html":[["الطلبيات المفتوحة","open"],["الطلبيات المكتملة","done"],["الهالك","rep"],["تقارير القسم","prod"]],

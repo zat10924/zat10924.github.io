@@ -8,7 +8,7 @@ const URL_ = Deno.env.get("SUPABASE_URL")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!; // يُحقن تلقائياً في الخادم فقط
 const ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-const ALLOWED_ROLES = ["admin", "owner"]; // للتوسيع لاحقاً أضف "manager" هنا وفي canSee بـ common.js
+const ALLOWED_ROLES = ["admin", "owner", "manager"]; // manager: فقط مع view_all (نفس canReports في الواجهة)
 
 function cors(req: Request) {
   const o = req.headers.get("origin") ?? "";
@@ -38,6 +38,10 @@ Deno.serve(async (req) => {
   // 2) الصلاحية
   const { data: prof } = await admin.from("profiles").select("role,active").eq("id", uid).maybeSingle();
   if (!prof || prof.active === false || !ALLOWED_ROLES.includes(prof.role)) return json(req, { error: "forbidden" }, 403);
+  if (prof.role === "manager") { // مسؤول القسم: لازم صلاحية التقارير. أي خطأ في القراءة = رفض
+    const { data: pm, error: pe } = await admin.from("profiles").select("view_all").eq("id", uid).maybeSingle();
+    if (pe || pm?.view_all !== true) return json(req, { error: "forbidden", message: "صلاحية التقارير مطلوبة لاستخدام المساعد." }, 403);
+  }
   const isAdmin = prof.role === "admin";
 
   let body: any;

@@ -70,13 +70,13 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
   .ai-md th{background:#642631;color:#fff}
   .ai-md tr:nth-child(even) td{background:var(--soft,#f7f2f4)}
   #ai_hist button{display:block;width:100%;text-align:right;background:none;border:0;border-bottom:1px dashed var(--line,#e5dce0);padding:9px 0;font:inherit;color:inherit;cursor:pointer}
-  @media print{body *{visibility:hidden}#ai_out,#ai_out *{visibility:visible}#ai_out{position:absolute;inset:0 auto auto 0;width:100%}#ai_tools{display:none}}
   </style>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
 <script src="ai.js"></script>
+<script src="ai-print.js"></script>
 <script>
 const CH=["عرّف بنفسك","ملخص إداري للفترة","قارن إنتاج الأقسام","تحليل الهالك","استهلاك الجليز والألوان","أعلى الأصناف إنتاجًا"];
 
@@ -106,7 +106,7 @@ function mdToHtml(src){
   }
   closeList();return out;
 }
-let LAST="";
+let LAST="",LASTCTX={};
 function showAns(text){LAST=text||"";ai_ans.innerHTML=mdToHtml(LAST);ai_tools.hidden=!LAST}
 
 
@@ -169,10 +169,10 @@ function exportCsv(){
   const paintAuto=()=>{ai_auto.setAttribute('aria-pressed',autoOn());ai_auto.textContent=autoOn()?'🔊 تلقائي':'🔈 تلقائي'};paintAuto();
   ai_auto.onclick=()=>{try{localStorage.setItem(AK,autoOn()?'0':'1')}catch(e){}paintAuto();if(!autoOn())stopSpeak()};
   ai_speak.onclick=()=>{if(ai_speak.classList.contains('ai-speaking'))stopSpeak();else speakText(LAST)};
-  ai_hist.onclick=e=>{const b=e.target.closest("button");if(!b)return;const x=getHist()[+b.dataset.n];if(!x)return;ai_q.value=x.q;ai_out.hidden=false;showAns(x.a);ai_meta.textContent=x.meta||"";window.scrollTo({top:ai_out.offsetTop-60,behavior:"smooth"})};
+  ai_hist.onclick=e=>{const b=e.target.closest("button");if(!b)return;const x=getHist()[+b.dataset.n];if(!x)return;LASTCTX=x.ctx||{q:x.q};ai_q.value=x.q;ai_out.hidden=false;showAns(x.a);ai_meta.textContent=x.meta||"";window.scrollTo({top:ai_out.offsetTop-60,behavior:"smooth"})};
   ai_hist_clear.onclick=()=>{try{localStorage.removeItem(HK)}catch(e){}renderHist()};
   ai_copy.onclick=async()=>{try{await navigator.clipboard.writeText(LAST);toast("تم النسخ","ok")}catch(e){toast("تعذّر النسخ","bad")}};
-  ai_pdf.onclick=()=>window.print();
+  ai_pdf.onclick=()=>AiPrint.print({md:LAST,question:LASTCTX.q||ai_q.value.trim(),period:LASTCTX.period,section:LASTCTX.section,title:"تقرير الذكاء الاصطناعي"});
   ai_csv.onclick=exportCsv;
   renderNav("ai.html");
   ai_chips.innerHTML=CH.map(c=>`<button type="button" class="btn ghost sm">${esc(c)}</button>`).join("");
@@ -189,7 +189,7 @@ function exportCsv(){
     showAns(r.data.answer);
     const meta="الفترة: "+r.data.period.from+" → "+r.data.period.to+" · المحرك: "+(r.data.provider==="gemini"?"Gemini":r.data.provider==="groq"?"Groq":r.data.provider)+(r.data.failover?" (تم التحويل تلقائيًا)":"");
     ai_meta.textContent=meta;
-    pushHist({q,a:r.data.answer,meta,t:Date.now()});
+    LASTCTX={q,period:r.data.period,section:ai_sec.value||""};pushHist({q,a:r.data.answer,meta,t:Date.now(),ctx:LASTCTX});
     if(autoOn())speakText(r.data.answer);
   };
 })();
