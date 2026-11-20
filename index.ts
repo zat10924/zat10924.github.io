@@ -1,6 +1,6 @@
 // mas-ai-hub — بوابة الذكاء الاصطناعي لـ MAS. المفاتيح من Secrets فقط، والبيانات بصلاحية المستخدم (RLS).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { buildPrompt, buildSsml, clampRate, detectTask, safeVoice, SYSTEM_PROMPT, validateAsk } from "./policy.ts";
+import { buildPrompt, buildSsml, clampRate, detectTask, safeVoice, SECTIONS, SYSTEM_PROMPT, validateAsk } from "./policy.ts";
 import { keyFor, REGISTRY } from "./providers.ts";
 import { runChain } from "./orchestrator.ts";
 
@@ -112,6 +112,48 @@ Deno.serve(async (req) => {
     } catch (_) {
       return json(req, { error: "tts_failed", message: "تعذّر توليد الصوت." }, 503);
     } finally { clearTimeout(to); }
+  }
+
+
+  // ---- تعبئة بيانات: استخراج منظّم من نص أو صورة. لا يكتب في قاعدة البيانات؛ المستخدم يراجع ويحفظ بنفسه ----
+  if (action === "extract" || action === "vision") {
+    if (!s.enabled) return json(req, { error: "disabled", message: "المساعد الذكي موقوف من الإعدادات." }, 503);
+    const text = typeof body?.text === "string" ? body.text.trim().slice(0, 4000) : "";
+    const img = typeof body?.image === "string" ? body.image : "";
+    const mime = String(body?.mime ?? "image/jpeg");
+    if (!text && !img) return json(req, { error: "bad_request", message: "أرسل نصًا أو صورة." }, 400);
+    if (img && (!/^image\/(jpeg|png|webp)$/.test(mime) || img.length > 3_500_000 || !/^[A-Za-z0-9+/=]+$/.test(img.slice(0, 2000))))
+      return json(req, { error: "bad_request", message: "الصورة غير مدعومة أو كبيرة جدًا." }, 400);
+    const since2 = cairoToday() + "T00:00:00+02:00";
+    const { count: used } = await admin.from("ai_usage_log").select("id", { count: "exact", head: true })
+      .eq("user_id", uid).eq("status", "ok").neq("task", "test").neq("task", "tts").gte("created_at", since2);
+    if ((used ?? 0) >= s.daily_limit_user) return json(req, { error: "quota", message: "تم بلوغ حد الاستخدام اليومي." }, 429);
+    const hint = SECTIONS.includes(body?.hint) ? body.hint : "";
+    const sys = "أنت أداة استخراج بيانات لمصنع خزف. استخرج فقط ما هو مكتوب صراحةً في المدخل. ممنوع التخمين أو اختراع أي اسم أو رقم؛ ما لم يتضح اجعله null. أعد JSON فقط بهذا الشكل: " +
+      '{"section":"casting|brush|glaze|deco|spray|repair|finish|fire|unknown","date":"YYYY-MM-DD أو null","confidence":"high|medium|low","notes":"ملاحظات عن الغموض أو الأرقام غير الواضحة","rows":[{"item":"اسم الصنف","qty":رقم_صحيح_أو_null,"scrap":رقم_صحيح_أو_null,"worker":"اسم العامل أو null","shift":"الوردية أو null","note":"ملاحظة أو null"}]}';
+    const prompt = (hint ? "القسم المرجّح: " + hint + "\n" : "") + "تاريخ اليوم: " + cairoToday() + "\n" + (text ? "النص:\n" + text : "الصورة المرفقة تحتوي سجل إنتاج. استخرج سطوره.");
+    const chain = img ? [REGISTRY.gemini] : [REGISTRY[s.primary_provider], ...(s.auto_failover && s.fallback_provider ? [REGISTRY[s.fallback_provider]] : [])].filter(Boolean);
+    const t0 = Date.now();
+    const r = await runChain(chain, { system: sys, prompt, timeoutMs: Math.max(s.timeout_ms, 25000), json: true, image: img ? { mime, data: img } : undefined }, hooks);
+    const ms = Date.now() - t0;
+    if (!r.ok) {
+      await log("ai_usage_log", { task: "extract", provider: r.provider, status: "error", latency_ms: ms });
+      return json(req, { error: r.error.cls, message: "تعذّر استخراج البيانات الآن، حاول بعد قليل." }, 503);
+    }
+    let j: any; try { j = JSON.parse(r.text.replace(/^```json|```$/g, "").trim()); } catch { j = null; }
+    const int = (v: unknown) => { const n = Number(v); return v == null || v === "" || !Number.isFinite(n) ? null : Math.min(1_000_000, Math.max(0, Math.round(n))); };
+    const str = (v: unknown, n: number) => { const t = typeof v === "string" ? v.trim().slice(0, n) : ""; return t || null; };
+    const rows = (Array.isArray(j?.rows) ? j.rows : []).slice(0, 60).map((x: any) => ({
+      item: str(x?.item, 80), qty: int(x?.qty), scrap: int(x?.scrap), worker: str(x?.worker, 60), shift: str(x?.shift, 30), note: str(x?.note, 120),
+    })).filter((x: any) => x.item || x.qty !== null || x.scrap !== null);
+    const vision = {
+      section: (SECTIONS as readonly string[]).includes(j?.section) ? j.section : "unknown",
+      date: /^\d{4}-\d{2}-\d{2}$/.test(String(j?.date ?? "")) ? j.date : null,
+      confidence: ["high", "medium", "low"].includes(j?.confidence) ? j.confidence : "low",
+      notes: str(j?.notes, 300) ?? "", rows,
+    };
+    await log("ai_usage_log", { task: "extract", provider: r.provider, model: r.model, status: "ok", latency_ms: ms, response_chars: r.text.length, failover: r.failover });
+    return json(req, { vision, provider: r.provider, failover: r.failover });
   }
 
   if (action !== "ask") return json(req, { error: "unknown_action" }, 400);

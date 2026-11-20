@@ -36,21 +36,20 @@
   #masai-orb *,#masai-panel *{box-sizing:border-box}
   #masai-orb{position:fixed;z-index:9900;width:62px;height:62px;border-radius:50%;border:0;padding:0;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;
     background:radial-gradient(circle at 32% 26%,#ffffffb0 0,#ffffff00 30%),radial-gradient(circle at 50% 58%,#c85a74 0,#7a2a3c 56%,#35131e 100%);
-    box-shadow:0 12px 26px #2510188c,inset -7px -9px 15px #1a0a1099,inset 6px 7px 12px #ffffff38;color:#fff;display:grid;place-items:center;animation:masai-float 4.5s ease-in-out infinite}
+    box-shadow:0 12px 26px #2510188c,inset -7px -9px 15px #1a0a1099,inset 6px 7px 12px #ffffff38;color:#fff;display:grid;place-items:center;animation:masai-float 7s ease-in-out infinite;will-change:transform}
   #masai-orb svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 2px #0006);position:relative;z-index:2}
   #masai-orb::before{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid transparent;pointer-events:none}
   #masai-orb.drag{cursor:grabbing;animation:none;transform:scale(1.06)}
   #masai-orb.st-listening{animation:masai-listen 1.1s ease-out infinite}
   #masai-orb.st-thinking::before{border-top-color:#d9b86a;border-right-color:#d9b86a66;animation:masai-spin 1s linear infinite}
-  #masai-orb.st-error{background:radial-gradient(circle at 32% 26%,#ffffffa0 0,#fff0 30%),radial-gradient(circle at 50% 58%,#e5534b 0,#8e2420 60%,#3d0f0d 100%);animation:masai-shake .5s}
+  #masai-orb.st-error{background:radial-gradient(circle at 32% 26%,#ffffffa0 0,#fff0 30%),radial-gradient(circle at 50% 58%,#e5534b 0,#8e2420 60%,#3d0f0d 100%)}
   #masai-orb.st-done{box-shadow:0 12px 26px #2510188c,0 0 0 6px #46d48344,inset -7px -9px 15px #1a0a1099,inset 6px 7px 12px #ffffff38}
   #masai-orb .dot{position:absolute;top:2px;right:2px;width:13px;height:13px;border-radius:50%;background:#46d483;border:2px solid #fff;z-index:3;display:none}
   #masai-orb.unread .dot{display:block}
-  @keyframes masai-float{50%{transform:translateY(-4px)}}
+  @keyframes masai-float{50%{transform:translateY(-3px)}}
   @keyframes masai-listen{0%{box-shadow:0 12px 26px #2510188c,0 0 0 0 #d9b86aaa}100%{box-shadow:0 12px 26px #2510188c,0 0 0 20px #d9b86a00}}
   @keyframes masai-spin{to{transform:rotate(360deg)}}
   @keyframes masai-talk{50%{transform:scale(1.09)}}
-  @keyframes masai-shake{20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
   #masai-panel{position:fixed;z-index:9901;display:none;flex-direction:column;overflow:hidden;direction:rtl;background:var(--card,#fffdfb);color:var(--txt,#241d20);
     border:1px solid #d9b86a55;border-radius:22px;box-shadow:0 24px 70px #180b1266,0 0 0 1px #ffffff55 inset;width:410px;height:620px;max-width:calc(100vw - 16px)}
   #masai-panel.open{display:flex;animation:masai-in .22s ease-out}

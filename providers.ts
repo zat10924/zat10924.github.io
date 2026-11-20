@@ -1,7 +1,7 @@
 // طبقة موحدة للمزودين. لإضافة مزود جديد: انظر docs/AI_HUB_ADD_PROVIDER_AR.md
 import { classifyHttp, ProviderError } from "./policy.ts";
 
-export interface CallOpts { system: string; prompt: string; timeoutMs: number; }
+export interface CallOpts { system: string; prompt: string; timeoutMs: number; image?: { mime: string; data: string }; json?: boolean; }
 export interface CallResult { text: string; model: string; }
 export interface Provider {
   id: string;            // معرّف يُخزَّن في ai_settings
@@ -31,7 +31,9 @@ export const gemini: Provider = {
     const model = Deno_env("GEMINI_MODEL") || "gemini-flash-latest";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     const r = await post(url, { "X-goog-api-key": key },
-      { systemInstruction: { parts: [{ text: o.system }] }, contents: [{ parts: [{ text: o.prompt }] }] }, o.timeoutMs, f);
+      { systemInstruction: { parts: [{ text: o.system }] },
+        contents: [{ parts: [{ text: o.prompt }, ...(o.image ? [{ inlineData: { mimeType: o.image.mime, data: o.image.data } }] : [])] }],
+        ...(o.json ? { generationConfig: { responseMimeType: "application/json", temperature: 0 } } : {}) }, o.timeoutMs, f);
     if (!r.ok) throw new ProviderError(classifyHttp(r.status), r.status, await errMsg(r));
     const j = await r.json();
     if (j?.promptFeedback?.blockReason) throw new ProviderError("safety", 200, "blocked: " + j.promptFeedback.blockReason);
@@ -48,7 +50,7 @@ export const groq: Provider = {
   async call(key, o, f = fetch) {
     const model = Deno_env("GROQ_MODEL")?.trim() || "llama-3.3-70b-versatile";
     const r = await post("https://api.groq.com/openai/v1/chat/completions", { Authorization: `Bearer ${key}` },
-      { model, temperature: 0.2, max_completion_tokens: 1500, messages: [{ role: "system", content: o.system }, { role: "user", content: o.prompt }] }, o.timeoutMs, f);
+      { model, temperature: 0.2, max_completion_tokens: 1500, ...(o.json ? { response_format: { type: "json_object" } } : {}), messages: [{ role: "system", content: o.system }, { role: "user", content: o.prompt }] }, o.timeoutMs, f);
     if (!r.ok) throw new ProviderError(classifyHttp(r.status), r.status, await errMsg(r));
     const j = await r.json();
     const text = String(j?.choices?.[0]?.message?.content ?? "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
