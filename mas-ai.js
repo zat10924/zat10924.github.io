@@ -15,8 +15,24 @@
   const put = (k, v) => { try { localStorage.setItem(K(k), JSON.stringify(v)); } catch (e) {} };
   const cfg = Object.assign({ open: false, full: false, pos: null }, get("cfg", {}));
   const saveCfg = () => put("cfg", cfg);
-  let hist = get("hist", []);
-  const saveHist = () => put("hist", hist.slice(-40));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const NEWT = "محادثة جديدة", IMGT = "صورة مرفقة"; // IMGT: تُعرض بأيقونة كاميرا بدل الإيموجي
+  const titleOf = ms => { const u = (ms || []).find(m => m.r === "u" && m.t && m.t !== IMGT && m.t !== "📷 صورة"); return u ? String(u.t).replace(/\s+/g, " ").slice(0, 46) : NEWT; };
+  let convs = get("convs", null);
+  if (!Array.isArray(convs)) { const old = get("hist", []); convs = old.length ? [{ id: uid(), title: "", ts: old[old.length - 1].ts || Date.now(), msgs: old }] : []; } // ترحيل السجل القديم لمحادثة واحدة
+  convs = convs.filter(c => c && c.id && Array.isArray(c.msgs));
+  convs.forEach(c => { c.ts = c.ts || Date.now(); c.title = c.title && c.title !== NEWT ? c.title : titleOf(c.msgs); });
+  let curId = get("cur", null);
+  if (!convs.some(c => c.id === curId)) curId = convs.length ? convs.slice().sort((a, b) => b.ts - a.ts)[0].id : null;
+  let hist = curId ? convs.find(c => c.id === curId).msgs : [];
+  const saveHist = () => {
+    let list = convs.map(c => ({ id: c.id, title: c.title, ts: c.ts, msgs: c.msgs.slice(-50) }));
+    for (let n = 0; n < 6; n++) {
+      try { localStorage.setItem(K("convs"), JSON.stringify(list)); put("cur", curId); try { localStorage.removeItem(K("hist")); } catch (e) {} return; }
+      catch (e) { const o = list.filter(c => c.id !== curId).sort((a, b) => a.ts - b.ts)[0]; if (!o) return; list = list.filter(c => c !== o); } // الذاكرة ممتلئة: نحذف أقدم محادثة
+    }
+  };
+  if (convs.length && get("convs", null) === null) saveHist(); // تثبيت الترحيل من السجل القديم فورًا
 
   /* ---------- أيقونات ---------- */
   const IC = {
@@ -26,9 +42,14 @@
     min: '<path d="M5 12h14"/>', full: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
     snd: '<path d="M4 9v6h4l5 4V5L8 9H4zM16 9a4 4 0 0 1 0 6"/>', mute: '<path d="M4 9v6h4l5 4V5L8 9H4zM17 9l4 6M21 9l-4 6"/>',
     cam: '<path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/>',
-    trash: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>', pause: '<path d="M8 5v14M16 5v14"/>', play: '<path d="M7 4l12 8-12 8V4z"/>', stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+    trash: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', warn: '<path d="M12 4l9 16H3L12 4zM12 10v4M12 17.5v.01"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>', list: '<path d="M5 7h14M5 12h14M5 17h14"/>', search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
+    copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>', redo: '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/>',
+    up: '<path d="M7 11v9H4v-9h3zM7 11l4-7c1.6 0 2.6 1 2.3 2.6L12.7 9H19a2 2 0 0 1 2 2.3l-1 6A2 2 0 0 1 18 19H7"/>',
+    down: '<g transform="rotate(180 12 12)"><path d="M7 11v9H4v-9h3zM7 11l4-7c1.6 0 2.6 1 2.3 2.6L12.7 9H19a2 2 0 0 1 2 2.3l-1 6A2 2 0 0 1 18 19H7"/></g>', pause: '<path d="M8 5v14M16 5v14"/>', play: '<path d="M7 4l12 8-12 8V4z"/>', stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
   };
-  const ic = k => `<svg viewBox="0 0 24 24" aria-hidden="true">${IC[k]}</svg>`;
+  const ic = (k, c) => `<svg viewBox="0 0 24 24" aria-hidden="true"${c ? ` class="${c}"` : ""}>${IC[k]}</svg>`;
 
   /* ---------- تنسيق ---------- */
   const css = `
@@ -36,20 +57,21 @@
   #masai-orb *,#masai-panel *{box-sizing:border-box}
   #masai-orb{position:fixed;z-index:9900;width:62px;height:62px;border-radius:50%;border:0;padding:0;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;
     background:radial-gradient(circle at 32% 26%,#ffffffb0 0,#ffffff00 30%),radial-gradient(circle at 50% 58%,#c85a74 0,#7a2a3c 56%,#35131e 100%);
-    box-shadow:0 12px 26px #2510188c,inset -7px -9px 15px #1a0a1099,inset 6px 7px 12px #ffffff38;color:#fff;display:grid;place-items:center;animation:masai-float 7s ease-in-out infinite;will-change:transform}
+    box-shadow:0 12px 26px #2510188c,inset -7px -9px 15px #1a0a1099,inset 6px 7px 12px #ffffff38;color:#fff;display:grid;place-items:center;animation:masai-float 4.5s ease-in-out infinite}
   #masai-orb svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 2px #0006);position:relative;z-index:2}
   #masai-orb::before{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid transparent;pointer-events:none}
   #masai-orb.drag{cursor:grabbing;animation:none;transform:scale(1.06)}
   #masai-orb.st-listening{animation:masai-listen 1.1s ease-out infinite}
   #masai-orb.st-thinking::before{border-top-color:#d9b86a;border-right-color:#d9b86a66;animation:masai-spin 1s linear infinite}
-  #masai-orb.st-error{background:radial-gradient(circle at 32% 26%,#ffffffa0 0,#fff0 30%),radial-gradient(circle at 50% 58%,#e5534b 0,#8e2420 60%,#3d0f0d 100%)}
+  #masai-orb.st-error{background:radial-gradient(circle at 32% 26%,#ffffffa0 0,#fff0 30%),radial-gradient(circle at 50% 58%,#e5534b 0,#8e2420 60%,#3d0f0d 100%);animation:masai-shake .5s}
   #masai-orb.st-done{box-shadow:0 12px 26px #2510188c,0 0 0 6px #46d48344,inset -7px -9px 15px #1a0a1099,inset 6px 7px 12px #ffffff38}
   #masai-orb .dot{position:absolute;top:2px;right:2px;width:13px;height:13px;border-radius:50%;background:#46d483;border:2px solid #fff;z-index:3;display:none}
   #masai-orb.unread .dot{display:block}
-  @keyframes masai-float{50%{transform:translateY(-3px)}}
+  @keyframes masai-float{50%{transform:translateY(-4px)}}
   @keyframes masai-listen{0%{box-shadow:0 12px 26px #2510188c,0 0 0 0 #d9b86aaa}100%{box-shadow:0 12px 26px #2510188c,0 0 0 20px #d9b86a00}}
   @keyframes masai-spin{to{transform:rotate(360deg)}}
   @keyframes masai-talk{50%{transform:scale(1.09)}}
+  @keyframes masai-shake{20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
   #masai-panel{position:fixed;z-index:9901;display:none;flex-direction:column;overflow:hidden;direction:rtl;background:var(--card,#fffdfb);color:var(--txt,#241d20);
     border:1px solid #d9b86a55;border-radius:22px;box-shadow:0 24px 70px #180b1266,0 0 0 1px #ffffff55 inset;width:410px;height:620px;max-width:calc(100vw - 16px)}
   #masai-panel.open{display:flex;animation:masai-in .22s ease-out}
@@ -119,6 +141,36 @@
   #masai-tray .ta{display:flex;gap:6px}#masai-tray button{flex:1;border:0;border-radius:10px;padding:9px 6px;font:inherit;font-size:12.5px;cursor:pointer;background:#ffffff1f;color:#fff}
   #masai-tray button.p{background:#d9b86a;color:#2b0f18;font-weight:700}
   @media(max-width:600px){#masai-panel{width:auto;left:8px;right:8px;border-radius:20px}}
+  #masai-panel .acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+  #masai-panel .ab{width:36px;height:36px;border:1px solid var(--line,#e2d6da);border-radius:11px;background:var(--soft,#f4ecef);color:#6e2735;display:grid;place-items:center;cursor:pointer;padding:0}
+  #masai-panel .ab svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  #masai-panel .ab.on{background:#6e2735;color:#fff;border-color:#6e2735}
+  #masai-panel .ab[hidden]{display:none}
+  #masai-panel .acts .prt{margin-top:0;padding:7px 12px}
+  #masai-panel .snd.stp{background:linear-gradient(135deg,#c0392b,#8e2420)}
+  #masai-panel .dr-wrap{display:none;flex:1;flex-direction:column;min-height:0;background:var(--bg,#faf6f3)}
+  #masai-panel.dr .dr-wrap{display:flex}
+  #masai-panel.dr .m,#masai-panel.dr .chips,#masai-panel.dr form{display:none}
+  #masai-panel .dr-top{display:flex;gap:8px;padding:10px;border-bottom:1px solid var(--line,#eadfe3);background:var(--card,#fff)}
+  #masai-panel .dr-s{flex:1;display:flex;align-items:center;gap:6px;border:1px solid var(--line,#ddd);border-radius:12px;padding:0 10px;background:var(--bg,#faf6f3);min-width:0}
+  #masai-panel .dr-s svg{width:17px;height:17px;flex:none;fill:none;stroke:#8a7f84;stroke-width:1.8;stroke-linecap:round}
+  #masai-panel .dr-s input{flex:1;min-width:0;border:0;background:none;color:inherit;font:inherit;font-size:14px;padding:11px 0;outline:none}
+  #masai-panel .dr-new{flex:none;display:flex;align-items:center;gap:6px;border:0;border-radius:12px;padding:0 12px;background:linear-gradient(135deg,#7c2d3d,#52202c);color:#fff;font:inherit;font-size:12.5px;cursor:pointer}
+  #masai-panel .dr-new svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+  #masai-panel .dr-l{flex:1;overflow:auto;padding:8px 10px;display:flex;flex-direction:column;gap:7px;overscroll-behavior:contain}
+  #masai-panel .dr-e{text-align:center;color:var(--muted,#8a7f84);font-size:13px;padding:28px 8px}
+  #masai-panel .ci{display:flex;gap:6px;align-items:stretch}
+  #masai-panel .co{flex:1;min-width:0;text-align:right;border:1px solid var(--line,#eadfe3);border-radius:13px;background:var(--card,#fff);color:inherit;font:inherit;padding:9px 12px;cursor:pointer}
+  #masai-panel .ci.on .co{border-color:#c9a24f;box-shadow:0 0 0 2px #c9a24f33}
+  #masai-panel .co b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #masai-panel .co small{display:block;font-size:11px;color:var(--muted,#8a7f84);margin-top:2px}
+  #masai-panel .cd{width:42px;flex:none;border:1px solid var(--line,#eadfe3);border-radius:13px;background:#fde3e1;color:#a12a22;display:grid;place-items:center;cursor:pointer;padding:0}
+  #masai-panel .cd svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  #masai-panel .i,#masai-tray .i{width:1.15em;height:1.15em;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em;flex:none}
+  #masai-panel .hero b .i{color:#d9b86a;width:1.2em;height:1.2em;margin-inline-end:4px}
+  #masai-panel .chip .i{vertical-align:-.25em;margin-inline-end:3px}
+  #masai-panel .imp-r .x{display:grid;place-items:center;padding:0}
+  #masai-panel .b.user .i{margin-inline-end:4px}
   #masai-panel.full{inset:10px!important;width:auto!important;height:auto!important;max-width:none}
   @media(prefers-reduced-motion:reduce){#masai-orb,#masai-orb::before,#masai-panel *{animation:none!important}}
   `;
@@ -132,11 +184,13 @@
   panel.id = "masai-panel"; panel.setAttribute("role", "dialog"); panel.setAttribute("aria-label", "المساعد ماسي");
   panel.innerHTML = `
     <header class="h"><div class="av">${ic("spark")}<i></i></div><div class="t"><b>ماسي</b><small id="mai-sub">مساعد المصنع الذكي</small></div>
-      <button class="ib" id="mai-clr" type="button" aria-label="مسح المحادثة">${ic("trash")}</button>
+      <button class="ib" id="mai-new" type="button" aria-label="محادثة جديدة">${ic("plus")}</button>
+      <button class="ib" id="mai-list" type="button" aria-label="المحادثات السابقة">${ic("list")}</button>
       <button class="ib" id="mai-full" type="button" aria-label="حجم كامل">${ic("full")}</button>
       <button class="ib" id="mai-min" type="button" aria-label="تصغير">${ic("min")}</button></header>
     <div class="m" id="mai-msgs" aria-live="polite"></div>
-    <div class="chips" id="mai-chips"><button class="chip cam" type="button" data-cam="1">📷 اقرأ صورة</button>
+    <div class="dr-wrap" id="mai-drawer"><div class="dr-top"><label class="dr-s">${ic("search")}<input id="mai-q" type="search" placeholder="ابحث في المحادثات…" aria-label="بحث في المحادثات" autocomplete="off"></label><button type="button" class="dr-new" id="mai-new2">${ic("plus")}<span>جديدة</span></button></div><div class="dr-l" id="mai-convs"></div></div>
+    <div class="chips" id="mai-chips"><button class="chip cam" type="button" data-cam="1">${ic("cam", "i")} اقرأ صورة</button>
       <button class="chip" type="button" data-q="ملخص إنتاج النهارده">ملخص النهارده</button>
       <button class="chip" type="button" data-q="أعلى نسب الهالك الشهر ده">أعلى هالك</button>
       <button class="chip" type="button" data-q="قارن بين الأقسام الشهر ده">قارن الأقسام</button></div>
@@ -171,8 +225,10 @@
   const scroll = () => { msgs.scrollTop = msgs.scrollHeight; };
   function bubble(who, text, o = {}) {
     const d = document.createElement("div"); d.className = "b " + who;
-    if (who === "bot" && !o.plain) d.innerHTML = md(text); else d.textContent = text;
+    if (who === "user" && (text === IMGT || text === "📷 صورة")) d.innerHTML = ic("cam", "i") + " " + IMGT;
+    else if (who === "bot" && !o.plain) d.innerHTML = md(text); else d.textContent = text;
     if (o.meta) { const s = document.createElement("small"); s.className = "meta"; s.textContent = o.meta; d.appendChild(s); }
+    if (o.rec && o.rec.c) addActions(d, o.rec);
     if (o.ctx) addPrint(d, text, o.ctx);
     msgs.appendChild(d); scroll(); return d;
   }
@@ -180,9 +236,48 @@
     if (!window.AiPrint || d.querySelector(".prt")) return;
     const b = document.createElement("button"); b.type = "button"; b.className = "retry prt"; b.textContent = "طباعة / PDF";
     b.onclick = () => AiPrint.print({ md: text, question: ctx.q, period: ctx.period, section: ctx.section });
-    d.appendChild(b);
+    (d.querySelector(".acts") || d).appendChild(b);
   }
-  function remember(who, text, meta, ctx) { hist.push({ r: who, t: String(text).slice(0, 6000), m: meta || "", c: ctx || null, ts: Date.now() }); saveHist(); }
+  function copyText(t) {
+    const ok = () => toast("اتنسخ"), bad = () => toast("تعذّر النسخ", "bad");
+    const fb = () => { try { const ta = document.createElement("textarea"); ta.value = t; ta.style.cssText = "position:fixed;opacity:0;top:0"; document.body.appendChild(ta); ta.select(); const r = document.execCommand("copy"); ta.remove(); r ? ok() : bad(); } catch (e) { bad(); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, fb); else fb();
+  }
+  /* أزرار الإجابة: نسخ · إعادة توليد (لآخر إجابة فقط) · تقييم */
+  function addActions(d, rec) {
+    if (d.querySelector(".acts")) return;
+    const row = document.createElement("div"); row.className = "acts";
+    const mk = (cls, icon, label) => { const b = document.createElement("button"); b.type = "button"; b.className = "ab " + cls; b.setAttribute("aria-label", label); b.title = label; b.innerHTML = ic(icon); row.appendChild(b); return b; };
+    const cp = mk("cp", "copy", "نسخ الإجابة"), rg = mk("rg", "redo", "إعادة توليد الإجابة"), up = mk("up", "up", "إجابة مفيدة"), dn = mk("dn", "down", "إجابة غير مفيدة");
+    const paint = () => { up.classList.toggle("on", rec.fb === 1); dn.classList.toggle("on", rec.fb === -1); up.setAttribute("aria-pressed", String(rec.fb === 1)); dn.setAttribute("aria-pressed", String(rec.fb === -1)); };
+    paint();
+    cp.onclick = () => copyText(rec.t);
+    const rate = v => { rec.fb = rec.fb === v ? 0 : v; paint(); saveHist(); if (rec.fb) toast("تم حفظ تقييمك"); };
+    up.onclick = () => rate(1); dn.onclick = () => rate(-1);
+    rg.onclick = () => regen(rec, d);
+    d.appendChild(row); refreshRegen();
+  }
+  function refreshRegen() { const all = msgs.querySelectorAll(".rg"); all.forEach((b, i) => { b.hidden = i !== all.length - 1; }); }
+  function regen(rec, d) {
+    if (busy || !rec.c || !rec.c.q) return;
+    const i = hist.indexOf(rec); if (i >= 0) hist.splice(i, 1); saveHist(); d.remove(); refreshRegen();
+    ask(rec.c.q, { silentUser: true, sec: rec.c.section || null });
+  }
+  function ensureConv() {
+    let c = convs.find(x => x.id === curId);
+    if (!c) {
+      if (convs.length >= 20) { const o = convs.filter(x => x.id !== curId).sort((a, b) => a.ts - b.ts)[0]; if (o) convs.splice(convs.indexOf(o), 1); }
+      c = { id: uid(), title: NEWT, ts: Date.now(), msgs: [] }; convs.push(c); curId = c.id;
+    }
+    hist = c.msgs; return c;
+  }
+  function remember(who, text, meta, ctx) {
+    const c = ensureConv();
+    const rec = { id: uid(), r: who, t: String(text).slice(0, 6000), m: meta || "", c: ctx || null, ts: Date.now() };
+    c.msgs.push(rec); if (c.msgs.length > 50) c.msgs.splice(0, c.msgs.length - 50);
+    hist = c.msgs; c.ts = rec.ts; if (c.title === NEWT && who === "u") c.title = titleOf([rec]);
+    saveHist(); return rec;
+  }
 
   /* ---------- الحالات ---------- */
   const LABEL = { ready: "جاهز أساعدك", listening: "بسمعك…", thinking: "بحلل البيانات…", error: "حصل خطأ", done: "تمام، خلصت" };
@@ -232,7 +327,7 @@
   }
   $("mai-min").onclick = () => toggle(false);
   $("mai-full").onclick = () => { cfg.full = !cfg.full; saveCfg(); layout(); };
-  addEventListener("keydown", e => { if (e.key === "Escape" && panel.classList.contains("open")) toggle(false); });
+  addEventListener("keydown", e => { if (e.key === "Escape" && panel.classList.contains("open")) { if (panel.classList.contains("dr")) drawer(false); else toggle(false); } });
 
   /* ---------- الصوت: الاستماع ---------- */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -254,16 +349,22 @@
   };
 
   /* ---------- الإرسال والفهم ---------- */
-  let busy = false;
+  let busy = false, reqSeq = 0, curWait = null;
+  function setBusy(v) { busy = v; sendB.disabled = false; sendB.innerHTML = ic(v ? "stop" : "send"); sendB.setAttribute("aria-label", v ? "إيقاف التوليد" : "إرسال"); sendB.classList.toggle("stp", v); }
+  function stopGen() { // الإيقاف يفك الواجهة فورًا ويتجاهل رد الخادم المتأخر
+    if (!busy) return; reqSeq++; setBusy(false);
+    if (curWait) { curWait.classList.remove("wait"); curWait.textContent = "تم إيقاف الإجابة."; curWait = null; }
+    setState("done", "تم الإيقاف");
+  }
   const grow = () => { input.style.height = "auto"; input.style.height = Math.min(110, input.scrollHeight) + "px"; };
   input.addEventListener("input", grow);
-  input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && innerWidth >= 600) { e.preventDefault(); $("mai-form").requestSubmit(); } });
+  input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && innerWidth >= 600) { e.preventDefault(); if (!busy) $("mai-form").requestSubmit(); } });
   const allowed = p => p.g === "any" || (p.g === "sec" && canSee(p.f)) || (p.g === "rep" && canReports()) || (p.g === "admin" && ME.role === "admin");
   function say(text, o) { const d = bubble("bot", text, o); remember("b", text, o && o.meta); return d; }
 
   async function ask(q, ctx) {
     q = q.trim(); if (!q || busy) return;
-    input.value = ""; grow();
+    input.value = ""; grow(); if (panel.classList.contains("dr")) drawer(false);
     if (!(ctx && ctx.silentUser)) { bubble("user", q); remember("u", q); }
     // 1) أوامر الفتح محلية (بدون استهلاك من حد الاستخدام) وبحسب الصلاحية
     const nav = C.parseNav(q);
@@ -276,13 +377,14 @@
       cfg.open = true; saveCfg(); setTimeout(() => { location.href = nav.page.f; }, 500); return;
     }
     // 2) سؤال للذكاء الاصطناعي: القسم من الكلام أو من الصفحة الحالية، والفترة من الكلام
-    busy = true; sendB.disabled = true; setState("thinking");
+    const my = ++reqSeq; setBusy(true); setState("thinking");
     const body = { action: "ask", question: q };
     const sec = C.detectSection(q) || (ctx && ctx.sec) || C.SEC_OF[PAGE] || null; if (sec) body.sections = [sec];
     const per = C.parsePeriod(q, today()); if (per) { body.from = per.from; body.to = per.to; }
-    const wait = bubble("bot", "ثانية واحدة أراجع البيانات…", { plain: true }); wait.classList.add("wait");
+    const wait = bubble("bot", "ثانية واحدة أراجع البيانات…", { plain: true }); wait.classList.add("wait"); curWait = wait;
     const r = await masAi(body);
-    busy = false; sendB.disabled = false;
+    if (my !== reqSeq) return; // اتوقفت الإجابة أثناء الانتظار
+    setBusy(false); curWait = null;
     if (!r.ok) {
       wait.classList.remove("wait"); wait.textContent = r.msg; setState("error", r.msg);
       const b = document.createElement("button"); b.type = "button"; b.className = "retry"; b.textContent = "إعادة المحاولة";
@@ -291,19 +393,55 @@
     const PN = { gemini: "Gemini", groq: "Groq" };
     const meta = "المحرك: " + (PN[r.data.provider] || r.data.provider) + (r.data.failover ? " (تحويل تلقائي)" : "") + " · " + r.data.period.from + " ← " + r.data.period.to + (sec ? " · " + (SEC_AR[sec] || sec) : "");
     const pctx = { q, period: r.data.period, section: sec };
-    wait.classList.remove("wait"); wait.innerHTML = md(r.data.answer); const s = document.createElement("small"); s.className = "meta"; s.textContent = meta; wait.appendChild(s); addPrint(wait, r.data.answer, pctx);
-    remember("b", r.data.answer, meta, pctx); scroll(); setState("done");
+    wait.classList.remove("wait"); wait.innerHTML = md(r.data.answer); const s = document.createElement("small"); s.className = "meta"; s.textContent = meta; wait.appendChild(s);
+    const rec = remember("b", r.data.answer, meta, pctx); addActions(wait, rec); addPrint(wait, r.data.answer, pctx); scroll(); setState("done");
     if (!panel.classList.contains("open")) orb.classList.add("unread");
   }
-  $("mai-form").addEventListener("submit", e => { e.preventDefault(); ask(input.value); });
-  $("mai-clr").onclick = async () => { if (!(await ask_confirm())) return; hist = []; saveHist(); msgs.innerHTML = ""; greet(); };
-  const ask_confirm = () => (typeof window.ask === "function" ? window.ask("تمسح المحادثة؟", "نعم، امسح") : Promise.resolve(confirm("تمسح المحادثة؟")));
+  $("mai-form").addEventListener("submit", e => { e.preventDefault(); if (busy) { stopGen(); return; } ask(input.value); });
+  const ask_confirm = (m, y) => (typeof window.ask === "function" ? window.ask(m, y) : Promise.resolve(confirm(m)));
+  const fmt = ts => { try { return new Date(ts).toLocaleString("ar-EG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); } catch (e) { return ""; } };
+  function drawer(v) { panel.classList.toggle("dr", v); if (v) { $("mai-q").value = ""; drawConvs(); } }
+  function renderConv() {
+    msgs.innerHTML = "";
+    if (!hist.length) greet(); else hist.forEach(h => { if (h.r === "u") bubble("user", h.t); else bubble("bot", h.t, { meta: h.m, ctx: h.c, rec: h }); });
+    refreshRegen(); scroll();
+  }
+  function newConv() {
+    if (busy) stopGen();
+    const c = convs.find(x => x.id === curId);
+    if (!c || c.msgs.length) { curId = null; hist = []; saveHist(); }
+    drawer(false); renderConv(); if (innerWidth >= 600) input.focus();
+  }
+  function openConv(id) { const c = convs.find(x => x.id === id); if (!c) return; if (busy) stopGen(); curId = id; hist = c.msgs; saveHist(); drawer(false); renderConv(); }
+  function deleteConv(id) {
+    const i = convs.findIndex(x => x.id === id); if (i < 0) return; convs.splice(i, 1);
+    const was = id === curId;
+    if (was) { if (busy) stopGen(); const n = convs.slice().sort((a, b) => b.ts - a.ts)[0]; curId = n ? n.id : null; hist = n ? n.msgs : []; }
+    saveHist(); drawConvs(); if (was) renderConv();
+  }
+  function drawConvs() {
+    const q = C.norm($("mai-q").value), box = $("mai-convs");
+    const list = convs.filter(c => !q || C.norm(c.title).includes(q) || c.msgs.some(m => C.norm(m.t).includes(q))).sort((a, b) => b.ts - a.ts);
+    box.innerHTML = list.length ? "" : '<div class="dr-e">' + (q ? "مفيش نتيجة للبحث" : "لسه مفيش محادثات محفوظة") + "</div>";
+    list.forEach(c => {
+      const row = document.createElement("div"); row.className = "ci" + (c.id === curId ? " on" : "");
+      const o = document.createElement("button"); o.type = "button"; o.className = "co"; o.innerHTML = "<b></b><small></small>";
+      o.firstChild.textContent = c.title; o.lastChild.textContent = fmt(c.ts) + " · " + c.msgs.filter(m => m.r === "u").length + " سؤال";
+      const d = document.createElement("button"); d.type = "button"; d.className = "cd"; d.setAttribute("aria-label", "حذف المحادثة"); d.innerHTML = ic("trash");
+      o.onclick = () => openConv(c.id);
+      d.onclick = async () => { if (await ask_confirm("تحذف المحادثة دي؟", "نعم، احذف")) deleteConv(c.id); };
+      row.append(o, d); box.appendChild(row);
+    });
+  }
+  $("mai-new").onclick = newConv; $("mai-new2").onclick = newConv;
+  $("mai-list").onclick = () => drawer(!panel.classList.contains("dr"));
+  $("mai-q").addEventListener("input", drawConvs);
   window.addEventListener("online", () => { if (state === "error") setState("ready"); });
   window.addEventListener("offline", () => setState("error", "مفيش اتصال بالإنترنت"));
 
   function greet() {
     const d = document.createElement("div"); d.className = "hero";
-    d.innerHTML = "<b>أهلًا، أنا ماسي 👋</b><p>مساعدك الذكي في المصنع: بحلّل الإنتاج والهالك، وبقرأ الصور وأوجّهها لقسمها.</p><ul><li>اسألني عن الإنتاج والهالك والأقسام</li><li>صوّر ورقة التسجيل وأنا أحوّلها لبيانات</li><li>قول «افتح قسم الحريق» وأفتحه لك</li></ul>";
+    d.innerHTML = "<b>" + ic("spark", "i") + " أهلًا، أنا ماسي</b><p>مساعدك الذكي في المصنع: بحلّل الإنتاج والهالك، وبقرأ الصور وأوجّهها لقسمها.</p><ul><li>اسألني عن الإنتاج والهالك والأقسام</li><li>صوّر ورقة التسجيل وأنا أحوّلها لبيانات</li><li>قول «افتح قسم الحريق» وأفتحه لك</li></ul>";
     msgs.appendChild(d);
   }
 
@@ -332,17 +470,17 @@
   fileIn.onchange = async () => {
     const f = fileIn.files && fileIn.files[0]; if (!f || busy) return;
     if (!/^image\//.test(f.type)) { toast("اختار صورة", "bad"); return; }
-    toggle(true); busy = true; sendB.disabled = true; setState("thinking", "بقرأ الصورة…");
+    toggle(true); const my = ++reqSeq; setBusy(true); setState("thinking", "بقرأ الصورة…");
     let data;
-    try { data = await shrink(f); } catch (e) { busy = false; sendB.disabled = false; setState("error", "الصورة مش مدعومة"); say("معلش، مقدرتش أفتح الصورة. جرّب صورة JPG أو PNG."); return; }
+    try { data = await shrink(f); } catch (e) { setBusy(false); setState("error", "الصورة مش مدعومة"); say("معلش، مقدرتش أفتح الصورة. جرّب صورة JPG أو PNG."); return; }
     const pb = document.createElement("div"); pb.className = "b user pic";
     const im = document.createElement("img"); im.src = data; im.alt = "الصورة المرفوعة"; pb.appendChild(im); msgs.appendChild(pb); scroll();
-    const wait = bubble("bot", "بقرأ الصورة وبحوّلها لبيانات…", { plain: true }); wait.classList.add("wait");
+    const wait = bubble("bot", "بقرأ الصورة وبحوّلها لبيانات…", { plain: true }); wait.classList.add("wait"); curWait = wait;
     const r = await masAi({ action: "vision", image: data.split(",")[1], mime: "image/jpeg", hint: C.SEC_OF[PAGE] || "" }, { retries: 0 });
-    busy = false; sendB.disabled = false; wait.classList.remove("wait");
+    if (my !== reqSeq) return; setBusy(false); curWait = null; wait.classList.remove("wait");
     if (!r.ok) { wait.textContent = r.msg; setState("error", r.msg); return; }
     renderImport(wait, r.data.vision); setState("done");
-    remember("u", "📷 صورة"); remember("b", "قرأت الصورة واستخرجت " + r.data.vision.rows.length + " سطر");
+    remember("u", IMGT); remember("b", "قرأت الصورة واستخرجت " + r.data.vision.rows.length + " سطر");
     if (!panel.classList.contains("open")) orb.classList.add("unread");
   };
 
@@ -365,7 +503,7 @@
       rowsEl.innerHTML = st.rows.map((r, i) => '<div class="imp-r" data-i="' + i + '"><div class="it"><label>الصنف</label><input data-k="item" value="' + esc(r.item || "") + '"></div>' +
         '<div><label>العدد</label><input data-k="qty" inputmode="numeric" value="' + (r.qty ?? "") + '"></div>' +
         '<div><label>الهالك</label><input data-k="scrap" inputmode="numeric" value="' + (r.scrap ?? "") + '"></div>' +
-        '<button class="x" type="button" aria-label="حذف السطر">✕</button>' +
+        '<button class="x" type="button" aria-label="حذف السطر">' + ic("x", "i") + '</button>' +
         '<div class="it"><label>العامل</label><input data-k="worker" value="' + esc(r.worker || "") + '"></div></div>').join("");
     };
     draw();
@@ -424,12 +562,12 @@
     const x = impLoad();
     if (!x || SEC_PAGE[x.sec] !== PAGE) { rmTray(); return; }
     const i = curRow(x);
-    if (i < 0) { rmTray(); impSave(null); toast("خلّصت كل سطور الصورة ✓"); return; }
+    if (i < 0) { rmTray(); impSave(null); toast("خلّصت كل سطور الصورة"); return; }
     const r = x.rows[i];
     if (!tray) { tray = document.createElement("div"); tray.id = "masai-tray"; document.body.appendChild(tray); }
-    tray.innerHTML = '<div class="t1"><span>📷 من الصورة · ' + esc(SEC_AR[x.sec]) + " · " + esc(x.date) + "</span><span>سطر " + (i + 1) + " من " + x.rows.length + "</span></div>" +
+    tray.innerHTML = '<div class="t1"><span>' + ic("cam", "i") + ' من الصورة · ' + esc(SEC_AR[x.sec]) + " · " + esc(x.date) + "</span><span>سطر " + (i + 1) + " من " + x.rows.length + "</span></div>" +
       '<div class="t2"><b>' + esc(r.item || "—") + "</b>" + (r.qty != null ? " · العدد " + r.qty : "") + (r.scrap != null ? " · هالك " + r.scrap : "") + (r.worker ? " · " + esc(r.worker) : "") + "</div>" +
-      '<div class="ta"><button type="button" class="p" data-t="fill">تعبئة</button><button type="button" data-t="done">تم ✓ التالي</button><button type="button" data-t="close">إغلاق</button></div>';
+      '<div class="ta"><button type="button" class="p" data-t="fill">تعبئة</button><button type="button" data-t="done">تم ' + ic("check", "i") + ' التالي</button><button type="button" data-t="close">إغلاق</button></div>';
     tray.onclick = e => {
       const b = e.target.closest("button"); if (!b) return; const cx = impLoad(); if (!cx) return; const k = curRow(cx);
       if (b.dataset.t === "close") { impSave(null); rmTray(); }
@@ -453,7 +591,7 @@
     new MutationObserver(() => { if (fctx && !document.getElementById("ov")) { const c = fctx; fctx = null; if (c.clicked) markDone(c.i); } }).observe(document.body, { childList: true });
   }
   /* ---------- تشغيل ---------- */
-  if (hist.length) hist.forEach(h => { if (h.r === "u") bubble("user", h.t); else bubble("bot", h.t, { meta: h.m, ctx: h.c }); }); else greet();
+  renderConv();
   setState("ready"); layout(); drawTray();
   if (cfg.open) toggle(true);
   try { // أمر معلّق بعد فتح صفحة (مثلاً: افتح الحريق واعرض إنتاج النهارده)
