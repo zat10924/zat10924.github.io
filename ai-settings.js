@@ -1,11 +1,9 @@
 /* إعدادات الذكاء الاصطناعي (للمدير فقط) — تُحقن داخل قسم «البيانات» في settings.html */
 (function(){
   const $=id=>document.getElementById(id);
-  const PN={gemini:"Google Gemini",groq:"Groq"};
+  const PN={gemini:"Google Gemini",groq:"Groq",openrouter:"OpenRouter"};
   const dt=t=>new Date(t).toLocaleString("ar-EG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
   let ST=null;
-  const SV=(p)=>'<svg viewBox="0 0 24 24" aria-hidden="true" style="width:1.15em;height:1.15em;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em">'+p+'</svg>';
-  const WARN=SV('<path d="M12 4l9 16H3L12 4zM12 10v4M12 17.5v.01"/>'),OKI=SV('<path d="M5 12.5l4.5 4.5L19 7.5"/>');
 
   async function load(){
     const[{data:s,error:e1},r]=await Promise.all([db.from("ai_settings").select("*").eq("id",1).maybeSingle(),masAi({action:"status"})]);
@@ -21,9 +19,9 @@
     $("ai_auto").checked=!!s.auto_failover;
     $("ai_to").value=Math.round(s.timeout_ms/1000);
     $("ai_lu").value=s.daily_limit_user;$("ai_lt").value=s.daily_limit_total;
-    $("ai_state").innerHTML=okList?"":WARN+" "+esc((r.ok||r.code==="unknown_action")
-      ?"نسخة الدالة mas-ai-hub على Supabase قديمة (لا تعرف أمر status). أعد نشرها من ملفات phase3b. القائمة المعروضة افتراضية."
-      :"تعذّر قراءة حالة المحركات: "+r.msg+" — القائمة المعروضة افتراضية.");
+    $("ai_state").textContent=okList?"":(r.ok||r.code==="unknown_action")
+      ?"⚠ نسخة الدالة mas-ai-hub على Supabase قديمة (لا تعرف أمر status). أعد نشرها من ملفات phase3b. القائمة المعروضة افتراضية."
+      :"⚠ تعذّر قراءة حالة المحركات: "+r.msg+" — القائمة المعروضة افتراضية.";
     $("ai_eng").innerHTML=prov.map(p=>`<div class="line fe"><span>${esc(p.label)} <span class="nums">· ${p.key_configured===null?"الحالة غير معروفة":p.key_configured?"المفتاح مضبوط":"المفتاح غير مضبوط"}</span></span><button class="btn ghost sm" data-t="${esc(p.id)}"${p.key_configured===false?" disabled":""}>اختبار الاتصال</button><span class="nums" id="ai_r_${esc(p.id)}"></span></div>`).join("");
     logs();
   }
@@ -58,7 +56,7 @@
       const id=b.dataset.t,out=$("ai_r_"+id);b.disabled=true;out.textContent="جارٍ الاختبار…";
       const r=await masAi({action:"test",provider:id});
       b.disabled=false;
-      out.innerHTML=!r.ok?esc("فشل: "+r.msg):r.data.ok?"يعمل "+OKI+" "+esc(String(r.data.latency_ms))+"ms":esc("فشل: "+r.data.error_class+(r.data.http_status?" "+r.data.http_status:""));
+      out.textContent=!r.ok?"فشل: "+r.msg:r.data.ok?"يعمل ✓ "+r.data.latency_ms+"ms":"فشل: "+r.data.error_class+(r.data.http_status?" "+r.data.http_status:"");
       logs();
     };
     load();
