@@ -68,6 +68,7 @@ document.addEventListener("pointerdown",e=>{
 
 /* ===== الأيقونات (SVG) ===== */
 const ICONS={
+  spark:'<path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8L12 3z"/><path d="M19 3v4M17 5h4"/>',
   checksq:'<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12.5l3 3 5.5-6.5"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   clip:'<rect class="f" width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11v6M9 14h6"/>',
@@ -134,6 +135,7 @@ const WORKERS=["workers.html","العمال","hat","#c76a2b"];const WSEARCH=["wo
 const ACTIVITY=["activity.html","سجل النشاط والنسخ","pulse","#5b6b8c"];
 const PROFILE=["profile.html","ملفي الشخصي","user","#642631"];
 const SETTINGS=["settings.html","الإعدادات","cog","#5b6b8c"];
+const AI=["ai.html","المساعد الذكي","spark","#642631"];
 const USERS=["users.html","المستخدمين والصلاحيات","shield","#7a5ea8"];
 const SEC_AR={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي",brush:"البرشر",finish:"الفنش",fire:"الحريق"};
 const ROLE_DESC={admin:"صلاحية كاملة: كل الأقسام والتقارير والمستخدمين",owner:"صاحب المصنع: يشوف كل الأقسام والطلبيات والتقارير (عرض فقط، من غير إدارة المستخدمين)",manager:"مسؤول عن قسم أو أكتر: يشوف ويدير أقسامه بس",worker:"يسجّل الإنتاج في قسمه بس"};
@@ -265,7 +267,7 @@ async function requireAuth(file){
   if(!session){location.href="index.html";return null}
   await loadMe();
   if(!ME.role||ME.active===false){noAccess();return null}
-  if(file&&file!=="index.html"&&!((file==="reports.html"||file==="search.html"||file==="orders.html"||file==="worker-search.html")?canReports():canSee(file))){location.replace("index.html");return null}
+  if(file&&file!=="index.html"&&!((file==="reports.html"||file==="search.html"||file==="orders.html"||file==="worker-search.html")?canReports():file===AI[0]?(ME.role==="admin"||ME.role==="owner"||(ME.role==="manager"&&canReports())):canSee(file))){location.replace("index.html");return null}
   if(hideDone()){ // إخفاء تبويبات «المكتملة» عن مسجّل الإنتاج
     ["t-done","o-closed"].forEach(i=>{const b=document.getElementById(i);if(b)b.style.display="none"});
     if(location.hash==="#done")history.replaceState(null,"",location.pathname+location.search);
@@ -418,7 +420,7 @@ function initShortcuts(ctx){
 }
 function renderNav(active){
   if(active===""||active==="index.html")setTimeout(()=>{try{showWhatsNew()}catch(e){}},1200);
-  const cur=SECTIONS.find(s=>s[0]===active)||(active===ORDERS[0]?ORDERS:active===REPORTS[0]?REPORTS:active===PROD[0]?PROD:active===ACTIVITY[0]?ACTIVITY:active===CATALOG[0]?CATALOG:active===WORKERS[0]?WORKERS:active===SEARCH[0]?SEARCH:active===WSEARCH[0]?WSEARCH:active===PROFILE[0]?PROFILE:active===USERS[0]?USERS:active===SETTINGS[0]?SETTINGS:null),acc=cur?cur[3]:"var(--pri)";
+  const cur=SECTIONS.find(s=>s[0]===active)||(active===ORDERS[0]?ORDERS:active===REPORTS[0]?REPORTS:active===PROD[0]?PROD:active===ACTIVITY[0]?ACTIVITY:active===CATALOG[0]?CATALOG:active===WORKERS[0]?WORKERS:active===SEARCH[0]?SEARCH:active===WSEARCH[0]?WSEARCH:active===PROFILE[0]?PROFILE:active===USERS[0]?USERS:active===SETTINGS[0]?SETTINGS:active===AI[0]?AI:null),acc=cur?cur[3]:"var(--pri)";
   document.body.classList.add("hasside");document.body.style.setProperty("--acc",acc);
   const app=typeof APP!=="undefined"?APP:"إدارة الأقسام";
   const h=document.createElement("header");h.className="topbar";
@@ -447,6 +449,7 @@ function renderNav(active){
   const side=document.createElement("aside");side.className="side";side.id="side";
   side.innerHTML=`<div class="side-head"><img src="icon.svg" alt="MAS"><div><b class="wm">MAS <span>الماس</span></b><em class="wsub">للخزف والصيني · إدارة الأقسام</em><small>${esc(ME.name||"")}${ME.name?" · ":""}${ROLE_AR[ME.role]||""}</small></div></div>
   <nav><a class="sh ${active===""||active==="index.html"?"on":""}" href="index.html" style="--c:var(--pri)">${ico("home")}<span>الرئيسية</span></a>
+  ${(ME.role==="admin"||ME.role==="owner"||(ME.role==="manager"&&canReports()))?sg(AI):""}
   ${grp("الإنتاج",[sg(PROD)])}
   ${grp("الطلبيات",canReports()?[sg(ORDERS)]:[])}
   ${grp("الأقسام",[...visibleSections().map(sg),...soonSections().map(x=>`<div class="sg soon" style="--c:${x[2]}"><div class="sh soonitem" aria-disabled="true">${ico(x[1])}<span>${x[0]}<small class="soonn">سوف تُنشأ قريبًا</small></span></div></div>`)])}
