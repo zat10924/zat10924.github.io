@@ -13,7 +13,7 @@
   const K = k => "mas_ai_" + k + "_" + ME.id;
   const get = (k, d) => { try { const v = localStorage.getItem(K(k)); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
   const put = (k, v) => { try { localStorage.setItem(K(k), JSON.stringify(v)); } catch (e) {} };
-  const cfg = Object.assign({ voice: false, rate: 1, open: false, full: false, pos: null }, get("cfg", {}));
+  const cfg = Object.assign({ open: false, full: false, pos: null }, get("cfg", {}));
   const saveCfg = () => put("cfg", cfg);
   let hist = get("hist", []);
   const saveHist = () => put("hist", hist.slice(-40));
@@ -25,6 +25,7 @@
     send: '<path d="M4 12l16-8-6 16-2.5-6.5L4 12z"/>',
     min: '<path d="M5 12h14"/>', full: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
     snd: '<path d="M4 9v6h4l5 4V5L8 9H4zM16 9a4 4 0 0 1 0 6"/>', mute: '<path d="M4 9v6h4l5 4V5L8 9H4zM17 9l4 6M21 9l-4 6"/>',
+    cam: '<path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/>',
     trash: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>', pause: '<path d="M8 5v14M16 5v14"/>', play: '<path d="M7 4l12 8-12 8V4z"/>', stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
   };
   const ic = k => `<svg viewBox="0 0 24 24" aria-hidden="true">${IC[k]}</svg>`;
@@ -41,7 +42,6 @@
   #masai-orb.drag{cursor:grabbing;animation:none;transform:scale(1.06)}
   #masai-orb.st-listening{animation:masai-listen 1.1s ease-out infinite}
   #masai-orb.st-thinking::before{border-top-color:#d9b86a;border-right-color:#d9b86a66;animation:masai-spin 1s linear infinite}
-  #masai-orb.st-speaking{animation:masai-talk .7s ease-in-out infinite}
   #masai-orb.st-error{background:radial-gradient(circle at 32% 26%,#ffffffa0 0,#fff0 30%),radial-gradient(circle at 50% 58%,#e5534b 0,#8e2420 60%,#3d0f0d 100%);animation:masai-shake .5s}
   #masai-orb.st-done{box-shadow:0 12px 26px #2510188c,0 0 0 6px #46d48344,inset -7px -9px 15px #1a0a1099,inset 6px 7px 12px #ffffff38}
   #masai-orb .dot{position:absolute;top:2px;right:2px;width:13px;height:13px;border-radius:50%;background:#46d483;border:2px solid #fff;z-index:3;display:none}
@@ -51,46 +51,75 @@
   @keyframes masai-spin{to{transform:rotate(360deg)}}
   @keyframes masai-talk{50%{transform:scale(1.09)}}
   @keyframes masai-shake{20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
-  #masai-panel{position:fixed;z-index:9901;display:none;flex-direction:column;overflow:hidden;direction:rtl;background:var(--card,#fff);color:var(--txt,#241d20);
-    border:1px solid var(--line,#e5dce0);border-radius:20px;box-shadow:0 20px 60px #180b1255;width:400px;height:600px;max-width:calc(100vw - 16px)}
-  #masai-panel.open{display:flex}
-  #masai-panel .h{display:flex;align-items:center;gap:8px;padding:12px;background:linear-gradient(135deg,#6e2735,#35131e);color:#fff}
-  #masai-panel .h .t{flex:1;min-width:0}#masai-panel .h b{display:block;font-size:15px}#masai-panel .h small{font-size:11px;opacity:.85}
-  #masai-panel .ib{width:34px;height:34px;border:0;border-radius:10px;background:#ffffff1c;color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+  #masai-panel{position:fixed;z-index:9901;display:none;flex-direction:column;overflow:hidden;direction:rtl;background:var(--card,#fffdfb);color:var(--txt,#241d20);
+    border:1px solid #d9b86a55;border-radius:22px;box-shadow:0 24px 70px #180b1266,0 0 0 1px #ffffff55 inset;width:410px;height:620px;max-width:calc(100vw - 16px)}
+  #masai-panel.open{display:flex;animation:masai-in .22s ease-out}
+  @keyframes masai-in{from{opacity:0;transform:translateY(14px) scale(.98)}}
+  #masai-panel .h{position:relative;display:flex;align-items:center;gap:10px;padding:14px 12px 13px;color:#fff;
+    background:radial-gradient(120% 140% at 100% 0,#8f3a50 0,#6e2735 45%,#35131e 100%)}
+  #masai-panel .h::after{content:"";position:absolute;inset:auto 0 0 0;height:2px;background:linear-gradient(90deg,transparent,#d9b86a,transparent)}
+  #masai-panel .av{position:relative;width:42px;height:42px;border-radius:50%;flex:none;display:grid;place-items:center;
+    background:radial-gradient(circle at 32% 26%,#ffffffb0 0,#fff0 32%),radial-gradient(circle at 50% 58%,#d4687f 0,#8a3045 56%,#3d1522 100%);box-shadow:0 4px 12px #0006,inset -3px -4px 8px #1a0a1066}
+  #masai-panel .av svg{width:21px;height:21px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  #masai-panel .av i{position:absolute;bottom:0;left:0;width:12px;height:12px;border-radius:50%;background:#46d483;border:2px solid #4a1b28}
+  #masai-panel.s-error .av i{background:#e5534b}#masai-panel.s-thinking .av i{background:#d9b86a;animation:masai-pulse 1s infinite}
+  @keyframes masai-pulse{50%{opacity:.35}}
+  #masai-panel .h .t{flex:1;min-width:0}#masai-panel .h b{display:block;font-size:16.5px;letter-spacing:.2px}#masai-panel .h small{display:block;font-size:11.5px;opacity:.82;margin-top:1px}
+  #masai-panel .ib{width:34px;height:34px;border:0;border-radius:11px;background:#ffffff1a;color:#fff;display:grid;place-items:center;cursor:pointer;flex:none;transition:background .15s}
   #masai-panel .ib svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-  #masai-panel .ib:hover{background:#ffffff33}
-  #masai-panel .rate{background:#ffffff1c;color:#fff;border:0;border-radius:10px;height:34px;font:inherit;font-size:12px;padding:0 4px}
-  #masai-panel .rate option{color:#222}
-  #masai-panel .m{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:9px;overscroll-behavior:contain}
-  #masai-panel .b{max-width:94%;padding:9px 12px;border-radius:14px;line-height:1.75;font-size:13.5px;overflow-wrap:anywhere}
-  #masai-panel .b.bot{align-self:flex-start;background:var(--soft,#f6f1f3);border:1px solid var(--line,#e9e0e3)}
-  #masai-panel .b.user{align-self:flex-end;background:#642631;color:#fff;white-space:pre-wrap}
-  #masai-panel .b.say{outline:2px solid #d9b86a;outline-offset:1px}
-  #masai-panel .b small.meta{display:block;margin-top:5px;font-size:10.5px;color:var(--muted,#766b70)}
-  #masai-panel .b h2{font-size:14.5px;margin:8px 0 4px;color:#8b3347}#masai-panel .b p{margin:4px 0}#masai-panel .b ul{margin:4px 0;padding-inline-start:18px}
-  #masai-panel .b .tw{overflow-x:auto;margin:6px 0}#masai-panel .b table{border-collapse:collapse;font-size:12px;min-width:240px;width:100%}
-  #masai-panel .b th,#masai-panel .b td{border:1px solid var(--line,#e5dce0);padding:5px 7px;text-align:right;white-space:nowrap}
-  #masai-panel .b th{background:#642631;color:#fff}
-  #masai-panel .b .retry{margin-top:6px;border:1px solid #642631;background:none;color:#642631;border-radius:9px;padding:5px 12px;font:inherit;font-size:12px;cursor:pointer}
-  #masai-panel .sb{display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid var(--line,#e5dce0);font-size:12px;color:var(--muted,#766b70);min-height:34px}
-  #masai-panel .sb .bars{display:flex;gap:2px;align-items:center;height:16px}
-  #masai-panel .sb .bars i{width:3px;height:4px;border-radius:2px;background:#8b3347;display:block}
-  #masai-panel.s-listening .bars i,#masai-panel.s-speaking .bars i{animation:masai-bar .8s ease-in-out infinite}
-  #masai-panel .bars i:nth-child(2){animation-delay:.12s!important}#masai-panel .bars i:nth-child(3){animation-delay:.24s!important}#masai-panel .bars i:nth-child(4){animation-delay:.36s!important}#masai-panel .bars i:nth-child(5){animation-delay:.48s!important}
-  @keyframes masai-bar{50%{height:16px}}
-  #masai-panel.s-error .sb{color:#c0392b}#masai-panel.s-done .sb{color:#2e8b57}
-  #masai-panel .sb .sp{margin-inline-start:auto;display:none;gap:5px}#masai-panel.s-speaking .sb .sp{display:flex}
-  #masai-panel .sb .sp button{width:30px;height:30px;border-radius:9px;border:1px solid var(--line,#ddd);background:var(--soft,#f6f1f3);color:inherit;display:grid;place-items:center;cursor:pointer}
-  #masai-panel .sb .sp svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8}
-  #masai-panel form{display:flex;gap:7px;align-items:flex-end;padding:9px 10px 10px;border-top:1px solid var(--line,#e5dce0)}
-  #masai-panel textarea{flex:1;min-height:44px;max-height:110px;resize:none;border:1px solid var(--line,#ddd);border-radius:12px;padding:11px;background:var(--bg,#fff);color:inherit;font:inherit;font-size:14px;outline:none}
+  #masai-panel .ib:hover{background:#ffffff36}
+  #masai-panel .m{flex:1;overflow:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px;overscroll-behavior:contain;
+    background:radial-gradient(circle at 100% 0,#f6e9ec 0,transparent 42%),var(--bg,#faf6f3)}
+  #masai-panel .b{max-width:92%;padding:10px 13px;border-radius:16px;line-height:1.8;font-size:13.5px;overflow-wrap:anywhere;animation:masai-pop .2s ease-out}
+  @keyframes masai-pop{from{opacity:0;transform:translateY(6px)}}
+  #masai-panel .b.bot{align-self:flex-start;background:var(--card,#fff);border:1px solid var(--line,#eadfe3);border-inline-start:3px solid #c9a24f;border-top-right-radius:6px;box-shadow:0 2px 10px #3a1a2412}
+  #masai-panel .b.user{align-self:flex-end;background:linear-gradient(135deg,#7c2d3d,#52202c);color:#fff;white-space:pre-wrap;border-top-left-radius:6px;box-shadow:0 4px 12px #52202c44}
+  #masai-panel .b.wait::after{content:"";display:inline-block;width:18px;height:4px;margin-inline-start:8px;vertical-align:middle;border-radius:2px;background:linear-gradient(90deg,#c9a24f 30%,#0000 0) 0/9px 4px;animation:masai-dots 1s steps(3) infinite}
+  @keyframes masai-dots{to{background-position:-27px 0}}
+  #masai-panel .b.pic{padding:5px}#masai-panel .b.pic img{display:block;max-width:100%;max-height:200px;border-radius:12px}
+  #masai-panel .b small.meta{display:block;margin-top:6px;font-size:10.5px;color:var(--muted,#8a7f84)}
+  #masai-panel .b h2{font-size:14.5px;margin:10px 0 4px;color:#7a2a3c;padding-bottom:3px;border-bottom:1px dashed #d9b86a88}#masai-panel .b p{margin:4px 0}#masai-panel .b ul{margin:4px 0;padding-inline-start:18px}
+  #masai-panel .b .tw{overflow-x:auto;margin:6px 0;border-radius:10px;border:1px solid var(--line,#e5dce0)}#masai-panel .b table{border-collapse:collapse;font-size:12px;min-width:240px;width:100%}
+  #masai-panel .b th,#masai-panel .b td{border-bottom:1px solid var(--line,#eee2e6);padding:6px 8px;text-align:right;white-space:nowrap}
+  #masai-panel .b th{background:#6e2735;color:#fff;font-weight:600}#masai-panel .b tr:nth-child(even) td{background:#f8f1f3}
+  #masai-panel .b .retry{margin-top:7px;border:1px solid #7a2a3c;background:none;color:#7a2a3c;border-radius:10px;padding:6px 13px;font:inherit;font-size:12px;cursor:pointer}
+  #masai-panel .hero{align-self:stretch;border-radius:18px;padding:16px 14px;color:#fff;background:radial-gradient(120% 120% at 0 0,#8f3a50 0,#52202c 60%,#2b0f18 100%);box-shadow:0 8px 22px #52202c44}
+  #masai-panel .hero b{display:block;font-size:16px;margin-bottom:4px}#masai-panel .hero p{margin:0 0 10px;font-size:12.5px;opacity:.9;line-height:1.7}
+  #masai-panel .hero ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}#masai-panel .hero li{font-size:12.5px;display:flex;gap:8px;align-items:center}
+  #masai-panel .hero li::before{content:"";width:6px;height:6px;border-radius:50%;background:#d9b86a;flex:none}
+  #masai-panel .chips{display:flex;gap:7px;overflow-x:auto;padding:8px 12px 2px;scrollbar-width:none;border-top:1px solid var(--line,#eadfe3);background:var(--card,#fff)}
+  #masai-panel .chips::-webkit-scrollbar{display:none}
+  #masai-panel .chip{flex:none;border:1px solid #d9b86a99;background:#fbf5e8;color:#5a2230;border-radius:999px;padding:7px 13px;font:inherit;font-size:12.5px;cursor:pointer;white-space:nowrap}
+  #masai-panel .chip.cam{background:#6e2735;color:#fff;border-color:#6e2735}
+  #masai-panel form{display:flex;gap:7px;align-items:flex-end;padding:8px 10px 11px;background:var(--card,#fff)}
+  #masai-panel textarea{flex:1;min-height:44px;max-height:110px;resize:none;border:1px solid var(--line,#ddd);border-radius:14px;padding:11px 12px;background:var(--bg,#faf6f3);color:inherit;font:inherit;font-size:14px;outline:none}
   #masai-panel textarea:focus{border-color:#8b4655;box-shadow:0 0 0 3px #8b46551f}
-  #masai-panel .fb{width:44px;height:44px;border:0;border-radius:12px;display:grid;place-items:center;cursor:pointer;flex:none}
+  #masai-panel .fb{width:44px;height:44px;border:0;border-radius:14px;display:grid;place-items:center;cursor:pointer;flex:none}
   #masai-panel .fb svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-  #masai-panel .mic{background:var(--soft,#f1eaed);color:#642631;border:1px solid var(--line,#ddd)}#masai-panel .mic.on{background:#c0392b;color:#fff;border-color:#c0392b;animation:masai-listen 1.1s infinite}
+  #masai-panel .mic,#masai-panel .att{background:var(--soft,#f4ecef);color:#6e2735;border:1px solid var(--line,#e2d6da)}#masai-panel .mic.on{background:#c0392b;color:#fff;border-color:#c0392b;animation:masai-listen 1.1s infinite}
   #masai-panel .mic.na{opacity:.45}
-  #masai-panel .snd{background:#642631;color:#fff}#masai-panel .snd:disabled{opacity:.45}
-  @media(max-width:600px){#masai-panel{width:auto;left:8px;right:8px;border-radius:18px}}
+  #masai-panel .snd{background:linear-gradient(135deg,#7c2d3d,#52202c);color:#fff;box-shadow:0 4px 10px #52202c44}#masai-panel .snd:disabled{opacity:.45}
+  /* بطاقة بيانات الصورة */
+  #masai-panel .imp{display:grid;gap:8px;min-width:260px}
+  #masai-panel .imp-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#masai-panel .imp-h b{font-size:13.5px}
+  #masai-panel .bdg{font-size:11px;padding:2px 9px;border-radius:999px;background:#e6f4ea;color:#1e6b3a}#masai-panel .bdg.medium{background:#fff4d6;color:#8a5a00}#masai-panel .bdg.low{background:#fde3e1;color:#a12a22}
+  #masai-panel .imp-m{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  #masai-panel .imp label{display:block;font-size:11px;color:var(--muted,#8a7f84);margin-bottom:2px}
+  #masai-panel .imp input,#masai-panel .imp select{width:100%;min-width:0;border:1px solid var(--line,#ddd);border-radius:10px;padding:7px 8px;background:var(--bg,#faf6f3);color:inherit;font:inherit;font-size:13px}
+  #masai-panel .imp-r{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;padding:8px;border:1px solid var(--line,#eadfe3);border-radius:12px;background:var(--bg,#faf6f3)}
+  #masai-panel .imp-r .it{grid-column:1/-1}#masai-panel .imp-r .x{align-self:end;width:34px;height:34px;border:0;border-radius:10px;background:#fde3e1;color:#a12a22;cursor:pointer;font-size:16px}
+  #masai-panel .imp-n{font-size:12px;color:#8a5a00;background:#fff8e6;border-radius:10px;padding:7px 10px}
+  #masai-panel .imp-a{display:flex;gap:7px;flex-wrap:wrap}
+  #masai-panel .imp-a button{flex:1;min-width:120px;border:0;border-radius:12px;padding:10px 12px;font:inherit;font-size:13px;cursor:pointer;background:linear-gradient(135deg,#7c2d3d,#52202c);color:#fff}
+  #masai-panel .imp-a button.g{background:var(--soft,#f4ecef);color:#6e2735;border:1px solid var(--line,#e2d6da)}
+  /* شريط تعبئة التسجيل من الصورة (فوق أي نافذة) */
+  #masai-tray{position:fixed;z-index:10050;top:max(8px,env(safe-area-inset-top));left:8px;right:8px;max-width:520px;margin-inline:auto;direction:rtl;font-family:inherit;
+    background:linear-gradient(135deg,#52202c,#2b0f18);color:#fff;border-radius:16px;padding:10px 12px;box-shadow:0 12px 30px #0008;border:1px solid #d9b86a77}
+  #masai-tray .t1{display:flex;justify-content:space-between;gap:8px;font-size:12px;opacity:.85}
+  #masai-tray .t2{font-size:14px;margin:5px 0 8px;line-height:1.6}#masai-tray .t2 b{color:#f1d58f}
+  #masai-tray .ta{display:flex;gap:6px}#masai-tray button{flex:1;border:0;border-radius:10px;padding:9px 6px;font:inherit;font-size:12.5px;cursor:pointer;background:#ffffff1f;color:#fff}
+  #masai-tray button.p{background:#d9b86a;color:#2b0f18;font-weight:700}
+  @media(max-width:600px){#masai-panel{width:auto;left:8px;right:8px;border-radius:20px}}
   #masai-panel.full{inset:10px!important;width:auto!important;height:auto!important;max-width:none}
   @media(prefers-reduced-motion:reduce){#masai-orb,#masai-orb::before,#masai-panel *{animation:none!important}}
   `;
@@ -103,21 +132,23 @@
   const panel = document.createElement("section");
   panel.id = "masai-panel"; panel.setAttribute("role", "dialog"); panel.setAttribute("aria-label", "المساعد ماسي");
   panel.innerHTML = `
-    <header class="h"><div class="t"><b>ماسي</b><small id="mai-sub">جاهز أساعدك</small></div>
-      <select class="rate" id="mai-rate" aria-label="سرعة الصوت"><option value="0.8">بطيء</option><option value="1">عادي</option><option value="1.2">سريع</option></select>
-      <button class="ib" id="mai-snd" type="button" aria-label="تشغيل أو إيقاف الرد الصوتي"></button>
+    <header class="h"><div class="av">${ic("spark")}<i></i></div><div class="t"><b>ماسي</b><small id="mai-sub">مساعد المصنع الذكي</small></div>
       <button class="ib" id="mai-clr" type="button" aria-label="مسح المحادثة">${ic("trash")}</button>
       <button class="ib" id="mai-full" type="button" aria-label="حجم كامل">${ic("full")}</button>
       <button class="ib" id="mai-min" type="button" aria-label="تصغير">${ic("min")}</button></header>
     <div class="m" id="mai-msgs" aria-live="polite"></div>
-    <div class="sb"><span class="bars"><i></i><i></i><i></i><i></i><i></i></span><span id="mai-st">جاهز</span>
-      <span class="sp"><button type="button" id="mai-pause" aria-label="إيقاف مؤقت">${ic("pause")}</button><button type="button" id="mai-stop" aria-label="إيقاف الصوت">${ic("stop")}</button></span></div>
-    <form id="mai-form"><textarea id="mai-in" rows="1" maxlength="1500" placeholder="اكتب أو اضغط الميكروفون وكلّمني…" aria-label="رسالتك"></textarea>
-      <button class="fb mic" id="mai-mic" type="button" aria-label="تحدّث">${ic("mic")}</button>
-      <button class="fb snd" id="mai-send" type="submit" aria-label="إرسال">${ic("send")}</button></form>`;
+    <div class="chips" id="mai-chips"><button class="chip cam" type="button" data-cam="1">📷 اقرأ صورة</button>
+      <button class="chip" type="button" data-q="ملخص إنتاج النهارده">ملخص النهارده</button>
+      <button class="chip" type="button" data-q="أعلى نسب الهالك الشهر ده">أعلى هالك</button>
+      <button class="chip" type="button" data-q="قارن بين الأقسام الشهر ده">قارن الأقسام</button></div>
+    <form id="mai-form"><button class="fb att" id="mai-att" type="button" aria-label="إرفاق صورة">${ic("cam")}</button>
+      <textarea id="mai-in" rows="1" maxlength="1500" placeholder="اكتب سؤالك أو ارفع صورة…" aria-label="رسالتك"></textarea>
+      <button class="fb mic" id="mai-mic" type="button" aria-label="إملاء بالصوت">${ic("mic")}</button>
+      <button class="fb snd" id="mai-send" type="submit" aria-label="إرسال">${ic("send")}</button></form>
+    <input type="file" id="mai-file" accept="image/*" hidden>`;
   document.body.append(orb, panel);
   const $ = id => panel.querySelector("#" + id);
-  const msgs = $("mai-msgs"), input = $("mai-in"), sendB = $("mai-send"), micB = $("mai-mic"), sub = $("mai-sub"), stT = $("mai-st");
+  const msgs = $("mai-msgs"), input = $("mai-in"), sendB = $("mai-send"), micB = $("mai-mic"), sub = $("mai-sub"), stT = document.createElement("span");
 
   /* ---------- عرض Markdown آمن ---------- */
   function md(src) {
@@ -155,7 +186,7 @@
   function remember(who, text, meta, ctx) { hist.push({ r: who, t: String(text).slice(0, 6000), m: meta || "", c: ctx || null, ts: Date.now() }); saveHist(); }
 
   /* ---------- الحالات ---------- */
-  const LABEL = { ready: "جاهز أساعدك", listening: "بسمعك…", thinking: "بحلل البيانات…", speaking: "بتكلم…", error: "حصل خطأ", done: "تمام، خلصت" };
+  const LABEL = { ready: "جاهز أساعدك", listening: "بسمعك…", thinking: "بحلل البيانات…", error: "حصل خطأ", done: "تمام، خلصت" };
   let state = "ready", stTimer = 0;
   function setState(s, txt) {
     state = s; clearTimeout(stTimer);
@@ -204,53 +235,6 @@
   $("mai-full").onclick = () => { cfg.full = !cfg.full; saveCfg(); layout(); };
   addEventListener("keydown", e => { if (e.key === "Escape" && panel.classList.contains("open")) toggle(false); });
 
-  /* ---------- الصوت: الرد ---------- */
-  let spkId = 0, curAudio = null, curRes = null, paused = false, sayEl = null;
-  const paintSnd = () => { $("mai-snd").innerHTML = ic(cfg.voice ? "snd" : "mute"); $("mai-snd").setAttribute("aria-pressed", cfg.voice); };
-  $("mai-rate").value = String(cfg.rate); paintSnd();
-  $("mai-rate").onchange = e => { cfg.rate = +e.target.value || 1; saveCfg(); };
-  $("mai-snd").onclick = () => { cfg.voice = !cfg.voice; saveCfg(); paintSnd(); if (!cfg.voice) stopSpeak(); toast(cfg.voice ? "الرد الصوتي شغّال" : "الرد الصوتي موقوف"); };
-  function stopSpeak() {
-    spkId++; paused = false; try { curAudio && curAudio.pause(); } catch (e) {} curAudio = null;
-    try { speechSynthesis.cancel(); } catch (e) {} if (curRes) { const r = curRes; curRes = null; r(); }
-    if (sayEl) { sayEl.classList.remove("say"); sayEl = null; } if (state === "speaking") setState("ready");
-  }
-  $("mai-stop").onclick = stopSpeak;
-  $("mai-pause").onclick = () => {
-    if (curAudio) { if (paused) { curAudio.play(); } else curAudio.pause(); paused = !paused; }
-    else { try { paused ? speechSynthesis.resume() : speechSynthesis.pause(); paused = !paused; } catch (e) {} }
-    $("mai-pause").innerHTML = ic(paused ? "play" : "pause");
-  };
-  const ttsFetch = async t => {
-    const r = await masAi({ action: "speak", text: t, rate: cfg.rate }, { retries: 0 });
-    return r.ok && r.data && r.data.audio ? "data:" + r.data.mime + ";base64," + r.data.audio : null;
-  };
-  const playUrl = (url, my) => new Promise(res => {
-    const a = new Audio(url); curAudio = a; curRes = res;
-    const done = () => { if (curAudio === a) curAudio = null; curRes = null; res(); };
-    a.onended = done; a.onerror = done; a.play().catch(done);
-  });
-  async function speak(text, el) {
-    stopSpeak(); const my = spkId; const t = C.plainForSpeech(text); if (!t) return;
-    sayEl = el || null; if (sayEl) sayEl.classList.add("say"); setState("speaking"); $("mai-pause").innerHTML = ic("pause");
-    const parts = C.chunks(t); let next = ttsFetch(parts[0]);
-    for (let i = 0; i < parts.length; i++) {
-      const url = await next; if (my !== spkId) return;
-      if (i + 1 < parts.length) next = ttsFetch(parts[i + 1]);
-      if (!url) { // الخادم غير جاهز: صوت المتصفح كبديل (غالبًا مش مصري)
-        const rest = parts.slice(i).join(" ");
-        if ("speechSynthesis" in window) {
-          await new Promise(res => { const u = new SpeechSynthesisUtterance(rest); u.lang = "ar-EG"; u.rate = cfg.rate;
-            const v = speechSynthesis.getVoices().filter(x => /^ar/i.test(x.lang)); u.voice = v.find(x => /EG/i.test(x.lang)) || v[0] || null;
-            curRes = res; u.onend = u.onerror = () => { curRes = null; res(); }; speechSynthesis.speak(u); });
-        } else toast("الصوت غير متاح دلوقتي", "bad");
-        break;
-      }
-      await playUrl(url, my); if (my !== spkId) return;
-    }
-    if (my === spkId) { if (sayEl) sayEl.classList.remove("say"); sayEl = null; setState("ready"); }
-  }
-
   /* ---------- الصوت: الاستماع ---------- */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let rec = null, listening = false;
@@ -259,7 +243,7 @@
   micB.onclick = () => {
     if (!SR) { toast("المتصفح أو التطبيق ده مش بيدعم الميكروفون. اكتب رسالتك، أو افتح البرنامج من Chrome.", "bad"); return; }
     if (listening) { stopListen(); return; }
-    stopSpeak(); rec = new SR(); rec.lang = "ar-EG"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+    rec = new SR(); rec.lang = "ar-EG"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
     const base = input.value.trim(); let finalT = "";
     rec.onstart = () => { listening = true; micB.classList.add("on"); setState("listening"); };
     rec.onresult = e => { let it = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const r = e.results[i]; if (r.isFinal) finalT += r[0].transcript + " "; else it += r[0].transcript; }
@@ -276,11 +260,11 @@
   input.addEventListener("input", grow);
   input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && innerWidth >= 600) { e.preventDefault(); $("mai-form").requestSubmit(); } });
   const allowed = p => p.g === "any" || (p.g === "sec" && canSee(p.f)) || (p.g === "rep" && canReports()) || (p.g === "admin" && ME.role === "admin");
-  function say(text, o) { const d = bubble("bot", text, o); remember("b", text, o && o.meta); if (cfg.voice) speak(text, d); return d; }
+  function say(text, o) { const d = bubble("bot", text, o); remember("b", text, o && o.meta); return d; }
 
   async function ask(q, ctx) {
     q = q.trim(); if (!q || busy) return;
-    stopSpeak(); input.value = ""; grow();
+    input.value = ""; grow();
     if (!(ctx && ctx.silentUser)) { bubble("user", q); remember("u", q); }
     // 1) أوامر الفتح محلية (بدون استهلاك من حد الاستخدام) وبحسب الصلاحية
     const nav = C.parseNav(q);
@@ -290,40 +274,188 @@
       if (nav.rest) { try { sessionStorage.setItem("masai_pending", JSON.stringify({ u: ME.id, q: nav.rest, sec: C.SEC_OF[nav.page.f] || null })); } catch (e) {} }
       if (nav.page.f === PAGE) { if (nav.rest) { try { sessionStorage.removeItem("masai_pending"); } catch (e) {} return ask(nav.rest, { sec: C.SEC_OF[PAGE] || null, silentUser: true }); } return; }
       say("حاضر، بفتحلك " + nav.page.n + (nav.rest ? " وأجيبلك المطلوب" : "") + "…");
-      cfg.open = true; saveCfg(); setTimeout(() => { location.href = nav.page.f; }, cfg.voice ? 1400 : 500); return;
+      cfg.open = true; saveCfg(); setTimeout(() => { location.href = nav.page.f; }, 500); return;
     }
     // 2) سؤال للذكاء الاصطناعي: القسم من الكلام أو من الصفحة الحالية، والفترة من الكلام
     busy = true; sendB.disabled = true; setState("thinking");
     const body = { action: "ask", question: q };
     const sec = C.detectSection(q) || (ctx && ctx.sec) || C.SEC_OF[PAGE] || null; if (sec) body.sections = [sec];
     const per = C.parsePeriod(q, today()); if (per) { body.from = per.from; body.to = per.to; }
-    const wait = bubble("bot", "ثانية واحدة أراجع البيانات…", { plain: true });
+    const wait = bubble("bot", "ثانية واحدة أراجع البيانات…", { plain: true }); wait.classList.add("wait");
     const r = await masAi(body);
     busy = false; sendB.disabled = false;
     if (!r.ok) {
-      wait.textContent = r.msg; setState("error", r.msg);
+      wait.classList.remove("wait"); wait.textContent = r.msg; setState("error", r.msg);
       const b = document.createElement("button"); b.type = "button"; b.className = "retry"; b.textContent = "إعادة المحاولة";
       b.onclick = () => { wait.remove(); busy = false; ask(q, Object.assign({}, ctx, { silentUser: true })); }; wait.appendChild(document.createElement("br")); wait.appendChild(b); remember("b", r.msg); scroll(); return;
     }
     const PN = { gemini: "Gemini", groq: "Groq" };
     const meta = "المحرك: " + (PN[r.data.provider] || r.data.provider) + (r.data.failover ? " (تحويل تلقائي)" : "") + " · " + r.data.period.from + " ← " + r.data.period.to + (sec ? " · " + (SEC_AR[sec] || sec) : "");
     const pctx = { q, period: r.data.period, section: sec };
-    wait.innerHTML = md(r.data.answer); const s = document.createElement("small"); s.className = "meta"; s.textContent = meta; wait.appendChild(s); addPrint(wait, r.data.answer, pctx);
+    wait.classList.remove("wait"); wait.innerHTML = md(r.data.answer); const s = document.createElement("small"); s.className = "meta"; s.textContent = meta; wait.appendChild(s); addPrint(wait, r.data.answer, pctx);
     remember("b", r.data.answer, meta, pctx); scroll(); setState("done");
     if (!panel.classList.contains("open")) orb.classList.add("unread");
-    if (cfg.voice) speak(r.data.answer, wait);
   }
   $("mai-form").addEventListener("submit", e => { e.preventDefault(); ask(input.value); });
   $("mai-clr").onclick = async () => { if (!(await ask_confirm())) return; hist = []; saveHist(); msgs.innerHTML = ""; greet(); };
   const ask_confirm = () => (typeof window.ask === "function" ? window.ask("تمسح المحادثة؟", "نعم، امسح") : Promise.resolve(confirm("تمسح المحادثة؟")));
   window.addEventListener("online", () => { if (state === "error") setState("ready"); });
   window.addEventListener("offline", () => setState("error", "مفيش اتصال بالإنترنت"));
-  addEventListener("pagehide", stopSpeak);
 
-  function greet() { const d = bubble("bot", "حاضر، أنا ماسي. اسألني عن الإنتاج والهالك والأقسام، أو قول «افتح قسم الحريق واعرض إنتاج النهارده». اضغط الميكروفون وكلّمني بالمصري.", { plain: true }); return d; }
+  function greet() {
+    const d = document.createElement("div"); d.className = "hero";
+    d.innerHTML = "<b>أهلًا، أنا ماسي 👋</b><p>مساعدك الذكي في المصنع: بحلّل الإنتاج والهالك، وبقرأ الصور وأوجّهها لقسمها.</p><ul><li>اسألني عن الإنتاج والهالك والأقسام</li><li>صوّر ورقة التسجيل وأنا أحوّلها لبيانات</li><li>قول «افتح قسم الحريق» وأفتحه لك</li></ul>";
+    msgs.appendChild(d);
+  }
+
+  /* ---------- قراءة الصور وتوجيهها للقسم ---------- */
+  const SEC_PAGE = { casting: "casting.html", brush: "brush.html", glaze: "glaze.html", deco: "decoration.html", spray: "spray.html", repair: "repair.html", finish: "finish.html", fire: "fire.html" };
+  const fileIn = $("mai-file");
+  const pickImg = () => { if (busy) return; fileIn.value = ""; fileIn.click(); };
+  $("mai-att").onclick = pickImg;
+  $("mai-chips").addEventListener("click", e => { const b = e.target.closest(".chip"); if (!b) return; if (b.dataset.cam) pickImg(); else ask(b.dataset.q); });
+
+  async function shrink(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+      let max = 1500, q = 0.82, out = "";
+      for (let k = 0; k < 4; k++) {
+        const sc = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        out = c.toDataURL("image/jpeg", q);
+        if (out.length < 2400000) break; max *= 0.75; q -= 0.07;
+      }
+      return out;
+    } finally { URL.revokeObjectURL(url); }
+  }
+  fileIn.onchange = async () => {
+    const f = fileIn.files && fileIn.files[0]; if (!f || busy) return;
+    if (!/^image\//.test(f.type)) { toast("اختار صورة", "bad"); return; }
+    toggle(true); busy = true; sendB.disabled = true; setState("thinking", "بقرأ الصورة…");
+    let data;
+    try { data = await shrink(f); } catch (e) { busy = false; sendB.disabled = false; setState("error", "الصورة مش مدعومة"); say("معلش، مقدرتش أفتح الصورة. جرّب صورة JPG أو PNG."); return; }
+    const pb = document.createElement("div"); pb.className = "b user pic";
+    const im = document.createElement("img"); im.src = data; im.alt = "الصورة المرفوعة"; pb.appendChild(im); msgs.appendChild(pb); scroll();
+    const wait = bubble("bot", "بقرأ الصورة وبحوّلها لبيانات…", { plain: true }); wait.classList.add("wait");
+    const r = await masAi({ action: "vision", image: data.split(",")[1], mime: "image/jpeg", hint: C.SEC_OF[PAGE] || "" }, { retries: 0 });
+    busy = false; sendB.disabled = false; wait.classList.remove("wait");
+    if (!r.ok) { wait.textContent = r.msg; setState("error", r.msg); return; }
+    renderImport(wait, r.data.vision); setState("done");
+    remember("u", "📷 صورة"); remember("b", "قرأت الصورة واستخرجت " + r.data.vision.rows.length + " سطر");
+    if (!panel.classList.contains("open")) orb.classList.add("unread");
+  };
+
+  function renderImport(host, v) {
+    host.textContent = "";
+    if (!v.rows.length) { host.textContent = v.notes || "ما لقيتش بيانات إنتاج واضحة في الصورة. جرّب صورة أوضح وقريبة."; return; }
+    const st = { sec: v.section !== "unknown" ? v.section : (C.SEC_OF[PAGE] || ""), date: v.date || today(), rows: v.rows.map(r => Object.assign({}, r)) };
+    const CONF = { high: "ثقة عالية", medium: "ثقة متوسطة", low: "ثقة منخفضة — راجع كل رقم" };
+    const box = document.createElement("div"); box.className = "imp";
+    box.innerHTML = '<div class="imp-h"><b></b><span class="bdg ' + v.confidence + '">' + CONF[v.confidence] + '</span></div>' +
+      '<div class="imp-m"><div><label>القسم</label><select data-f="sec"><option value="">— اختار القسم —</option>' +
+      Object.keys(SEC_PAGE).map(k => '<option value="' + k + '"' + (k === st.sec ? " selected" : "") + ">" + esc(SEC_AR[k]) + "</option>").join("") +
+      '</select></div><div><label>التاريخ</label><input type="date" data-f="date" value="' + esc(st.date) + '"></div></div>' +
+      '<div class="imp-rows"></div>' + (v.notes ? '<div class="imp-n">' + esc(v.notes) + "</div>" : "") +
+      '<div class="imp-a"><button type="button" data-a="go">فتح القسم وتجهيز التسجيل</button><button type="button" class="g" data-a="copy">نسخ كنص</button></div>';
+    host.appendChild(box);
+    const rowsEl = box.querySelector(".imp-rows"), title = box.querySelector(".imp-h b");
+    const draw = () => {
+      title.textContent = "اتقرا " + st.rows.length + " سطر";
+      rowsEl.innerHTML = st.rows.map((r, i) => '<div class="imp-r" data-i="' + i + '"><div class="it"><label>الصنف</label><input data-k="item" value="' + esc(r.item || "") + '"></div>' +
+        '<div><label>العدد</label><input data-k="qty" inputmode="numeric" value="' + (r.qty ?? "") + '"></div>' +
+        '<div><label>الهالك</label><input data-k="scrap" inputmode="numeric" value="' + (r.scrap ?? "") + '"></div>' +
+        '<button class="x" type="button" aria-label="حذف السطر">✕</button>' +
+        '<div class="it"><label>العامل</label><input data-k="worker" value="' + esc(r.worker || "") + '"></div></div>').join("");
+    };
+    draw();
+    box.addEventListener("input", e => {
+      const el = e.target, f = el.dataset.f, k = el.dataset.k;
+      if (f) { st[f] = el.value; return; }
+      if (!k) return; const row = st.rows[+el.closest(".imp-r").dataset.i];
+      row[k] = (k === "qty" || k === "scrap") ? (el.value === "" ? null : Math.max(0, parseInt(el.value, 10) || 0)) : (el.value.trim() || null);
+    });
+    box.addEventListener("click", e => {
+      const x = e.target.closest(".x"); if (x) { st.rows.splice(+x.closest(".imp-r").dataset.i, 1); draw(); return; }
+      const a = e.target.closest("[data-a]"); if (!a) return;
+      const rows = st.rows.filter(r => r.item || r.qty != null || r.scrap != null);
+      if (a.dataset.a === "copy") {
+        const t = SEC_AR[st.sec] ? SEC_AR[st.sec] + " — " + st.date + "\n" : st.date + "\n";
+        const txt = t + rows.map(r => [r.item, r.qty != null ? "العدد " + r.qty : "", r.scrap != null ? "هالك " + r.scrap : "", r.worker || ""].filter(Boolean).join(" | ")).join("\n");
+        try { navigator.clipboard.writeText(txt); toast("اتنسخ"); } catch (_) { toast("تعذّر النسخ", "bad"); } return;
+      }
+      if (!st.sec) { toast("اختار القسم الأول", "bad"); return; }
+      if (!rows.length) { toast("مفيش سطور للتسجيل", "bad"); return; }
+      const file = SEC_PAGE[st.sec];
+      if (!canSee(file)) { toast("حسابك مالهوش صلاحية على " + SEC_AR[st.sec], "bad"); return; }
+      impSave({ u: ME.id, sec: st.sec, date: st.date, rows: rows.map(r => Object.assign({}, r, { done: false })) });
+      if (file === PAGE) { drawTray(); toggle(false); toast("جاهز. اضغط زر التسجيل وهتتعبّى البيانات"); return; }
+      say("حاضر، بفتحلك " + SEC_AR[st.sec] + " وأجهّز لك " + rows.length + " سطر للتسجيل…");
+      cfg.open = false; saveCfg(); setTimeout(() => { location.href = file; }, 500);
+    });
+  }
+
+  /* شريط التعبئة: يعبّي نافذة التسجيل العادية من بيانات الصورة. المستخدم يراجع ويحفظ بنفسه (لا كتابة تلقائية). */
+  const IMP_K = "masai_import";
+  const impLoad = () => { try { const x = JSON.parse(sessionStorage.getItem(IMP_K) || "null"); return x && x.u === ME.id ? x : null; } catch (e) { return null; } };
+  const impSave = x => { try { x ? sessionStorage.setItem(IMP_K, JSON.stringify(x)) : sessionStorage.removeItem(IMP_K); } catch (e) {} };
+  const curRow = x => x.rows.findIndex(r => !r.done);
+  let tray = null, fctx = null;
+  const rmTray = () => { if (tray) { tray.remove(); tray = null; } };
+  function markDone(i) { const x = impLoad(); if (!x || !x.rows[i]) return; x.rows[i].done = true; impSave(x); drawTray(); }
+  function setV(ov, id, v) {
+    const el = ov.querySelector("#" + id); if (!el || el.disabled || v == null || v === "") return false;
+    el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); return true;
+  }
+  function pickOpt(sel, txt) {
+    if (!sel || !txt) return; const t = String(txt).trim();
+    const o = [...sel.options].find(o => o.text.trim() && (o.text.includes(t) || t.includes(o.text.trim())));
+    if (o) { sel.value = o.value; sel.dispatchEvent(new Event("change", { bubbles: true })); }
+  }
+  function fillModal(row, x, i) {
+    const ov = document.getElementById("ov"); if (!ov) return false;
+    let n = 0;
+    [["m-d", x.date], ["m-item", row.item], ["m-q", row.qty], ["m-scrap", row.scrap], ["m-n", row.note]].forEach(([id, v]) => { if (setV(ov, id, v)) n++; });
+    pickOpt(ov.querySelector("#m-sh"), row.shift); pickOpt(ov.querySelector("#m-w"), row.worker);
+    if (n) { fctx = { i, clicked: false }; ["mSave", "mSaveMore"].forEach(id => { const b = ov.querySelector("#" + id); if (b) b.addEventListener("click", () => { if (fctx) fctx.clicked = true; }); }); }
+    return n > 0;
+  }
+  function drawTray() {
+    const x = impLoad();
+    if (!x || SEC_PAGE[x.sec] !== PAGE) { rmTray(); return; }
+    const i = curRow(x);
+    if (i < 0) { rmTray(); impSave(null); toast("خلّصت كل سطور الصورة ✓"); return; }
+    const r = x.rows[i];
+    if (!tray) { tray = document.createElement("div"); tray.id = "masai-tray"; document.body.appendChild(tray); }
+    tray.innerHTML = '<div class="t1"><span>📷 من الصورة · ' + esc(SEC_AR[x.sec]) + " · " + esc(x.date) + "</span><span>سطر " + (i + 1) + " من " + x.rows.length + "</span></div>" +
+      '<div class="t2"><b>' + esc(r.item || "—") + "</b>" + (r.qty != null ? " · العدد " + r.qty : "") + (r.scrap != null ? " · هالك " + r.scrap : "") + (r.worker ? " · " + esc(r.worker) : "") + "</div>" +
+      '<div class="ta"><button type="button" class="p" data-t="fill">تعبئة</button><button type="button" data-t="done">تم ✓ التالي</button><button type="button" data-t="close">إغلاق</button></div>';
+    tray.onclick = e => {
+      const b = e.target.closest("button"); if (!b) return; const cx = impLoad(); if (!cx) return; const k = curRow(cx);
+      if (b.dataset.t === "close") { impSave(null); rmTray(); }
+      else if (b.dataset.t === "done") markDone(k);
+      else if (b.dataset.t === "fill") { if (!fillModal(cx.rows[k], cx, k)) toast("افتح نافذة التسجيل (زر الإضافة) وأنا أعبّيها"); }
+    };
+  }
+  if (typeof window.openModal === "function" && !window.__masOM) {
+    window.__masOM = 1; const om = window.openModal;
+    window.openModal = function (title) {
+      if (fctx && fctx.clicked) { const c = fctx; fctx = null; markDone(c.i); }
+      const r = om.apply(this, arguments);
+      try {
+        const x = impLoad();
+        if (x && SEC_PAGE[x.sec] === PAGE && !/تعديل|حذف|تغيير|كلمة|مرور/.test(String(title))) {
+          const i = curRow(x); if (i >= 0 && fillModal(x.rows[i], x, i)) toast("اتعبّت من الصورة. راجع الأرقام وبعدين احفظ");
+        }
+      } catch (e) {}
+      return r;
+    };
+    new MutationObserver(() => { if (fctx && !document.getElementById("ov")) { const c = fctx; fctx = null; if (c.clicked) markDone(c.i); } }).observe(document.body, { childList: true });
+  }
   /* ---------- تشغيل ---------- */
   if (hist.length) hist.forEach(h => { if (h.r === "u") bubble("user", h.t); else bubble("bot", h.t, { meta: h.m, ctx: h.c }); }); else greet();
-  setState("ready"); layout();
+  setState("ready"); layout(); drawTray();
   if (cfg.open) toggle(true);
   try { // أمر معلّق بعد فتح صفحة (مثلاً: افتح الحريق واعرض إنتاج النهارده)
     const p = JSON.parse(sessionStorage.getItem("masai_pending") || "null"); sessionStorage.removeItem("masai_pending");
