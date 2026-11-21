@@ -227,9 +227,9 @@ const SUG=["عرّف بنفسك وبيّن ما تستطيع فعله","ملخص
 const WHO='<div class="x-who"><span>'+ic('spark')+'</span>مساعد MAS</div>';
 const ENG={gemini:"Gemini",groq:"Groq",openrouter:"OpenRouter"};
 const THINK=["أقرأ بيانات المصنع…","أحسب وأقارن الأرقام…","أجهّز الإجابة…"];
-const SEC_AR={casting:"الصب",brush:"البرشر",glaze:"الجليز",deco:"الزخرفة",spray:"الرش",repair:"التصليح",finish:"التشطيب",fire:"الحريق"};
+const SECN={casting:"الصب",brush:"البرشر",glaze:"الجليز",deco:"الزخرفة",spray:"الرش",repair:"التصليح",finish:"التشطيب",fire:"الحريق"};
 const SEC_PAGE={casting:"casting.html",brush:"brush.html",glaze:"glaze.html",deco:"decoration.html",spray:"spray.html",repair:"repair.html",finish:"finish.html",fire:"fire.html"};
-let CAT=null,fillMode=false;
+let ITEMS=null,fillMode=false;
 let K,chats=[],cur=null,busy=false,gen=0,tick=null;
 
 /* ---------- تخزين محلي لكل مستخدم ---------- */
@@ -301,7 +301,7 @@ function ctxQ(q){ // سياق مختصر من آخر تبادل، بحدّ ال�
   const pre="[سياق المحادثة السابق — للفهم فقط]\nسؤال سابق: "+lu.t.slice(0,200)+"\nملخص الرد السابق: "+la.t.replace(/\s+/g," ").slice(0,350)+"\n[السؤال الحالي]\n";
   return pre.length+q.length<=1500?pre+q:q;
 }
-async function ask(q,regen){
+async function askQ(q,regen){
   if(busy)return;q=q.trim();if(q.length<2){toast("اكتب سؤالك","bad");return}
   if(!cur){cur={id:uid(),title:q.slice(0,40),m:[],t:Date.now()};chats.unshift(cur)}
   if(!regen)cur.m.push({r:"u",t:q});
@@ -331,10 +331,10 @@ function csv(el){
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+s],{type:"text/csv;charset=utf-8"}));a.download="mas-ai-"+new Date().toISOString().slice(0,10)+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 }
 $("x_msgs").onclick=async e=>{
-  const sug=e.target.closest(".x-chips button");if(sug){$("ai_q").value=sug.textContent;ask(sug.textContent);$("ai_q").value="";return}
+  const sug=e.target.closest(".x-chips button");if(sug){$("ai_q").value=sug.textContent;askQ(sug.textContent);$("ai_q").value="";return}
   const b=e.target.closest("[data-a]");if(!b)return;const w=b.closest(".x-m"),i=+w.dataset.i,m=cur.m[i],a=b.dataset.a;
   if(a==="copy"){try{await navigator.clipboard.writeText(m.t);toast("تم النسخ","ok")}catch(x){toast("تعذّر النسخ","bad")}}
-  else if(a==="regen"||a==="retry"){if(busy)return;const q=m.q;cur.m.splice(i,1);ask(q,true)}
+  else if(a==="regen"||a==="retry"){if(busy)return;const q=m.q;cur.m.splice(i,1);askQ(q,true)}
   else if(a==="up"||a==="down"){m.fb=m.fb===a?"":a;save();b.parentNode.querySelectorAll("[data-a=up],[data-a=down]").forEach(x=>x.classList.toggle("on",x.dataset.a===m.fb));toast(m.fb?"شكرًا على تقييمك":"أُلغي التقييم","ok")}
   else if(a==="pdf"){const c=m.ctx||{};AiPrint.print({md:m.t,question:c.q||m.q,period:c.period,section:c.section,title:"تقرير الذكاء الاصطناعي"})}
   else if(a==="csv")csv(w.querySelector(".ai-md"));
@@ -362,12 +362,12 @@ async function adminPanel(){
 
 /* ---------- تعبئة البيانات: استخراج ← مراجعة وتعديل ← فتح القسم للحفظ (لا كتابة تلقائية) ---------- */
 const nz=s=>String(s||"").toLowerCase().replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/\s+/g," ").trim();
-async function loadCat(){if(CAT)return CAT;try{const r=await db.from("catalog").select("name");CAT=(r.data||[]).map(x=>x.name).filter(Boolean)}catch(e){CAT=[]}
-  const dl=$("x_cat")||Object.assign(document.createElement("datalist"),{id:"x_cat"});dl.innerHTML=CAT.map(n=>'<option value="'+esc(n)+'">').join("");document.body.appendChild(dl);return CAT}
+async function loadCat(){if(ITEMS)return ITEMS;try{const r=await db.from("catalog").select("name");ITEMS=(r.data||[]).map(x=>x.name).filter(Boolean)}catch(e){ITEMS=[]}
+  const dl=$("x_cat")||Object.assign(document.createElement("datalist"),{id:"x_cat"});dl.innerHTML=ITEMS.map(n=>'<option value="'+esc(n)+'">').join("");document.body.appendChild(dl);return ITEMS}
 function match(item){ // يتحقق من اسم الصنف مقابل الأصناف المسجّلة
-  if(!item||!CAT||!CAT.length)return{s:"unk"};const n=nz(item);
-  if(CAT.some(c=>nz(c)===n))return{s:"ok"};
-  const near=CAT.find(c=>{const k=nz(c);return k.includes(n)||n.includes(k)});
+  if(!item||!ITEMS||!ITEMS.length)return{s:"unk"};const n=nz(item);
+  if(ITEMS.some(c=>nz(c)===n))return{s:"ok"};
+  const near=ITEMS.find(c=>{const k=nz(c);return k.includes(n)||n.includes(k)});
   return near?{s:"near",sug:near}:{s:"no"};
 }
 function validate(v){
@@ -387,7 +387,7 @@ function validate(v){
 }
 function impDraw(d,m){
   const v=m.imp,host=d.querySelector(".x-imp"),CONF={high:"ثقة عالية",medium:"ثقة متوسطة",low:"ثقة منخفضة — راجع كل رقم"};
-  const opts='<option value="">— اختر القسم —</option>'+Object.keys(SEC_AR).map(k=>'<option value="'+k+'"'+(k===v.section?" selected":"")+">"+SEC_AR[k]+"</option>").join("");
+  const opts='<option value="">— اختر القسم —</option>'+Object.keys(SECN).map(k=>'<option value="'+k+'"'+(k===v.section?" selected":"")+">"+SECN[k]+"</option>").join("");
   host.innerHTML='<div class="x-imp-h"><b>'+ic("clip")+'بيانات مستخرجة — راجعها قبل الحفظ</b><span class="bdg '+v.confidence+'">'+CONF[v.confidence]+'</span></div>'+
     (v.notes?'<div class="x-meta">ملاحظة المساعد: '+esc(v.notes)+"</div>":"")+
     '<div class="x-imp-m"><div><label>القسم</label><select data-f="section">'+opts+'</select></div><div><label>التاريخ</label><input type="date" data-f="date" value="'+esc(v.date||"")+'"></div></div>'+
@@ -416,12 +416,12 @@ $("x_msgs").addEventListener("click",e=>{
   else if(fx){v.rows[+fx.dataset.fix].item=v.rows[+fx.dataset.fix]._m.sug;save();impDraw(w,m)}
   else if(ia){const a=ia.dataset.ia;
     if(a==="add"){v.rows.push({item:null,qty:null,scrap:null,worker:null,shift:null,note:null});save();impDraw(w,m)}
-    else if(a==="copy"){const tx=(SEC_AR[v.section]||"")+" — "+v.date+"\n"+v.rows.map(r=>[r.item,r.qty!=null?"العدد "+r.qty:"",r.scrap!=null?"هالك "+r.scrap:"",r.worker].filter(Boolean).join(" | ")).join("\n");navigator.clipboard.writeText(tx).then(()=>toast("تم النسخ","ok"),()=>toast("تعذّر النسخ","bad"))}
+    else if(a==="copy"){const tx=(SECN[v.section]||"")+" — "+v.date+"\n"+v.rows.map(r=>[r.item,r.qty!=null?"العدد "+r.qty:"",r.scrap!=null?"هالك "+r.scrap:"",r.worker].filter(Boolean).join(" | ")).join("\n");navigator.clipboard.writeText(tx).then(()=>toast("تم النسخ","ok"),()=>toast("تعذّر النسخ","bad"))}
     else if(a==="go"){const {E}=validate(v);if(E.length){toast(E[0],"bad");return}
-      const file=SEC_PAGE[v.section];if(!canSee(file)){toast("حسابك لا يملك صلاحية على "+SEC_AR[v.section],"bad");return}
+      const file=SEC_PAGE[v.section];if(!canSee(file)){toast("حسابك لا يملك صلاحية على "+SECN[v.section],"bad");return}
       const rows=v.rows.filter(r=>r.item||r.qty!=null||r.scrap!=null).map(r=>({item:r.item,qty:r.qty,scrap:r.scrap,worker:r.worker,shift:r.shift,note:r.note,done:false}));
       try{sessionStorage.setItem("masai_import",JSON.stringify({u:ME.id,sec:v.section,date:v.date,rows}))}catch(x){toast("تعذّر تجهيز البيانات","bad");return}
-      toast("جاري فتح "+SEC_AR[v.section]+"… راجع كل سطر ثم احفظ","ok");setTimeout(()=>{location.href=file},500)}}
+      toast("جاري فتح "+SECN[v.section]+"… راجع كل سطر ثم احفظ","ok");setTimeout(()=>{location.href=file},500)}}
 });
 async function shrink(file){
   const url=URL.createObjectURL(file);
@@ -606,7 +606,7 @@ function labChart(r){
 async function labOpen(){
   const p=$("x_labp");if(!p.hidden){p.hidden=true;return}
   $("x_memp").hidden=true;$("x_admin").hidden=true;p.hidden=false;
-  p.innerHTML='<div class="mh"><b>مختبر التنبؤ <span class="lb-tag">تجريبي</span></b><small>يدرّب شبكة عصبية صغيرة داخل المتصفح على إنتاجك اليومي خلال آخر سنة، ثم يقارنها على أيام لم تَرَها بطرق إحصائية بسيطة. لا يدخل في إجابات المساعد ولا يغيّر أي بيانات.</small></div><div class="lb-row"><select id="lb_s" aria-label="القسم"><option value="">كل الأقسام</option>'+Object.keys(SEC_AR).map(k=>'<option value="'+k+'">'+SEC_AR[k]+"</option>").join("")+'</select><button type="button" class="p" id="lb_go">ابدأ التجربة</button></div><div id="lb_o"></div>';
+  p.innerHTML='<div class="mh"><b>مختبر التنبؤ <span class="lb-tag">تجريبي</span></b><small>يدرّب شبكة عصبية صغيرة داخل المتصفح على إنتاجك اليومي خلال آخر سنة، ثم يقارنها على أيام لم تَرَها بطرق إحصائية بسيطة. لا يدخل في إجابات المساعد ولا يغيّر أي بيانات.</small></div><div class="lb-row"><select id="lb_s" aria-label="القسم"><option value="">كل الأقسام</option>'+Object.keys(SECN).map(k=>'<option value="'+k+'">'+SECN[k]+"</option>").join("")+'</select><button type="button" class="p" id="lb_go">ابدأ التجربة</button></div><div id="lb_o"></div>';
   $("lb_go").onclick=async()=>{
     const b=$("lb_go"),o=$("lb_o"),sec=$("lb_s").value;b.disabled=true;o.innerHTML='<div class="lb-sm">جارٍ تحميل البيانات…</div>';
     const to=today(),from=new Date(Date.now()-364*864e5).toISOString().slice(0,10);
@@ -655,7 +655,7 @@ async function labOpen(){
   const q=$("ai_q"),fit=()=>{q.style.height="auto";q.style.height=Math.min(q.scrollHeight,150)+"px"};
   q.oninput=fit;
   q.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("ai_go").click()}};
-  $("ai_go").onclick=()=>{if(busy){stop();return}const v=q.value;if(v.trim().length<2){toast("اكتب سؤالك","bad");return}q.value="";fit();fillMode?(CANWRITE?writeCommand(v.trim()):extractData({text:v.trim()},v.trim().slice(0,60))):ask(v)};
+  $("ai_go").onclick=()=>{if(busy){stop();return}const v=q.value;if(v.trim().length<2){toast("اكتب سؤالك","bad");return}q.value="";fit();fillMode?(CANWRITE?writeCommand(v.trim()):extractData({text:v.trim()},v.trim().slice(0,60))):askQ(v)};
   addEventListener("online",()=>markOff(false));addEventListener("offline",()=>markOff(true));
 })();
 </script>
