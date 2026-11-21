@@ -283,7 +283,7 @@ function masAiMount(){
   const load=src=>new Promise(res=>{const s=document.createElement("script");s.src=src;s.onload=s.onerror=()=>res();document.body.appendChild(s)});
   (async()=>{
     if(typeof masAi!=="function")await load("ai.js");
-    await load("ai-print.js");await load("mas-ai-core.js");await load("mas-ai.js");
+    await load("ai-print.js"); /* الزر العائم متوقف: لا تحميل لـ mas-ai-core.js و mas-ai.js */
   })();
 }
 const SUBS={
