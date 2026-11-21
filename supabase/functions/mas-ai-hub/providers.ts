@@ -86,4 +86,5 @@ export const openrouter: Provider = {
 };
 
 export const REGISTRY: Record<string, Provider> = { gemini, groq, openrouter };
-export const keyFor = (p: Provider) => Deno_env(p.envKey);
+// تنظيف المفتاح: مسافات/أسطر زائدة أو علامات اقتباس أو كلمة Bearer من اللصق تسبب خطأ 401
+export const keyFor = (p: Provider) => Deno_env(p.envKey)?.trim().replace(/^Bearer\s+/i, "").replace(/^["']|["']$/g, "").trim() || undefined;

@@ -1,9 +1,21 @@
 // mas-ai-hub — بوابة الذكاء الاصطناعي لـ MAS. المفاتيح من Secrets فقط، والبيانات بصلاحية المستخدم (RLS).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { buildPrompt, buildSsml, clampRate, detectTask, safeVoice, SECTIONS, SYSTEM_PROMPT, validateAsk } from "./policy.ts";
+import { buildPrompt, buildSsml, clampRate, detectTask, knowledgeBlock, safeVoice, SECTIONS, SYSTEM_PROMPT, validateAsk } from "./policy.ts";
 import { keyFor, REGISTRY } from "./providers.ts";
-import { runChain } from "./orchestrator.ts";
+import { buildFilter, buildRows, cleanIds, WSECS } from "./writer.ts";
+import { runChain, runHedged } from "./orchestrator.ts";
 
+// مهلة بدء المحرك الاحتياطي بالتوازي (مللي ثانية). يمكن ضبطها بسر HEDGE_MS (500–10000)
+const HEDGE_MS = Math.min(10000, Math.max(500, Number(Deno.env.get("HEDGE_MS")) || 2000));
+
+// ذاكرة المساعد (مصطلحات معتمدة). أي خطأ هنا لا يعطّل الإجابة.
+// deno-lint-ignore no-explicit-any
+async function loadKb(admin: any): Promise<string> {
+  try {
+    const { data } = await admin.from("ai_knowledge").select("kind,term,meaning").eq("active", true).order("id").limit(60);
+    return knowledgeBlock(data ?? []);
+  } catch { return ""; }
+}
 // سلسلة المحركات: الأساسي ثم الاحتياطي ثم أي محرك آخر مفتاحه مضبوط (مثل OpenRouter) عند تفعيل التحويل التلقائي
 // deno-lint-ignore no-explicit-any
 function buildChain(s: any) {
@@ -127,6 +139,96 @@ Deno.serve(async (req) => {
   }
 
 
+  // ---- تفويض الكتابة: شخص واحد فقط (ai_write_policy). كل كتابة بصلاحية المستخدم نفسه (RLS)، وتُسجَّل وتقبل التراجع 7 أيام ----
+  if (typeof action === "string" && action.startsWith("write_")) {
+    const { data: wp } = await admin.from("ai_write_policy").select("user_id,enabled").eq("id", 1).maybeSingle();
+    const canWrite = !!wp && wp.enabled === true && wp.user_id === uid && (prof.role === "admin" || prof.role === "manager");
+    if (action === "write_status") return json(req, { can_write: canWrite, sections: canWrite ? Object.entries(WSECS).map(([id, v]) => ({ id, label: v.label })) : [] });
+    if (!canWrite) return json(req, { error: "forbidden", message: "الكتابة المباشرة مفوّضة لشخص واحد فقط." }, 403);
+    const today = cairoToday();
+    const sec = String(body?.sec ?? "");
+    const c = WSECS[sec];
+    const bad = (m: string, st = 400) => json(req, { error: "bad_request", message: m }, st);
+
+    // أمر نصي ← نية منظّمة (للعرض والتأكيد فقط؛ لا ينفّذ شيئًا)
+    if (action === "write_intent") {
+      const text = typeof body?.text === "string" ? body.text.trim().slice(0, 2000) : "";
+      if (text.length < 3) return bad("اكتب الأمر.");
+      const sys = "أنت محلّل أوامر لنظام مصنع خزف. حوّل أمر المستخدم إلى JSON فقط، ولا تخمّن أي اسم أو رقم غير مذكور (اجعله null). الشكل: " +
+        '{"op":"add|delete|none","section":"casting|brush|finish|glaze|deco|spray|repair|fire|unknown","date":"YYYY-MM-DD أو null","from":"YYYY-MM-DD أو null","to":"YYYY-MM-DD أو null","item":"اسم الصنف أو النشاط أو null","worker":"أو null","notes":"أي غموض","rows":[{"item":"","qty":0,"scrap":null,"worker":null,"shift":null,"note":null}]}. ' +
+        "op=add إذا طلب تسجيل/إضافة بيانات (ضع السطور في rows). op=delete إذا طلب حذف سجلات (ضع شروط البحث date أو from/to وitem وworker ولا تضع rows). غير ذلك op=none. الأقسام: الصب=casting، البرشر=brush، التشطيب=finish، الجليز=glaze، الزخرفة=deco، الرش=spray، التصليح=repair، الحريق=fire. تاريخ اليوم " + today + ".";
+      const r = await runHedged(buildChain(s), { system: sys, prompt: text, timeoutMs: Math.max(s.timeout_ms, 20000), json: true }, hooks, HEDGE_MS);
+      if (!r.ok) return json(req, { error: r.error.cls, message: "تعذّر فهم الأمر الآن، حاول بعد قليل." }, 503);
+      let j: any; try { j = JSON.parse(r.text.replace(/^```json|```$/g, "").trim()); } catch { j = null; }
+      const sx = (v: unknown, n: number) => { const x = typeof v === "string" ? v.trim().slice(0, n) : ""; return x || null; };
+      const dt = (v: unknown) => /^\d{4}-\d{2}-\d{2}$/.test(String(v ?? "")) ? String(v) : null;
+      const num = (v: unknown) => { const n = Number(v); return v == null || v === "" || !Number.isFinite(n) ? null : Math.min(1_000_000, Math.max(0, Math.round(n))); };
+      const rows = (Array.isArray(j?.rows) ? j.rows : []).slice(0, 60).map((x: any) => ({ item: sx(x?.item, 120), qty: num(x?.qty), scrap: num(x?.scrap), worker: sx(x?.worker, 80), shift: sx(x?.shift, 20), note: sx(x?.note, 300) }));
+      await log("ai_usage_log", { task: "intent", provider: r.provider, model: r.model, status: "ok", latency_ms: 0, failover: r.failover });
+      return json(req, { intent: {
+        op: ["add", "delete"].includes(j?.op) ? j.op : "none",
+        section: (SECTIONS as readonly string[]).includes(j?.section) ? j.section : "unknown",
+        date: dt(j?.date), from: dt(j?.from), to: dt(j?.to), item: sx(j?.item, 80), worker: sx(j?.worker, 80), notes: sx(j?.notes, 300) ?? "", rows } });
+    }
+
+    if (!c) return bad("هذا القسم غير مدعوم للكتابة المباشرة. الأقسام المدعومة: الصب والبرشر والتشطيب.");
+
+    if (action === "write_add") {
+      const b = buildRows(sec, String(body?.date ?? ""), body?.rows, today, () => crypto.randomUUID());
+      if (!b.ok) return bad(b.message);
+      const { data: ins, error } = await userDb.from(c.table).insert(b.rows).select("id");
+      if (error) { await log("ai_error_log", { provider: "write", error_class: "add_" + (error.code ?? "x"), message: String(error.message).slice(0, 200) }); return bad("تعذّر الحفظ. راجع البيانات أو صلاحياتك على القسم.", 400); }
+      const ids = (ins ?? []).map((r: any) => r.id);
+      const { data: lg } = await admin.from("ai_action_log").insert({ user_id: uid, action: "add", section: sec, row_ids: ids }).select("id").single();
+      return json(req, { ok: true, count: ids.length, log_id: lg?.id ?? null });
+    }
+
+    if (action === "write_find") {
+      const f = buildFilter(body, today);
+      if (!f.ok) return bad(f.message);
+      let q = userDb.from(c.table).select("*").gte(c.date, f.f.from).lte(c.date, f.f.to)
+        .order(c.date, { ascending: false }).order("id", { ascending: false }).limit(f.f.limit);
+      if (f.f.item) q = q.ilike(c.text, `%${f.f.item}%`);
+      if (f.f.worker) q = q.ilike("worker", `%${f.f.worker}%`);
+      const { data, error } = await q;
+      if (error) return bad("تعذّر البحث.", 400);
+      return json(req, { sec, rows: (data ?? []).map((r: any) => ({ id: r.id, date: r[c.date], item: r[c.text], qty: r.qty, scrap: r.scrap ?? null, shift: r.shift ?? null, worker: r.worker ?? null, note: r.note ?? null })) });
+    }
+
+    if (action === "write_delete") {
+      const ids = cleanIds(body?.ids);
+      if (!ids || body?.confirm !== true) return bad("حدّد السجلات (حتى 50) وأكّد الحذف.");
+      const { data: before, error: e1 } = await userDb.from(c.table).select("*").in("id", ids);
+      if (e1 || !before?.length) return bad("لم أجد هذه السجلات (أو لا تملك صلاحية قراءتها).", 404);
+      const { data: del, error: e2 } = await userDb.from(c.table).delete().in("id", before.map((r: any) => r.id)).select("id");
+      if (e2) { await log("ai_error_log", { provider: "write", error_class: "del_" + (e2.code ?? "x"), message: String(e2.message).slice(0, 200) }); return bad("تعذّر الحذف.", 400); }
+      const gone = new Set((del ?? []).map((r: any) => r.id));
+      if (!gone.size) return bad("لم يُحذف شيء: الصلاحيات الحالية تمنع الحذف.", 403);
+      const snap = before.filter((r: any) => gone.has(r.id));
+      const { data: lg } = await admin.from("ai_action_log").insert({ user_id: uid, action: "delete", section: sec, row_ids: [...gone], before_data: snap }).select("id").single();
+      return json(req, { ok: true, deleted: gone.size, log_id: lg?.id ?? null });
+    }
+
+    return bad("أمر كتابة غير معروف.");
+  }
+
+  // التراجع عن آخر عملية كتابة (7 أيام، مرة واحدة، لصاحبها فقط)
+  if (action === "write_undo") {
+    const { data: wp } = await admin.from("ai_write_policy").select("user_id,enabled").eq("id", 1).maybeSingle();
+    if (!wp || wp.enabled !== true || wp.user_id !== uid) return json(req, { error: "forbidden" }, 403);
+    const lid = Number(body?.log_id);
+    const { data: lg } = Number.isInteger(lid) ? await admin.from("ai_action_log").select("*").eq("id", lid).eq("user_id", uid).is("undone_at", null)
+      .gte("at", new Date(Date.now() - 7 * 864e5).toISOString()).maybeSingle() : { data: null };
+    const c = lg ? WSECS[lg.section] : null;
+    if (!lg || !c) return json(req, { error: "bad_request", message: "لا يمكن التراجع (انتهت المدة أو تم التراجع من قبل)." }, 404);
+    const res = lg.action === "delete"
+      ? await userDb.from(c.table).insert(lg.before_data)
+      : await userDb.from(c.table).delete().in("id", lg.row_ids);
+    if (res.error) return json(req, { error: "db", message: "تعذّر التراجع." }, 400);
+    await admin.from("ai_action_log").update({ undone_at: new Date().toISOString() }).eq("id", lid);
+    return json(req, { ok: true });
+  }
+
   // ---- تعبئة بيانات: استخراج منظّم من نص أو صورة. لا يكتب في قاعدة البيانات؛ المستخدم يراجع ويحفظ بنفسه ----
   if (action === "extract" || action === "vision") {
     if (!s.enabled) return json(req, { error: "disabled", message: "المساعد الذكي موقوف من الإعدادات." }, 503);
@@ -143,10 +245,10 @@ Deno.serve(async (req) => {
     const hint = SECTIONS.includes(body?.hint) ? body.hint : "";
     const sys = "أنت أداة استخراج بيانات لمصنع خزف. استخرج فقط ما هو مكتوب صراحةً في المدخل. ممنوع التخمين أو اختراع أي اسم أو رقم؛ ما لم يتضح اجعله null. أعد JSON فقط بهذا الشكل: " +
       '{"section":"casting|brush|glaze|deco|spray|repair|finish|fire|unknown","date":"YYYY-MM-DD أو null","confidence":"high|medium|low","notes":"ملاحظات عن الغموض أو الأرقام غير الواضحة","rows":[{"item":"اسم الصنف","qty":رقم_صحيح_أو_null,"scrap":رقم_صحيح_أو_null,"worker":"اسم العامل أو null","shift":"الوردية أو null","note":"ملاحظة أو null"}]}';
-    const prompt = (hint ? "القسم المرجّح: " + hint + "\n" : "") + "تاريخ اليوم: " + cairoToday() + "\n" + (text ? "النص:\n" + text : "الصورة المرفقة تحتوي سجل إنتاج. استخرج سطوره.");
+    const prompt = (hint ? "القسم المرجّح: " + hint + "\n" : "") + "تاريخ اليوم: " + cairoToday() + "\n" + (await loadKb(admin)) + (text ? "النص:\n" + text : "الصورة المرفقة تحتوي سجل إنتاج. استخرج سطوره.");
     const chain = img ? [REGISTRY.gemini, REGISTRY.openrouter].filter((p) => p === REGISTRY.gemini || keyFor(p)) : buildChain(s);
     const t0 = Date.now();
-    const r = await runChain(chain, { system: sys, prompt, timeoutMs: Math.max(s.timeout_ms, 25000), json: true, image: img ? { mime, data: img } : undefined }, hooks);
+    const r = await runHedged(chain, { system: sys, prompt, timeoutMs: Math.max(s.timeout_ms, 25000), json: true, image: img ? { mime, data: img } : undefined }, hooks, HEDGE_MS);
     const ms = Date.now() - t0;
     if (!r.ok) {
       await log("ai_usage_log", { task: "extract", provider: r.provider, status: "error", latency_ms: ms });
@@ -200,13 +302,14 @@ Deno.serve(async (req) => {
   if (task === "orders") notes.push("تنبيه: بيانات الطلبيات غير مرفقة في هذه النسخة؛ اعتمد على الإنتاج فقط وصرّح بالنقص.");
   let payload = facts;
   if (JSON.stringify(payload).length > 60000) { payload = { ...facts, daily_production: [] }; notes.push("حُذف التفصيل اليومي لضيق الحجم."); }
-  const prompt = buildPrompt(v.q, task, payload, notes.join("\n"));
+  const kb = await loadKb(admin);
+  const prompt = buildPrompt(v.q, task, payload, notes.join("\n"), kb);
 
   const chain = buildChain(s);
   if (!chain[0]) return json(req, { error: "config", message: "المحرك الأساسي غير معرّف." }, 500);
 
   const t0 = Date.now();
-  const r = await runChain(chain, { system: SYSTEM_PROMPT, prompt, timeoutMs: s.timeout_ms }, hooks);
+  const r = await runHedged(chain, { system: SYSTEM_PROMPT, prompt, timeoutMs: s.timeout_ms }, hooks, HEDGE_MS);
   const ms = Date.now() - t0;
   if (r.ok) {
     await log("ai_usage_log", { task, provider: r.provider, model: r.model, status: "ok", latency_ms: ms,
