@@ -105,9 +105,7 @@ Deno.serve(async (req) => {
     await log("ai_usage_log", { task: "test", provider: p.id, model: r.ok ? r.model : null, status: r.ok ? "ok" : "error", latency_ms: ms });
     return json(req, r.ok ? { ok: true, provider: p.id, latency_ms: ms }
                           : { ok: false, provider: p.id, latency_ms: ms, error_class: r.error.cls, http_status: r.error.status });
-  }
-
-  // ---- صوت المساعد: Azure Speech بصوت مصري (ar-EG-SalmaNeural افتراضيًا) ----
+  }  // ---- صوت المساعد: Azure Speech بصوت مصري (ar-EG-SalmaNeural افتراضيًا) ----
   if (action === "speak") {
     const key = Deno.env.get("AZURE_SPEECH_KEY")?.trim();
     const region = Deno.env.get("AZURE_SPEECH_REGION")?.trim() ?? "";
@@ -210,9 +208,7 @@ Deno.serve(async (req) => {
     }
 
     return bad("أمر كتابة غير معروف.");
-  }
-
-  // التراجع عن آخر عملية كتابة (7 أيام، مرة واحدة، لصاحبها فقط)
+  }  // التراجع عن آخر عملية كتابة (7 أيام، مرة واحدة، لصاحبها فقط)
   if (action === "write_undo") {
     const { data: wp } = await admin.from("ai_write_policy").select("user_id,enabled").eq("id", 1).maybeSingle();
     if (!wp || wp.enabled !== true || wp.user_id !== uid) return json(req, { error: "forbidden" }, 403);
@@ -246,9 +242,10 @@ Deno.serve(async (req) => {
     const sys = "أنت أداة استخراج بيانات لمصنع خزف. استخرج فقط ما هو مكتوب صراحةً في المدخل. ممنوع التخمين أو اختراع أي اسم أو رقم؛ ما لم يتضح اجعله null. أعد JSON فقط بهذا الشكل: " +
       '{"section":"casting|brush|glaze|deco|spray|repair|finish|fire|unknown","date":"YYYY-MM-DD أو null","confidence":"high|medium|low","notes":"ملاحظات عن الغموض أو الأرقام غير الواضحة","rows":[{"item":"اسم الصنف","qty":رقم_صحيح_أو_null,"scrap":رقم_صحيح_أو_null,"worker":"اسم العامل أو null","shift":"الوردية أو null","note":"ملاحظة أو null"}]}';
     const prompt = (hint ? "القسم المرجّح: " + hint + "\n" : "") + "تاريخ اليوم: " + cairoToday() + "\n" + (await loadKb(admin)) + (text ? "النص:\n" + text : "الصورة المرفقة تحتوي سجل إنتاج. استخرج سطوره.");
-    const chain = img ? [REGISTRY.gemini, REGISTRY.openrouter].filter((p) => p === REGISTRY.gemini || keyFor(p)) : buildChain(s);
+    // الصور: Gemini مرتين (محاولة ثانية عند 503 العابر) ثم OpenRouter فقط إن ضُبط له نموذج رؤية OPENROUTER_VISION_MODEL
+    const chain = img ? [REGISTRY.gemini, REGISTRY.gemini, ...(Deno.env.get("OPENROUTER_VISION_MODEL")?.trim() && keyFor(REGISTRY.openrouter) ? [REGISTRY.openrouter] : [])] : buildChain(s);
     const t0 = Date.now();
-    const r = await runHedged(chain, { system: sys, prompt, timeoutMs: Math.max(s.timeout_ms, 25000), json: true, image: img ? { mime, data: img } : undefined }, hooks, HEDGE_MS);
+    const r = await runHedged(chain, { system: sys, prompt, timeoutMs: Math.max(s.timeout_ms, 30000), json: true, image: img ? { mime, data: img } : undefined }, hooks, img ? Math.max(HEDGE_MS, 8000) : HEDGE_MS);
     const ms = Date.now() - t0;
     if (!r.ok) {
       await log("ai_usage_log", { task: "extract", provider: r.provider, status: "error", latency_ms: ms });
@@ -270,9 +267,7 @@ Deno.serve(async (req) => {
     return json(req, { vision, provider: r.provider, failover: r.failover });
   }
 
-  if (action !== "ask") return json(req, { error: "unknown_action" }, 400);
-
-  // ---- سؤال ----
+  if (action !== "ask") return json(req, { error: "unknown_action" }, 400);  // ---- سؤال ----
   if (!s.enabled) return json(req, { error: "disabled", message: "المساعد الذكي موقوف من الإعدادات." }, 503);
   const v = validateAsk(body, cairoToday());
   if (!v.ok) return json(req, { error: "bad_request", message: v.error }, 400);
