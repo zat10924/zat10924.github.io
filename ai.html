@@ -39,6 +39,8 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
       <div class="x-id"><b>مساعد MAS</b><span class="x-st" id="x_st"><i></i><em id="x_stt">متصل · قراءة وتحليل فقط</em></span></div>
       <span class="x-eng" id="x_eng" hidden></span>
       <button class="x-ib" id="x_flt" aria-label="الفترة والقسم" title="الفترة والقسم"><svg viewBox="0 0 24 24"><path d="M4 5h16l-6 8v6l-4-2v-4L4 5z"/></svg></button>
+      <button class="x-ib" id="x_mem" aria-label="ذاكرة المساعد" title="ذاكرة المساعد" hidden><svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4zM5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg></button>
+      <button class="x-ib" id="x_lab" aria-label="مختبر التنبؤ" title="مختبر التنبؤ (تجريبي)"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 8-10M15 5h5v5"/></svg></button>
       <button class="x-ib" id="x_adm" aria-label="حالة المحركات" title="حالة المحركات" hidden><svg viewBox="0 0 24 24"><path d="M4 18V9M10 18V5M16 18v-7M21 18H3"/></svg></button>
     </header>
     <div class="x-filters" id="x_filters" hidden>
@@ -47,6 +49,8 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
       <small>الفترة الفارغة = الافتراضية من الخادم</small>
     </div>
     <div class="x-admin" id="x_admin" hidden></div>
+    <div class="x-memp" id="x_memp" hidden></div>
+    <div class="x-memp x-labp" id="x_labp" hidden></div>
     <section class="x-msgs" id="x_msgs" aria-live="polite"></section>
     <footer class="x-comp">
       <div class="x-box">
@@ -164,6 +168,35 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 .x-imp .acts2 button{display:flex;align-items:center;gap:6px}
 .x-ir .rm{display:grid;place-items:center}
 .x-box textarea,.x-imp input,.x-imp select,.x-srch,.x-filters input,.x-filters select{font-size:16px}
+.x-memp{padding:14px;border-bottom:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;gap:10px;max-height:46vh;overflow-y:auto}
+.x-memp[hidden]{display:none}.x-memp .mh{display:flex;flex-direction:column;gap:2px}.x-memp .mh b{font-size:16px}.x-memp .mh small{color:var(--mute);font-size:13px;line-height:1.6}
+.x-memp .mf{display:grid;grid-template-columns:130px 1fr 1.6fr auto auto;gap:8px}
+.x-memp input,.x-memp select{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:8px 10px;font:inherit;font-size:16px;min-width:0}
+.x-memp input:focus,.x-memp select:focus{outline:2px solid color-mix(in srgb,var(--pri) 45%,transparent);border-color:var(--pri)}
+.x-memp .mf button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:8px 14px;font:inherit;font-size:14.5px;cursor:pointer}
+.x-memp .mf .p{background:linear-gradient(135deg,#8a3447,#642631);color:#fff;border:0;font-weight:700}
+.x-ml{display:flex;flex-direction:column;gap:6px}
+.x-mi{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.x-mi.off{opacity:.55}.x-mi .tx{flex:1;min-width:0;font-size:14.5px;line-height:1.7;overflow-wrap:anywhere}.x-mi .tx b{color:var(--pri)}
+.x-mi .kd{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--mute);white-space:nowrap}
+.x-mi button{border:0;background:none;color:var(--mute);cursor:pointer;padding:6px;border-radius:8px;display:grid;place-items:center}.x-mi button:hover{color:var(--pri)}.x-mi button[data-md]:hover{color:var(--bad)}
+.x-mi input[type=checkbox]{width:18px;height:18px;accent-color:var(--pri)}
+.x-mnote{font-size:13.5px;color:var(--warn);line-height:1.7}
+@media(max-width:860px){.x-memp .mf{grid-template-columns:1fr 1fr}.x-memp .mf input{grid-column:1/-1}}
+.x-labp{max-height:60vh}
+.lb-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.lb-row select,.lb-row button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:8px 12px;font:inherit;font-size:15px}
+.lb-row .p{background:linear-gradient(135deg,#8a3447,#642631);color:#fff;border:0;font-weight:700;cursor:pointer}.lb-row .p:disabled{opacity:.5}
+.lb-tag{font-size:12.5px;border:1px solid var(--warn);color:var(--warn);border-radius:999px;padding:2px 10px}
+.lb-t{width:100%;border-collapse:collapse;font-size:14.5px}.lb-t th,.lb-t td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:right;white-space:nowrap}
+.lb-t th{color:var(--mute);font-weight:500;background:var(--bg)}.lb-t tbody tr:nth-child(even) td{background:transparent}.lb-t tr.win td{background:color-mix(in srgb,var(--ok) 12%,transparent);font-weight:700}
+.lb-v{border:1px solid var(--line);border-radius:12px;padding:10px 12px;line-height:1.9;font-size:15px}.lb-v.g{border-color:var(--ok)}.lb-v.w{border-color:var(--warn)}
+.x-app .lb-ch text{stroke:none;font-family:inherit}.x-app .lb-ch{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.lb-sm{font-size:13px;color:var(--mute);line-height:1.7}
+.x-id b{white-space:nowrap}.x-head{gap:8px}
+@media(max-width:520px){.x-st em{display:none}.x-head .x-ib{width:36px;height:36px}.x-head{padding:8px 10px}}
+.x-imp .acts2 .dg{background:var(--bad);color:#fff;border:0;font-weight:700}.x-imp .acts2 .dg:disabled{opacity:.45;cursor:default}
+.x-del td:first-child,.x-del th:first-child{width:34px}.x-del input[type=checkbox]{width:18px;height:18px;accent-color:var(--bad)}
 .x-scrim{display:none}
 @media(max-width:860px){
  .x-app{--xh:calc(100dvh - 66px);grid-template-columns:1fr}
@@ -188,7 +221,7 @@ const P={copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6
  sheet:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16"/>',chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',alert:'<path d="M12 4l9 16H3L12 4zM12 10v4M12 17.5v.01"/>',
  clip:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/>',spark:'<path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8L12 3z"/>',
- plus:'<path d="M12 5v14M5 12h14"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>'};
+ plus:'<path d="M12 5v14M5 12h14"/>',edit:'<path d="M4 20l4-1 11-11-3-3L5 16l-1 4zM14 7l3 3"/>',trash:'<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',book:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4zM5 17a3 3 0 0 1 3-3h11M9 8h6"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>'};
 const ic=n=>'<svg class="i" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>';
 const SUG=["عرّف بنفسك وبيّن ما تستطيع فعله","ملخص إداري للفترة","قارن إنتاج الأقسام","حلّل نسب الهالك وأسبابها المحتملة","استهلاك الجليز والألوان","أعلى الأصناف إنتاجًا"],SUGI=["info","clip","chart","alert","sheet","chart"];
 const WHO='<div class="x-who"><span>'+ic('spark')+'</span>مساعد MAS</div>';
@@ -233,9 +266,11 @@ const scrollDown=()=>{const m=$("x_msgs");m.scrollTop=m.scrollHeight};
 function msgEl(m,i){
   const d=document.createElement("div");d.className="x-m "+(m.r==="u"?"u":"a")+(m.err?" err":"");d.dataset.i=i;
   if(m.r==="u"){d.innerHTML='<div class="x-b">'+esc(m.t)+"</div>";return d}
+  if(m.del){d.innerHTML=WHO+'<div class="x-b x-imp"></div>';delDraw(d,m);return d}
+  if(m.res){d.innerHTML=WHO+'<div class="x-b ai-md"><p>'+esc(m.t)+'</p></div>'+(m.res.log_id&&!m.res.undone?'<div class="x-acts"><button data-a="undo">'+ic("refresh")+'تراجع عن هذه العملية</button></div>':"");return d}
   if(m.imp){d.innerHTML=WHO+'<div class="x-b x-imp"></div>';impDraw(d,m);return d}
   if(m.err){d.innerHTML='<div class="x-b">'+esc(m.t)+'</div>'+(m.q?'<div class="x-acts"><button data-a="retry">'+ic("refresh")+'إعادة المحاولة</button></div>':"")+'';return d}
-  d.innerHTML=WHO+'<div class="x-b ai-md">'+mdToHtml(m.t)+'</div><div class="x-meta">'+esc(m.meta||"")+'</div><div class="x-acts"><button data-a="copy">'+ic("copy")+'نسخ</button><button data-a="regen">'+ic("refresh")+'إعادة توليد</button><button data-a="up" aria-label="مفيدة" title="مفيدة" class="'+(m.fb==="up"?"on":"")+'">'+ic("up")+'</button><button data-a="down" aria-label="غير مفيدة" title="غير مفيدة" class="'+(m.fb==="down"?"on":"")+'">'+ic("down")+'</button><button data-a="pdf">'+ic("pdf")+'PDF / طباعة</button><button data-a="csv">'+ic("sheet")+'Excel (جداول)</button></div>';
+  d.innerHTML=WHO+'<div class="x-b ai-md">'+mdToHtml(m.t)+'</div><div class="x-meta">'+esc(m.meta||"")+'</div><div class="x-acts"><button data-a="copy">'+ic("copy")+'نسخ</button><button data-a="regen">'+ic("refresh")+'إعادة توليد</button><button data-a="up" aria-label="مفيدة" title="مفيدة" class="'+(m.fb==="up"?"on":"")+'">'+ic("up")+'</button><button data-a="down" aria-label="غير مفيدة" title="غير مفيدة" class="'+(m.fb==="down"?"on":"")+'">'+ic("down")+'</button><button data-a="pdf">'+ic("pdf")+'PDF / طباعة</button><button data-a="csv">'+ic("sheet")+'Excel (جداول)</button>'+(CANMEM()?'<button data-a="mem">'+ic("book")+'حفظ تصحيح</button>':"")+'</div>';
   d.querySelectorAll("table").forEach(t=>{ // رسم بياني بسيط للجداول الرقمية
     const rows=[...t.querySelectorAll("tbody tr")].map(r=>[r.children[0]?.textContent||"",num(r.children[1]?.textContent)]).filter(x=>x[1]!==null);
     if(rows.length<2||rows.length>15)return;
@@ -287,7 +322,7 @@ async function ask(q,regen){
   chat.m=chat.m.slice(-40);save();if(cur===chat)render();renderList();
 }
 function stop(){gen++;clearInterval(tick);setBusy(false);if(cur){cur.m.push({r:"a",t:"تم إيقاف التوليد.",err:1,q:[...cur.m].reverse().find(x=>x.r==="u")?.t});save();render()}}
-function markOff(off){$("x_st").classList.toggle("off",off);$("x_stt").textContent=off?"غير متصل — تحقّق من الإنترنت":"متصل · قراءة وتحليل فقط"}
+function markOff(off){$("x_st").classList.toggle("off",off);$("x_stt").textContent=off?"غير متصل — تحقّق من الإنترنت":CANWRITE?"متصل · الكتابة المفوّضة مفعّلة":"متصل · قراءة وتحليل فقط"}
 
 /* ---------- أزرار الرسائل ---------- */
 function csv(el){
@@ -303,6 +338,8 @@ $("x_msgs").onclick=async e=>{
   else if(a==="up"||a==="down"){m.fb=m.fb===a?"":a;save();b.parentNode.querySelectorAll("[data-a=up],[data-a=down]").forEach(x=>x.classList.toggle("on",x.dataset.a===m.fb));toast(m.fb?"شكرًا على تقييمك":"أُلغي التقييم","ok")}
   else if(a==="pdf"){const c=m.ctx||{};AiPrint.print({md:m.t,question:c.q||m.q,period:c.period,section:c.section,title:"تقرير الذكاء الاصطناعي"})}
   else if(a==="csv")csv(w.querySelector(".ai-md"));
+  else if(a==="mem")openMem({kind:"correction"});
+  else if(a==="undo"){if(WBUSY||!m.res)return;if(!confirm("التراجع عن هذه العملية وإرجاع الوضع السابق؟"))return;WBUSY=true;const r=await masAi({action:"write_undo",log_id:m.res.log_id},{retries:0});WBUSY=false;if(!r.ok){toast(r.msg||"تعذّر التراجع","bad");return}m.res.undone=true;m.t+=" (تم التراجع)";save();render();toast("تم التراجع","ok")}
   else if(a==="chart"){const old=w.querySelector(".x-chart");if(old){old.remove();return}
     const rows=b._rows,mx=Math.max(...rows.map(r=>Math.abs(r[1])))||1,c=document.createElement("div");c.className="x-chart";
     c.innerHTML=rows.map(r=>'<div class="x-bar"><span>'+esc(r[0])+'</span><div><i style="width:'+Math.max(2,Math.abs(r[1])/mx*100)+'%"></i></div><b>'+esc(String(r[1]))+"</b></div>").join("");
@@ -311,7 +348,7 @@ $("x_msgs").onclick=async e=>{
 
 /* ---------- لوحة المحركات (للمدير فقط) ---------- */
 async function adminPanel(){
-  const p=$("x_admin");p.hidden=!p.hidden;if(p.hidden)return;p.textContent="جارٍ التحميل…";
+  const p=$("x_admin");p.hidden=!p.hidden;if(p.hidden)return;$("x_memp").hidden=true;$("x_labp").hidden=true;p.textContent="جارٍ التحميل…";
   const r=await masAi({action:"status"},{retries:0});
   if(!r.ok){p.textContent=r.msg;return}
   const d=r.data;
@@ -343,7 +380,7 @@ function validate(v){
     if(r.qty==null){W.push("سطر "+n+": العدد غير محدد.");f.push("warn")}
     if(r.qty!=null&&r.scrap!=null&&r.scrap>r.qty){W.push("سطر "+n+": الهالك أكبر من العدد.");f.push("warn")}
     if(r.qty!=null&&r.qty>50000){W.push("سطر "+n+": عدد كبير غير معتاد ("+r.qty+").");f.push("warn")}
-    const m=match(r.item);r._m=m;if(m.s==="no"){W.push("سطر "+n+": الصنف غير موجود في الأصناف المسجّلة.");f.push("warn")}else if(m.s==="near"){W.push("سطر "+n+": الاسم قريب من «"+m.sug+"».");f.push("warn")}
+    if(v.section==="finish"&&r.item&&!["مشرط","مياه","صنفرة"].includes(r.item))W.push("سطر "+n+": التشطيب يقبل فقط مشرط أو مياه أو صنفرة.");const m=match(r.item);r._m=m;if(m.s==="no"){W.push("سطر "+n+": الصنف غير موجود في الأصناف المسجّلة.");f.push("warn")}else if(m.s==="near"){W.push("سطر "+n+": الاسم قريب من «"+m.sug+"».");f.push("warn")}
     const k=nz(r.item)+"|"+nz(r.worker);if(r.item&&seen[k]){W.push("سطر "+n+": مكرر مع سطر "+seen[k]+".")}else seen[k]=n;
     r._f=f.includes("bad")?"bad":f.length?"warn":"";});
   return{E,W};
@@ -355,7 +392,7 @@ function impDraw(d,m){
     (v.notes?'<div class="x-meta">ملاحظة المساعد: '+esc(v.notes)+"</div>":"")+
     '<div class="x-imp-m"><div><label>القسم</label><select data-f="section">'+opts+'</select></div><div><label>التاريخ</label><input type="date" data-f="date" value="'+esc(v.date||"")+'"></div></div>'+
     '<div class="x-rows">'+v.rows.map((r,i)=>'<div class="x-ir" data-r="'+i+'"><div class="it"><label>الصنف</label><input list="x_cat" data-k="item" value="'+esc(r.item||"")+'" maxlength="120"></div><div><label>العدد</label><input data-k="qty" inputmode="numeric" value="'+(r.qty??"")+'"></div><div><label>الهالك</label><input data-k="scrap" inputmode="numeric" value="'+(r.scrap??"")+'"></div><button class="rm" type="button" data-rm="'+i+'" aria-label="حذف السطر">'+ic("x")+'</button><div class="w"><label>العامل</label><input data-k="worker" value="'+esc(r.worker||"")+'" maxlength="60"></div><div class="rn"></div></div>').join("")+"</div>"+
-    '<div class="x-chk"></div><div class="acts2"><button type="button" data-ia="add">'+ic("plus")+'سطر</button><button type="button" class="p" data-ia="go">فتح القسم وتجهيز التسجيل</button><button type="button" data-ia="copy">'+ic("copy")+'نسخ كنص</button></div>';
+    '<div class="x-chk"></div><div class="acts2"><button type="button" data-ia="add">'+ic("plus")+'سطر</button>'+(CANWRITE&&WS[v.section]?'<button type="button" class="p" data-ia="save">حفظ مباشرة</button>':"")+'<button type="button" class="p" data-ia="go">فتح القسم وتجهيز التسجيل</button><button type="button" data-ia="copy">'+ic("copy")+'نسخ كنص</button></div>';
   impCheck(d,m);
 }
 function impCheck(d,m){
@@ -363,7 +400,7 @@ function impCheck(d,m){
   d.querySelectorAll(".x-ir").forEach(el=>{const r=v.rows[+el.dataset.r];el.className="x-ir "+(r._f||"");const rn=el.querySelector(".rn");
     rn.innerHTML=r._m&&r._m.s==="near"?'اقتراح: <button type="button" data-fix="'+el.dataset.r+'">'+esc(r._m.sug)+"</button>":r._m&&r._m.s==="ok"?'<span style="color:var(--ok);display:inline-flex;gap:4px;align-items:center">'+ic("check")+'صنف مسجّل</span>':""});
   d.querySelector(".x-chk").innerHTML=E.map(x=>'<div class="e">'+ic("x")+esc(x)+"</div>").join("")+W.map(x=>'<div class="w">'+ic("alert")+esc(x)+"</div>").join("")+(!E.length&&!W.length?'<div class="o">'+ic("check")+"لا توجد ملاحظات على البيانات</div>":"");
-  d.querySelector('[data-ia=go]').disabled=E.length>0;
+  d.querySelector('[data-ia=go]').disabled=E.length>0;const sv=d.querySelector('[data-ia=save]');if(sv)sv.disabled=E.length>0;
 }
 $("x_msgs").addEventListener("input",e=>{
   const w=e.target.closest(".x-m");if(!w||!cur||!cur.m[+w.dataset.i]||!cur.m[+w.dataset.i].imp)return;
@@ -406,7 +443,192 @@ async function extractData(payload,label){
     else{if(!v.date)v.date=today();chat.m.push({r:"a",t:"بيانات مستخرجة",imp:v,meta:""})}}
   chat.m=chat.m.slice(-40);save();if(cur===chat)render();renderList();
 }
-function setFill(on){fillMode=on;$("x_fillb").setAttribute("aria-pressed",String(on));$("ai_q").placeholder=on?"اكتب أو الصق بيانات الإنتاج، مثال: جليز اليوم — طقم ٦ قطع ٣٠٠ وهالك ٥ (أحمد)…":"اسأل عن إنتاج المصنع أو اطلب تقريرًا…";$("x_hint").textContent=on?"وضع التعبئة: سيُستخرج النص إلى جدول تراجعه وتعدّله قبل الحفظ":"Enter للإرسال · Shift+Enter سطر جديد · المساعد لا يعدّل أي بيانات"}
+function setFill(on){fillMode=on;$("x_fillb").setAttribute("aria-pressed",String(on));$("ai_q").placeholder=on?(CANWRITE?"أمر: سجّل في الصب… أو احذف سجلات…":"اكتب أو الصق بيانات الإنتاج، مثال: جليز اليوم — طقم ٦ قطع ٣٠٠ وهالك ٥ (أحمد)…"):"اسأل عن إنتاج المصنع أو اطلب تقريرًا…";$("x_hint").textContent=on?(CANWRITE?"وضع الأوامر: لن يُنفَّذ أي شيء قبل مراجعتك وتأكيدك، ويمكن التراجع 7 أيام":"وضع التعبئة: سيُستخرج النص إلى جدول تراجعه وتعدّله قبل الحفظ"):"Enter للإرسال · Shift+Enter سطر جديد · المساعد لا يعدّل أي بيانات"}
+
+/* LAB-START — مختبر التنبؤ: شبكة عصبية صغيرة مقابل طرق إحصائية على نفس البيانات (تجريبي، لا يدخل في إجابات المساعد) */
+const LAG=7,DAYS_AR=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+function rngS(seed){let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296}}
+function mkSeries(rows,from,to){
+  const m={};rows.forEach(r=>{m[r.d]=(m[r.d]||0)+Number(r.q||0)});const o=[];
+  for(let d=new Date(from+"T00:00:00Z");d<=new Date(to+"T00:00:00Z");d=new Date(d.getTime()+864e5)){const k=d.toISOString().slice(0,10);o.push({d:k,w:d.getUTCDay(),y:m[k]||0})}
+  let i=0;while(i<o.length&&o[i].y===0)i++;return o.slice(i);
+}
+const featOf=(y,w,t,sc)=>{const f=[];for(let k=1;k<=LAG;k++)f.push((y[t-k]||0)/sc);for(let d=0;d<7;d++)f.push(w[t]===d?1:0);return f};
+function trainMLP(X,Y,seed,H=12,ep=500,lr=0.01,wd=1e-3){
+  const r=rngS(seed),n=X[0].length,P=H*n+H+H+1,th=new Float64Array(P),m=new Float64Array(P),v=new Float64Array(P);
+  for(let i=0;i<H*n;i++)th[i]=(r()-.5)*2*Math.sqrt(2/n);for(let i=0;i<H;i++)th[H*n+H+i]=(r()-.5)*.8;
+  const N=X.length,g=new Float64Array(P),h=new Float64Array(H);
+  for(let e=1;e<=ep;e++){g.fill(0);
+    for(let s=0;s<N;s++){const x=X[s];let o=th[P-1];
+      for(let j=0;j<H;j++){let z=th[H*n+j];for(let k=0;k<n;k++)z+=th[j*n+k]*x[k];h[j]=Math.tanh(z);o+=th[H*n+H+j]*h[j]}
+      const d=2*(o-Y[s])/N;g[P-1]+=d;
+      for(let j=0;j<H;j++){g[H*n+H+j]+=d*h[j];const dz=d*th[H*n+H+j]*(1-h[j]*h[j]);g[H*n+j]+=dz;for(let k=0;k<n;k++)g[j*n+k]+=dz*x[k]}}
+    for(let i=0;i<P;i++){const gi=g[i]+wd*th[i];m[i]=.9*m[i]+.1*gi;v[i]=.999*v[i]+.001*gi*gi;th[i]-=lr*(m[i]/(1-Math.pow(.9,e)))/(Math.sqrt(v[i]/(1-Math.pow(.999,e)))+1e-8)}}
+  return x=>{let o=th[P-1];for(let j=0;j<H;j++){let z=th[H*n+j];for(let k=0;k<n;k++)z+=th[j*n+k]*x[k];o+=th[H*n+H+j]*Math.tanh(z)}return o};
+}
+function trainRidge(X,Y,lam=0.1){
+  const n=X[0].length+1,A=Array.from({length:n},()=>new Float64Array(n+1));
+  X.forEach((x,s)=>{const xb=[...x,1];for(let i=0;i<n;i++){for(let j=0;j<n;j++)A[i][j]+=xb[i]*xb[j];A[i][n]+=xb[i]*Y[s]}});
+  for(let i=0;i<n-1;i++)A[i][i]+=lam;
+  for(let i=0;i<n;i++){let p=i;for(let r=i+1;r<n;r++)if(Math.abs(A[r][i])>Math.abs(A[p][i]))p=r;[A[i],A[p]]=[A[p],A[i]];
+    const d=A[i][i]||1e-9;for(let r=0;r<n;r++){if(r===i)continue;const f=A[r][i]/d;if(f)for(let c=i;c<=n;c++)A[r][c]-=f*A[i][c]}}
+  const w=A.map((row,i)=>row[n]/(row[i]||1e-9));return x=>{let o=w[n-1];for(let i=0;i<n-1;i++)o+=w[i]*x[i];return o};
+}
+const BASE={
+  naive:(y,w,t)=>y[t-1],
+  ma7:(y,w,t)=>{let s=0;for(let k=1;k<=7;k++)s+=y[t-k];return s/7},
+  seasonal:(y,w,t)=>y[t-7]
+};
+const LAB_AR={naive:"أمس (بسيط)",ma7:"متوسط 7 أيام",seasonal:"نفس اليوم الأسبوع الماضي",linear:"انحدار خطي",nn:"الشبكة العصبية"};
+function labRun(S){
+  const y=S.map(x=>x.y),w=S.map(x=>x.w),n=S.length,nz=y.filter(v=>v>0).length;
+  const H=Math.min(28,Math.floor((n-LAG)*.25)),ts=n-H;
+  if(n<90||nz<45||ts-LAG<50)return{ok:false,n,nz};
+  const trY=y.slice(0,ts),sc=(trY.reduce((a,b)=>a+b,0)/trY.length)||1;
+  const mk=(from,to)=>{const X=[],Y=[];for(let t=from;t<to;t++){X.push(featOf(y,w,t,sc));Y.push(y[t]/sc)}return{X,Y}};
+  const tr=mk(LAG,ts),ens=(X,Y)=>{const ms=[1,2,3].map(sd=>trainMLP(X,Y,sd*7919));return x=>ms.reduce((a,f)=>a+f(x),0)/ms.length};
+  const lin=trainRidge(tr.X,tr.Y),nn=ens(tr.X,tr.Y);
+  const preds={};for(const k of Object.keys(BASE))preds[k]=[];preds.linear=[];preds.nn=[];
+  for(let t=ts;t<n;t++){for(const k of Object.keys(BASE))preds[k].push(BASE[k](y,w,t));const f=featOf(y,w,t,sc);preds.linear.push(Math.max(0,lin(f)*sc));preds.nn.push(Math.max(0,nn(f)*sc))}
+  const act=y.slice(ts),sumY=act.reduce((a,b)=>a+b,0)||1,res=[];
+  for(const k of Object.keys(preds)){let ae=0;preds[k].forEach((p,i)=>ae+=Math.abs(p-act[i]));res.push({k,mae:ae/H,wape:ae/sumY})}
+  const base=res.filter(r=>r.k!=="nn").sort((a,b)=>a.mae-b.mae)[0],nnr=res.find(r=>r.k==="nn"),imp=(base.mae-nnr.mae)/(base.mae||1);
+  const win=imp>=.05?"nn":base.k,verdict=imp>=.05?"g":imp<=-.05?"b":"e";
+  // توقع 7 أيام قادمة بالفائز بعد إعادة تدريبه على كل البيانات
+  const full=mk(LAG,n);let pf;
+  if(win==="nn")pf=(()=>{const f=ens(full.X,full.Y);return(yy,ww,t)=>Math.max(0,f(featOf(yy,ww,t,sc))*sc)})();
+  else if(win==="linear")pf=(()=>{const f=trainRidge(full.X,full.Y);return(yy,ww,t)=>Math.max(0,f(featOf(yy,ww,t,sc))*sc)})();
+  else pf=BASE[win];
+  const yy=y.slice(),ww=w.slice(),fc=[];let d0=new Date(S[n-1].d+"T00:00:00Z");
+  for(let i=0;i<7;i++){d0=new Date(d0.getTime()+864e5);ww.push(d0.getUTCDay());yy.push(0);const v=Math.round(pf(yy,ww,yy.length-1));yy[yy.length-1]=v;fc.push({d:d0.toISOString().slice(0,10),w:d0.getUTCDay(),v})}
+  return{ok:true,n,nz,H,res,win,imp,verdict,fc,hist:S.slice(-42)};
+}
+/* LAB-END */
+
+/* ---------- الكتابة المفوَّضة: شخص واحد فقط يحدده الخادم. لا تنفيذ قبل مراجعة وتأكيد، وكل عملية تُسجَّل وتقبل التراجع ---------- */
+let CANWRITE=false,WBUSY=false;const WS={casting:"الصب",brush:"البرشر",finish:"التشطيب"};
+async function initWrite(){if(!ME||!(ME.role==="admin"||ME.role==="manager"))return;const r=await masAi({action:"write_status"},{retries:0});if(r.ok&&r.data&&r.data.can_write){CANWRITE=true;markOff(false);setFill(fillMode)}}
+function pushRes(chat,text,log_id){chat.m.push({r:"a",t:text,res:{log_id:log_id||null}});}
+async function writeCommand(text){
+  if(busy)return;if(!cur){cur={id:uid(),title:"أمر: "+text.slice(0,30),m:[],t:Date.now()};chats.unshift(cur)}
+  cur.m.push({r:"u",t:"أمر: "+text});save();render();renderList();
+  const th=document.createElement("div");th.className="x-m a";th.innerHTML='<div class="x-b x-think"><span class="x-dots"><i></i><i></i><i></i></span><span>أفهم الأمر وأجهّز المراجعة…</span></div>';$("x_msgs").appendChild(th);scrollDown();
+  setBusy(true);const my=++gen,chat=cur;
+  const r=await masAi({action:"write_intent",text},{retries:0});
+  if(my!==gen)return;
+  const say=(t_,err)=>chat.m.push({r:"a",t:t_,err:err?1:0});
+  if(!r.ok)say(r.msg||"تعذّر فهم الأمر",1);
+  else{const it=r.data.intent,nm=WS[it.section];
+    if(it.op==="add"){
+      if(!it.rows.length)say("لم أجد بيانات لتسجيلها في الأمر. اكتب الصنف والعدد.");
+      else{await loadCat();chat.m.push({r:"a",t:"بيانات",imp:{section:it.section,date:it.date||today(),confidence:"medium",notes:(nm?"":"القسم غير مدعوم للحفظ المباشر؛ يمكنك فتح القسم لتسجيلها. ")+(it.notes||""),rows:it.rows}})}
+    }else if(it.op==="delete"){
+      if(!nm)say("الحذف المباشر متاح لأقسام الصب والبرشر والتشطيب فقط. حدّد القسم في الأمر.");
+      else{const f=await masAi({action:"write_find",sec:it.section,date:it.date,from:it.from,to:it.to,item:it.item,worker:it.worker},{retries:0});
+        if(!f.ok)say(f.msg||"تعذّر البحث",1);
+        else if(!f.data.rows.length)say("لم أجد سجلات مطابقة في قسم "+nm+". عدّل شروط الأمر.");
+        else chat.m.push({r:"a",t:"حذف",del:{sec:it.section,rows:f.data.rows,sel:[]}})}
+    }else say("لم أفهم الأمر كإضافة أو حذف. اكتب مثلًا: «سجّل في الصب طقم ٦ قطع ٣٠٠» أو «احذف سجلات البرشر ليوم ٢٠ نوفمبر».")}
+  setBusy(false);chat.m=chat.m.slice(-40);save();if(cur===chat)render();renderList();
+}
+async function writeSave(w,m){
+  const v=m.imp,{E}=validate(v);if(E.length){toast(E[0],"bad");return}
+  const rows=v.rows.filter(r=>r.item||r.qty!=null).map(r=>({item:r.item,qty:r.qty,scrap:r.scrap,worker:r.worker,shift:r.shift,note:r.note}));
+  if(!confirm("سيتم حفظ "+rows.length+" سجل في قسم "+WS[v.section]+" بتاريخ "+v.date+" مباشرة في قاعدة البيانات. يمكنك التراجع خلال 7 أيام. متابعة؟"))return;
+  if(WBUSY)return;WBUSY=true;const btn=w.querySelector("[data-ia=save]");if(btn)btn.disabled=true;
+  const r=await masAi({action:"write_add",sec:v.section,date:v.date,rows},{retries:0});WBUSY=false;
+  if(!r.ok){toast(r.msg||"تعذّر الحفظ","bad");if(btn)btn.disabled=false;return}
+  const i=cur.m.indexOf(m);cur.m[i]={r:"a",t:"تم حفظ "+r.data.count+" سجل في قسم "+WS[v.section]+" بتاريخ "+v.date+".",res:{log_id:r.data.log_id}};save();render();toast("تم الحفظ","ok");
+}
+function delDraw(d,m){
+  const v=m.del,host=d.querySelector(".x-imp"),n=v.sel.length;
+  host.innerHTML='<div class="x-imp-h"><b>'+ic("alert")+'سجلات مطابقة في '+WS[v.sec]+' ('+v.rows.length+') — اختر ما تريد حذفه</b></div>'+
+   '<div class="tw"><table class="lb-t x-del"><thead><tr><th></th><th>التاريخ</th><th>الصنف</th><th>العدد</th><th>الهالك</th><th>العامل</th></tr></thead><tbody>'+
+   v.rows.map(r=>'<tr><td><input type="checkbox" data-ds="'+r.id+'" '+(v.sel.includes(r.id)?"checked":"")+' aria-label="تحديد"></td><td>'+esc(r.date)+"</td><td>"+esc(r.item||"")+"</td><td>"+esc(r.qty??"")+"</td><td>"+esc(r.scrap??"")+"</td><td>"+esc(r.worker||"")+"</td></tr>").join("")+"</tbody></table></div>"+
+   '<div class="x-chk"><div class="w">'+ic("alert")+"الحذف نهائي من قاعدة البيانات، ويمكنك التراجع خلال 7 أيام من هذه المحادثة.</div></div>"+
+   '<div class="acts2"><button type="button" data-ia="dall">'+(n===v.rows.length?"إلغاء التحديد":"تحديد الكل")+'</button><button type="button" class="dg" data-ia="del" '+(n?"":"disabled")+'>'+ic("trash")+" حذف المحدد ("+n+")</button></div>";
+}
+$("x_msgs").addEventListener("change",e=>{const c=e.target.closest("[data-ds]");if(!c)return;const w=c.closest(".x-m"),m=cur&&cur.m[+w.dataset.i];if(!m||!m.del)return;
+  const id=+c.dataset.ds,s=m.del.sel;if(c.checked){if(!s.includes(id))s.push(id)}else m.del.sel=s.filter(x=>x!==id);delDraw(w,m)});
+$("x_msgs").addEventListener("click",async e=>{
+  const ia=e.target.closest("[data-ia]");if(!ia||!cur)return;const w=ia.closest(".x-m"),m=cur.m[+w.dataset.i];if(!m)return;
+  if(m.imp&&ia.dataset.ia==="save"){writeSave(w,m);return}
+  if(!m.del)return;const v=m.del,a=ia.dataset.ia;
+  if(a==="dall"){v.sel=v.sel.length===v.rows.length?[]:v.rows.map(r=>r.id);delDraw(w,m)}
+  else if(a==="del"){if(!v.sel.length||WBUSY)return;
+    if(!confirm("سيتم حذف "+v.sel.length+" سجل نهائيًا من قسم "+WS[v.sec]+". يمكنك التراجع خلال 7 أيام. متابعة؟"))return;
+    WBUSY=true;ia.disabled=true;const r=await masAi({action:"write_delete",sec:v.sec,ids:v.sel,confirm:true},{retries:0});WBUSY=false;
+    if(!r.ok){toast(r.msg||"تعذّر الحذف","bad");ia.disabled=false;return}
+    const i=cur.m.indexOf(m);cur.m[i]={r:"a",t:"تم حذف "+r.data.deleted+" سجل من قسم "+WS[v.sec]+".",res:{log_id:r.data.log_id}};save();render();toast("تم الحذف","ok")}
+});
+
+/* ---------- ذاكرة المساعد: مصطلحات وتصحيحات يعتمدها المدير ويستخدمها المساعد في كل إجابة ---------- */
+const CANMEM=()=>!!ME&&(ME.role==="admin"||ME.role==="owner");
+const KIND_AR={term:"مصطلح",correction:"تصحيح",rule:"قاعدة"};
+let MEM=[],memEdit=null,memMsg="";
+const memErr=e=>/does not exist|schema cache|42P01|PGRST205/.test((e.code||"")+(e.message||""))?"جدول الذاكرة غير مُنشأ بعد. شغّل ملف 20261120_mas_ai_knowledge.sql في SQL Editor.":/23505/.test(e.code||"")||/duplicate/i.test(e.message||"")?"هذا المصطلح محفوظ بالفعل.":/limit/i.test(e.message||"")?"وصلت للحد الأقصى (100 عنصر). احذف ما لا تحتاجه.":/permission|policy|42501/i.test((e.code||"")+(e.message||""))?"ليس لديك صلاحية تعديل الذاكرة.":"تعذّر الحفظ، حاول مرة أخرى.";
+async function memLoad(){const r=await db.from("ai_knowledge").select("id,kind,term,meaning,active").order("id",{ascending:false});if(r.error){memMsg=memErr(r.error);MEM=[]}else{memMsg="";MEM=r.data||[]}}
+function memDraw(pre){
+  const p=$("x_memp"),e=memEdit?MEM.find(x=>x.id===memEdit):null,v=e||pre||{};
+  p.innerHTML='<div class="mh"><b>ذاكرة المساعد ('+MEM.length+')</b><small>ما تحفظه هنا يستخدمه المساعد في كل إجابة لفهم مصطلحات مصنعك وتصحيح أخطائه. لا تكتب فيها أرقامًا أو بيانات سرية، فهي للتسمية والتفسير فقط.</small></div>'+
+   (memMsg?'<div class="x-mnote">'+esc(memMsg)+"</div>":"")+
+   '<div class="mf"><select id="mm_k" aria-label="النوع">'+Object.keys(KIND_AR).map(k=>'<option value="'+k+'"'+((v.kind||"term")===k?" selected":"")+">"+KIND_AR[k]+"</option>").join("")+'</select><input id="mm_t" maxlength="80" placeholder="المصطلح أو الخطأ الشائع (مثال: البرشر)" value="'+esc(v.term||"")+'"><input id="mm_m" maxlength="300" placeholder="المعنى أو الصواب (مثال: قسم تشطيب قبل الجليز)" value="'+esc(v.meaning||"")+'"><button type="button" class="p" id="mm_s">'+(e?"تحديث":"حفظ")+'</button>'+(e?'<button type="button" id="mm_c">إلغاء</button>':"")+"</div>"+
+   '<div class="x-ml">'+(MEM.length?MEM.map(x=>'<div class="x-mi'+(x.active?"":" off")+'"><input type="checkbox" data-ma="'+x.id+'" '+(x.active?"checked":"")+' aria-label="تفعيل"><span class="kd">'+KIND_AR[x.kind]+'</span><div class="tx"><b>'+esc(x.term)+"</b> ← "+esc(x.meaning)+'</div><button type="button" data-me="'+x.id+'" aria-label="تعديل">'+ic("edit")+'</button><button type="button" data-md="'+x.id+'" aria-label="حذف">'+ic("trash")+"</button></div>").join(""):'<div class="x-empty">لا توجد عناصر بعد. أضف أول مصطلح من الأعلى.</div>')+"</div>";
+}
+async function openMem(pre){const p=$("x_memp");if(!CANMEM())return;p.hidden=false;$("x_admin").hidden=true;memEdit=null;await memLoad();memDraw(pre);setTimeout(()=>$("mm_t")&&$("mm_t").focus(),50)}
+$("x_memp").addEventListener("click",async e=>{
+  const B=e.target.closest("button"),c=e.target.closest("[data-ma]");
+  if(c)return; // يُعالج في change
+  if(!B)return;
+  if(B.id==="mm_c"){memEdit=null;memDraw();return}
+  if(B.dataset.me){memEdit=+B.dataset.me;memDraw();$("mm_t").focus();return}
+  if(B.dataset.md){if(!confirm("حذف هذا العنصر من ذاكرة المساعد؟"))return;const r=await db.from("ai_knowledge").delete().eq("id",+B.dataset.md);if(r.error){toast(memErr(r.error),"bad");return}toast("تم الحذف","ok");await memLoad();memDraw();return}
+  if(B.id==="mm_s"){
+    const row={kind:$("mm_k").value,term:$("mm_t").value.trim(),meaning:$("mm_m").value.trim()};
+    if(!row.term||!row.meaning){toast("اكتب المصطلح ومعناه","bad");return}
+    B.disabled=true;
+    const r=memEdit?await db.from("ai_knowledge").update(row).eq("id",memEdit):await db.from("ai_knowledge").insert(row);
+    B.disabled=false;if(r.error){toast(memErr(r.error),"bad");return}
+    toast(memEdit?"تم التحديث":"تم الحفظ — سيستخدمه المساعد في الإجابات القادمة","ok");memEdit=null;await memLoad();memDraw();$("mm_t").focus()}
+});
+$("x_memp").addEventListener("change",async e=>{const c=e.target.closest("[data-ma]");if(!c)return;
+  const r=await db.from("ai_knowledge").update({active:c.checked}).eq("id",+c.dataset.ma);
+  if(r.error){toast(memErr(r.error),"bad");c.checked=!c.checked;return}await memLoad();memDraw()});
+$("x_memp").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id&&e.target.id.startsWith("mm_")&&e.target.tagName==="INPUT"){e.preventDefault();$("mm_s").click()}});
+
+const nfmt=v=>Math.round(v).toLocaleString("ar-EG");
+function labChart(r){
+  const H=r.hist,F=r.fc,all=[...H.map(x=>x.y),...F.map(x=>x.v)],mx=Math.max(...all,1),W=640,Hh=190,pl=8,pb=22,N=H.length+F.length,X=i=>pl+i*(W-2*pl)/(N-1),Y=v=>Hh-pb-v/mx*(Hh-pb-12);
+  const pa=H.map((x,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(x.y).toFixed(1)).join(" "),
+        pf=[H[H.length-1].y,...F.map(x=>x.v)].map((v,i)=>(i?"L":"M")+X(H.length-1+i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  return '<svg class="lb-ch" viewBox="0 0 '+W+" "+Hh+'" role="img" aria-label="الإنتاج الفعلي والتوقع"><line x1="'+pl+'" x2="'+(W-pl)+'" y1="'+(Hh-pb)+'" y2="'+(Hh-pb)+'" stroke="currentColor" opacity=".2"/><path d="'+pa+'" fill="none" stroke="#642631" stroke-width="2.2" stroke-linejoin="round"/><path d="'+pf+'" fill="none" stroke="#c9a24b" stroke-width="2.4" stroke-dasharray="6 5" stroke-linejoin="round"/><text x="'+pl+'" y="'+(Hh-6)+'" font-size="12" fill="currentColor" opacity=".7">آخر 42 يومًا فعليًا</text><text x="'+(W-pl)+'" y="'+(Hh-6)+'" font-size="12" text-anchor="end" fill="#a07c2a">توقع 7 أيام</text></svg>';
+}
+async function labOpen(){
+  const p=$("x_labp");if(!p.hidden){p.hidden=true;return}
+  $("x_memp").hidden=true;$("x_admin").hidden=true;p.hidden=false;
+  p.innerHTML='<div class="mh"><b>مختبر التنبؤ <span class="lb-tag">تجريبي</span></b><small>يدرّب شبكة عصبية صغيرة داخل المتصفح على إنتاجك اليومي خلال آخر سنة، ثم يقارنها على أيام لم تَرَها بطرق إحصائية بسيطة. لا يدخل في إجابات المساعد ولا يغيّر أي بيانات.</small></div><div class="lb-row"><select id="lb_s" aria-label="القسم"><option value="">كل الأقسام</option>'+Object.keys(SEC_AR).map(k=>'<option value="'+k+'">'+SEC_AR[k]+"</option>").join("")+'</select><button type="button" class="p" id="lb_go">ابدأ التجربة</button></div><div id="lb_o"></div>';
+  $("lb_go").onclick=async()=>{
+    const b=$("lb_go"),o=$("lb_o"),sec=$("lb_s").value;b.disabled=true;o.innerHTML='<div class="lb-sm">جارٍ تحميل البيانات…</div>';
+    const to=today(),from=new Date(Date.now()-364*864e5).toISOString().slice(0,10);
+    const q=await db.rpc("mas_ai_facts",{p_from:from,p_to:to,p_secs:sec?[sec]:null});
+    if(q.error){o.innerHTML='<div class="x-mnote">تعذّر تحميل البيانات أو ليس لديك صلاحية عليها.</div>';b.disabled=false;return}
+    const S=mkSeries((q.data&&q.data.daily_production)||[],from,to);
+    o.innerHTML='<div class="lb-sm">جارٍ تدريب الشبكة ومقارنتها…</div>';await new Promise(r=>setTimeout(r,60));
+    let r;try{r=labRun(S)}catch(e){o.innerHTML='<div class="x-mnote">حدث خطأ أثناء التجربة.</div>';b.disabled=false;return}
+    b.disabled=false;
+    if(!r.ok){o.innerHTML='<div class="lb-v w">البيانات غير كافية لتجربة موثوقة: عندك '+r.n+' يومًا منها '+r.nz+' يوم إنتاج. أحتاج 90 يومًا على الأقل منها 45 يوم إنتاج. استخدم «كل الأقسام» أو انتظر تراكم بيانات أكثر.</div>';return}
+    const best=Math.min(...r.res.map(x=>x.mae)),pct=Math.abs(Math.round(r.imp*100));
+    const vt=r.verdict==="g"?"الشبكة العصبية أدق من أفضل طريقة إحصائية بحوالي "+pct+"% على أيام الاختبار، فاعتمدتها في التوقع."
+      :r.verdict==="b"?"الطرق الإحصائية أدق من الشبكة العصبية بحوالي "+pct+"%. الأفضل لك الآن «"+LAB_AR[r.win]+"»، وهي أبسط وأوضح."
+      :"النتيجتان متقاربتان (فرق أقل من 5%). لا يوجد مبرر لتعقيد الشبكة العصبية الآن، واخترت «"+LAB_AR[r.win]+"» للتوقع.";
+    o.innerHTML='<div class="lb-sm">اختُبرت على آخر '+r.H+' يومًا لم تدخل في التدريب، من إجمالي '+r.n+' يومًا ('+r.nz+' يوم إنتاج). الخطأ بالقطعة (أقل = أفضل).</div>'+
+      '<div class="tw" style="overflow-x:auto"><table class="lb-t"><thead><tr><th>الطريقة</th><th>الخطأ اليومي</th><th>الخطأ %</th></tr></thead><tbody>'+
+      [...r.res].sort((a,b)=>a.mae-b.mae).map(x=>'<tr class="'+(x.k===r.win?"win":"")+'"><td>'+LAB_AR[x.k]+(x.k===r.win?" ✓":"")+"</td><td>"+nfmt(x.mae)+"</td><td>"+(x.wape*100).toFixed(1)+"%</td></tr>").join("")+"</tbody></table></div>"+
+      '<div class="lb-v '+(r.verdict==="g"?"g":"w")+'">'+esc(vt)+'</div>'+labChart(r)+
+      '<div class="tw"><table class="lb-t"><thead><tr><th>اليوم</th><th>التاريخ</th><th>الإنتاج المتوقع</th></tr></thead><tbody>'+r.fc.map(x=>"<tr><td>"+DAYS_AR[x.w]+"</td><td>"+x.d+"</td><td>"+nfmt(x.v)+"</td></tr>").join("")+"</tbody></table></div>"+
+      '<div class="lb-sm">تنبيه: الاختبار على عدد أيام محدود فقد تتغير النتيجة مع بيانات جديدة، والتوقع تقدير وليس وعدًا. الأعياد والتوقفات غير معروفة للنموذج.</div>';
+  };
+}
 
 /* ---------- تشغيل ---------- */
 (async()=>{
@@ -414,12 +636,14 @@ function setFill(on){fillMode=on;$("x_fillb").setAttribute("aria-pressed",String
   K="mas_ai_chats_v2_"+ME.id;chats=load();renderNav("ai.html");
   render();renderList();
   if(ME.role==="admin")$("x_adm").hidden=false;
+  $("x_lab").onclick=labOpen;
+  if(CANMEM()){$("x_mem").hidden=false;$("x_mem").onclick=()=>{$("x_memp").hidden?openMem():($("x_memp").hidden=true)}}
   $("x_adm").onclick=adminPanel;
   $("x_flt").onclick=()=>{$("x_filters").hidden=!$("x_filters").hidden};
   $("x_new").onclick=newChat;$("x_menu").onclick=()=>$("x_app").classList.add("so");
   $("x_scrim").onclick=$("x_sclose").onclick=()=>$("x_app").classList.remove("so");
   $("x_srch").oninput=renderList;
-  $("x_fillb").onclick=()=>setFill(!fillMode);loadCat();
+  $("x_fillb").onclick=()=>setFill(!fillMode);loadCat();initWrite();
   $("x_img").onclick=()=>$("x_file").click();
   $("x_file").onchange=async()=>{const f=$("x_file").files[0];$("x_file").value="";if(!f||busy)return;if(!/^image\//.test(f.type)){toast("اختر صورة","bad");return}
     let d;try{d=await shrink(f)}catch(x){toast("الصورة غير مدعومة، جرّب JPG أو PNG","bad");return}
@@ -431,7 +655,7 @@ function setFill(on){fillMode=on;$("x_fillb").setAttribute("aria-pressed",String
   const q=$("ai_q"),fit=()=>{q.style.height="auto";q.style.height=Math.min(q.scrollHeight,150)+"px"};
   q.oninput=fit;
   q.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("ai_go").click()}};
-  $("ai_go").onclick=()=>{if(busy){stop();return}const v=q.value;if(v.trim().length<2){toast("اكتب سؤالك","bad");return}q.value="";fit();fillMode?extractData({text:v.trim()},v.trim().slice(0,60)):ask(v)};
+  $("ai_go").onclick=()=>{if(busy){stop();return}const v=q.value;if(v.trim().length<2){toast("اكتب سؤالك","bad");return}q.value="";fit();fillMode?(CANWRITE?writeCommand(v.trim()):extractData({text:v.trim()},v.trim().slice(0,60))):ask(v)};
   addEventListener("online",()=>markOff(false));addEventListener("offline",()=>markOff(true));
 })();
 </script>
