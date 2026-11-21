@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
   const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
 
   // 2) الصلاحية
-  const { data: prof } = await admin.from("profiles").select("role,active").eq("id", uid).maybeSingle();
+  const { data: prof } = await admin.from("profiles").select("role,active,full_name").eq("id", uid).maybeSingle();
   if (!prof || prof.active === false || !ALLOWED_ROLES.includes(prof.role)) return json(req, { error: "forbidden" }, 403);
   if (prof.role === "manager") { // مسؤول القسم: لازم صلاحية التقارير. أي خطأ في القراءة = رفض
     const { data: pm, error: pe } = await admin.from("profiles").select("view_all").eq("id", uid).maybeSingle();
@@ -298,6 +298,10 @@ Deno.serve(async (req) => {
     return json(req, { error: "data", message: "تعذّر تحميل بيانات المصنع." }, 502);
   }
   let notes: string[] = [];
+  // هوية المستخدم من حسابه على الخادم (لا من المتصفح): للمخاطبة بالاسم فقط
+  const ROLE_AR: Record<string, string> = { admin: "مدير النظام", owner: "المالك", manager: "مسؤول قسم", worker: "عامل" };
+  const who = String(prof?.full_name ?? "").replace(/[<>\r\n]+/g, " ").trim().slice(0, 60);
+  if (who) notes.push(`المستخدم الحالي (من حسابه في النظام): الاسم «${who}»، الدور: ${ROLE_AR[prof?.role ?? ""] ?? "مستخدم"}. خاطبه باسمه عند الترحيب أو عندما يسأل من هو. لا تذكر عنه أي معلومة أخرى لا تعرفها.`);
   if (task === "inventory") notes.push("تنبيه: لا توجد في النظام حالياً جداول أرصدة مخزون؛ لا تذكر أي أرصدة.");
   if (task === "orders") notes.push("تنبيه: بيانات الطلبيات غير مرفقة في هذه النسخة؛ اعتمد على الإنتاج فقط وصرّح بالنقص.");
   let payload = facts;
