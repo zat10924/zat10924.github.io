@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="الأقسام">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>المساعد الذكي — MAS</title>
+<title>MAS AI CENTER — مركز الذكاء الاصطناعي</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Alexandria:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -28,9 +28,9 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
     <div class="hr-l">
       <div class="x-av" id="x_av"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8L12 3z"/></svg></div>
       <div class="hr-t">
-        <span class="hr-eye">INTELLIGENCE CENTER</span>
-        <h1>مركز الذكاء الاصطناعي</h1>
-        <p>حلّل بيانات مصنعك، استكشف المؤشرات، وحوّل الأرقام إلى قرارات أوضح.</p>
+        <span class="hr-eye">MAS MANAGER · AI</span>
+        <h1>MAS AI CENTER <small>مركز الذكاء الاصطناعي</small></h1>
+        <p>يجمع المساعد الداخلي المتصل بالخادم مع الاستيراد الخارجي من ChatGPT، وتمر كل النتائج بمراجعة موحدة قبل دخول أي بيانات إلى أقسام البرنامج.</p>
       </div>
     </div>
     <div class="hr-r">
@@ -39,6 +39,36 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
     </div>
   </section>
 
+  <nav class="xc-tabs" id="xc_tabs" role="tablist" aria-label="أقسام مركز الذكاء الاصطناعي" hidden>
+    <button type="button" role="tab" id="tb_ov" aria-controls="tp_ov" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span>نظرة عامة</span></button>
+    <button type="button" role="tab" id="tb_chat" aria-controls="tp_chat" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z"/></svg><span>المحادثة الذكية</span></button>
+    <button type="button" role="tab" id="tb_vis" aria-controls="tp_vis" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/></svg><span>قراءة الصور</span></button>
+    <button type="button" role="tab" id="tb_ext" aria-controls="tp_ext" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg><span>الاستيراد الخارجي</span></button>
+    <button type="button" role="tab" id="tb_rev" aria-controls="tp_rev" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><span>مراجعة البيانات</span> <i class="xc-n" id="tb_rev_n" hidden></i></button>
+    <button type="button" role="tab" id="tb_log" aria-controls="tp_log" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>سجل العمليات</span></button>
+    <button type="button" role="tab" id="tb_eng" aria-controls="tp_eng" aria-selected="false" tabindex="-1" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h14"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/></svg><span>إعدادات المحركات</span></button>
+  </nav>
+  <section class="xc-panel" id="tp_ov" role="tabpanel" aria-labelledby="tb_ov" tabindex="-1" hidden>
+    <div class="xc-cards">
+      <article class="xc-card" id="ovc_conn" style="--d:0"><span class="xc-ci"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8 15.5a6 6 0 0 1 8 0M12 19v.01"/></svg></span><div><small>حالة الاتصال</small><b id="ov_conn">—</b><em id="ov_conn_s"></em></div></article>
+      <article class="xc-card" id="ovc_eng" style="--d:1"><span class="xc-ci"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8L12 3z"/></svg></span><div><small>المحرك النشط</small><b id="ov_eng">—</b><em id="ov_eng_s"></em></div></article>
+      <button type="button" class="xc-card" id="ovc_ops" style="--d:2" data-go="log"><span class="xc-ci"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span><div><small>العمليات المسجّلة</small><b id="ov_ops">—</b><em id="ov_ops_s"></em></div></button>
+      <button type="button" class="xc-card" id="ovc_rev" style="--d:3" data-go="log"><span class="xc-ci"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></span><div><small>تحتاج مراجعة</small><b id="ov_rev">—</b><em id="ov_rev_s"></em></div></button>
+    </div>
+    <div class="xc-two">
+      <section class="xc-box"><h2>ابدأ من هنا</h2>
+        <div class="xc-start">
+          <button type="button" class="xc-b p" data-go="chat">اسأل المساعد</button>
+          <button type="button" class="xc-b" data-go="ext">استيراد من ChatGPT</button>
+          <button type="button" class="xc-b" data-go="vis">قراءة صورة سجل</button>
+          <button type="button" class="xc-b" data-go="rev">مراجعة البيانات</button>
+        </div>
+        <p>لا يُحفظ أي شيء في أقسام البرنامج قبل مراجعتك واعتمادك. الاستيراد الخارجي مسار نقل يدوي: لا يتصل البرنامج بحساب ChatGPT ولا يطلب أي بيانات دخول.</p>
+      </section>
+      <section class="xc-box"><h2>آخر العمليات</h2><div id="ov_recent" aria-live="polite"></div></section>
+    </div>
+  </section>
+  <div class="xc-panel" id="tp_chat" role="tabpanel" aria-labelledby="tb_chat" tabindex="-1" hidden>
   <div class="x-grid">
     <section class="x-chat" aria-label="المحادثة التحليلية">
       <header class="x-head">
@@ -88,6 +118,64 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
       </section>
     </aside>
   </div>
+  </div>
+  <section class="xc-panel" id="tp_vis" role="tabpanel" aria-labelledby="tb_vis" tabindex="-1" hidden>
+    <div class="xc-box">
+      <h2>قراءة الصور واستخراج البيانات</h2>
+      <p>ارفع صورة سجل الإنتاج أو الصق نصه، فيستخرج المساعد الأسطر ثم تراجعها وتعدّلها في تبويب «مراجعة البيانات». تعتمد القراءة على المحرك المضبوط على الخادم؛ إن لم يدعم قراءة الصور ستظهر رسالة خطأ واضحة ولن يُحفظ شيء.</p>
+      <div class="xc-row"><button type="button" class="xc-b p" id="vis_pick">اختر صورة</button><input type="file" id="vis_file" accept="image/*" hidden></div>
+      <img id="vis_pv" class="xc-pv" alt="معاينة الصورة المختارة" hidden>
+      <div><label for="vis_txt">أو الصق نص السجل</label><textarea id="vis_txt" rows="4" maxlength="1500" placeholder="مثال: جليز اليوم — طقم ٦ قطع ٣٠٠ وهالك ٥ (أحمد)"></textarea></div>
+      <div class="xc-row"><button type="button" class="xc-b" id="vis_txt_go">استخراج من النص</button></div>
+      <div id="vis_msg" class="xc-note" role="status" aria-live="polite" hidden></div>
+    </div>
+  </section>
+  <section class="xc-panel" id="tp_ext" role="tabpanel" aria-labelledby="tb_ext" tabindex="-1" hidden>
+    <div class="xc-grid2">
+      <div class="xc-box">
+        <h2>الاستيراد الخارجي – ChatGPT</h2>
+        <ol class="xc-steps"><li>انسخ التعليمات والقالب من اللوحة المجاورة والصقهما في ChatGPT مع صورة السجل.</li><li>اطلب منه الرد بـ JSON فقط، ثم انسخ الرد.</li><li>الصقه هنا أو ارفعه كملف JSON / CSV، وراجع النتيجة قبل أي حفظ.</li></ol>
+        <div class="xc-note info">لا تشارك كلمة مرور ChatGPT أو رموز الجلسة مع أي جهة. هذه الصفحة لا تتصل بحساب ChatGPT؛ هي مسار نقل يدوي فقط.</div>
+        <div><label for="xc_txt">الصق النتيجة (JSON أو CSV)</label><textarea id="xc_txt" class="xc-ta" rows="12" dir="auto" spellcheck="false" placeholder='{ "schema_version": "1.0", "section": "glaze", "report_date": "2026-11-20", "items": [ ... ] }'></textarea></div>
+        <div class="xc-row"><button type="button" class="xc-b" id="xc_paste" hidden>لصق من الحافظة</button><button type="button" class="xc-b" id="xc_pickfile">رفع ملف (JSON / CSV)</button><input type="file" id="xc_file" accept=".json,.csv,.txt,.xlsx,.xls" hidden><span class="xc-sm" id="xc_fn"></span></div>
+        <div class="xc-two2"><div><label for="xc_sec">القسم (إن لم يحدده الملف)</label><select id="xc_sec"></select></div><div><label for="xc_date">التاريخ (إن لم يحدده الملف)</label><input type="date" id="xc_date"></div></div>
+        <div class="xc-row"><button type="button" class="xc-b p" id="xc_run">تحليل وتجهيز المراجعة</button><button type="button" class="xc-b" id="xc_clear">مسح</button></div>
+        <div id="xc_msg" class="xc-note" role="status" aria-live="polite" hidden></div>
+        <p class="xc-sm">الحدود: ملف حتى 1 ميجابايت و500 صف. ملفات Excel (XLSX) غير مدعومة حاليًا؛ احفظ الشيت بصيغة CSV UTF-8 وارفعه.</p>
+      </div>
+      <div class="xc-box">
+        <h2>القالب الموحد</h2>
+        <p>هذا قالب نقل مقترح؛ يُحوَّل داخليًا إلى نفس صيغة المراجعة المستخدمة لقراءة الصور. الحقول غير المعروفة تظهر لك للمراجعة ولا تُسقَط بصمت.</p>
+        <pre class="xc-pre" id="xc_tpl" dir="ltr" tabindex="0" aria-label="مثال قالب JSON"></pre>
+        <div class="xc-row"><button type="button" class="xc-b" id="xc_cp_tpl">نسخ القالب</button><button type="button" class="xc-b" id="xc_cp_prompt">نسخ تعليمات ChatGPT</button><button type="button" class="xc-b" id="xc_dl_tpl">تنزيل القالب</button></div>
+      </div>
+    </div>
+  </section>
+  <section class="xc-panel" id="tp_rev" role="tabpanel" aria-labelledby="tb_rev" tabindex="-1" hidden>
+    <div class="xc-box"><div id="rv_host" aria-live="polite"></div></div>
+  </section>
+  <section class="xc-panel" id="tp_log" role="tabpanel" aria-labelledby="tb_log" tabindex="-1" hidden>
+    <div class="xc-box">
+      <div class="xc-hd"><h2>سجل العمليات</h2><span class="xc-sm" id="lg_n"></span></div>
+      <div class="xc-filters">
+        <input type="search" id="lg_q" placeholder="بحث في السجل…" aria-label="بحث في سجل العمليات">
+        <select id="lg_src" aria-label="المصدر"></select>
+        <select id="lg_st" aria-label="الحالة"></select>
+        <button type="button" class="xc-b" id="lg_clear">مسح السجل</button>
+      </div>
+      <div id="lg_list"></div>
+      <p class="xc-sm">السجل محفوظ على هذا الجهاز فقط ويضم ملخص كل عملية (المصدر والقسم وعدد الصفوف والتحذيرات والحالة) دون المحتوى الكامل أو الصور، لذلك لا يمكن استرجاع تقرير منه.</p>
+    </div>
+  </section>
+  <section class="xc-panel" id="tp_eng" role="tabpanel" aria-labelledby="tb_eng" tabindex="-1" hidden>
+    <div class="xc-box">
+      <div class="xc-hd"><h2>إعدادات المحركات</h2><button type="button" class="xc-b" id="eng_refresh">تحديث</button></div>
+      <p>حالة المحركات واختبارها وسجلات الاستخدام. لا تظهر مفاتيح المزوّدين هنا؛ يظهر فقط إن كان المفتاح مضبوطًا.</p>
+      <div id="eng_host"></div>
+      <div id="eng_logs" class="xc-logs"></div>
+    </div>
+  </section>
+  <datalist id="x_shifts"><option value="صباحي"><option value="مسائي"><option value="ليلي"></datalist>
 <style>
 /* ===== MAS AI — مركز الذكاء الاصطناعي (هوية MAS: عنابي + ذهبي) ===== */
 .xw{max-width:1320px!important;margin-inline:auto!important;padding:14px 14px 28px!important}
@@ -122,7 +210,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 
 /* الشبكة */
 .x-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start}
-.x-chat{display:flex;flex-direction:column;min-height:520px;height:calc(100dvh - 270px);max-height:820px;background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--sh);overflow:hidden;animation:xfade .65s .1s both}
+.x-chat{display:flex;flex-direction:column;min-height:520px;height:calc(100dvh - 340px);max-height:820px;background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--sh);overflow:hidden;animation:xfade .65s .1s both}
 .x-head{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--card)}
 .x-hb{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;background:color-mix(in srgb,var(--g1) 20%,var(--card));color:var(--gd)}
 .x-hb svg{width:18px;height:18px;fill:currentColor;stroke:none}
@@ -279,10 +367,80 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 .lb-sm{font-size:13px;color:var(--mute);line-height:1.7}
 .x-imp .acts2 .dg{background:var(--bad);color:#fff;border:0;font-weight:700}.x-imp .acts2 .dg:disabled{opacity:.45;cursor:default}
 .x-del td:first-child,.x-del th:first-child{width:34px}.x-del input[type=checkbox]{width:18px;height:18px;accent-color:var(--bad)}
+/* ===== MAS AI CENTER: التبويبات والبطاقات والاستيراد ===== */
+.x-hero h1 small{display:block;font-family:var(--fu);font-size:14px;font-weight:500;color:var(--g2);letter-spacing:0;margin-top:2px}
+.xc-tabs{display:flex;gap:6px;overflow-x:auto;padding:5px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:var(--sh);scrollbar-width:none;animation:xfade .5s both}
+.xc-tabs::-webkit-scrollbar{display:none}
+.xc-tabs button{display:flex;align-items:center;justify-content:center;gap:6px;flex:1 0 auto;border:0;border-radius:12px;padding:9px 10px;background:transparent;color:var(--mute);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .2s,color .2s}
+.xc-tabs button svg{width:18px;height:18px}
+.xc-tabs button:hover{color:var(--pri);background:color-mix(in srgb,var(--pri) 8%,transparent)}
+.xc-tabs button.on{color:#fff;background:linear-gradient(135deg,#8a3447,#642631);box-shadow:0 6px 14px #64263140}
+.xc-tabs button:focus-visible,.xc-b:focus-visible,.xc-card:focus-visible,.xc-box input:focus-visible,.xc-box select:focus-visible,.xc-box textarea:focus-visible,.xc-op summary:focus-visible{outline:3px solid color-mix(in srgb,var(--g1) 75%,transparent);outline-offset:2px}
+.xc-n{font-style:normal;font-size:11.5px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;display:grid;place-items:center;background:var(--g1);color:#3a1a20}
+.xc-panel.xc-in{animation:xfade .38s both}
+.xc-panel{display:flex;flex-direction:column;gap:14px;min-width:0}
+.xc-panel[hidden]{display:none!important}
+#tp_chat{display:block}
+.xc-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.xc-card{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:var(--sh);text-align:right;font:inherit;color:var(--ink);min-width:0;animation:xfade .5s calc(var(--d,0)*70ms) both}
+button.xc-card{cursor:pointer;transition:transform .18s,border-color .2s}button.xc-card:hover{transform:translateY(-2px);border-color:var(--g1)}
+.xc-ci{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;flex:none;background:color-mix(in srgb,var(--g1) 20%,var(--card));color:var(--gd)}
+.xc-card>div{min-width:0}.xc-card small{display:block;font-size:12.5px;color:var(--mute)}
+.xc-card b{display:block;font-size:19px;font-weight:700;line-height:1.5;overflow-wrap:anywhere}
+.xc-card em{display:block;font-style:normal;font-size:12px;color:var(--mute);line-height:1.6;overflow-wrap:anywhere}
+.xc-card.bad .xc-ci{background:color-mix(in srgb,var(--bad) 15%,var(--card));color:var(--bad)}
+.xc-two{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.xc-two2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.xc-grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
+.xc-box{display:flex;flex-direction:column;gap:12px;min-width:0;padding:18px;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:var(--sh)}
+.xc-box h2{margin:0;font-family:var(--fd);font-size:17px;font-weight:700}
+.xc-box p,.xc-box li{margin:0;font-size:14px;line-height:1.9;color:var(--mute)}
+.xc-steps{margin:0;padding-inline-start:22px;display:flex;flex-direction:column;gap:2px}
+.xc-box label{display:block;font-size:13px;color:var(--mute);margin-bottom:3px}
+.xc-box input,.xc-box select,.xc-box textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);padding:9px 12px;font:inherit;font-size:16px;line-height:1.7}
+.xc-box textarea{resize:vertical;min-height:110px}
+.xc-pre{margin:0;direction:ltr;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);padding:12px;font:12.5px/1.7 ui-monospace,Consolas,monospace;overflow-x:auto;white-space:pre;max-width:100%}
+.xc-pv{max-width:100%;max-height:260px;border-radius:12px;border:1px solid var(--line);object-fit:contain;align-self:flex-start}
+.xc-row,.xc-start{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.xc-hd{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.xc-sm{font-size:12.5px;color:var(--mute);line-height:1.8}
+.xc-b{position:relative;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:9px 15px;font:inherit;font-size:14.5px;font-weight:600;cursor:pointer;transition:transform .15s,border-color .2s}
+.xc-b:hover{border-color:var(--g1);transform:translateY(-1px)}
+.xc-b.p{background:linear-gradient(135deg,#8a3447,#642631);color:#fff;border:0}
+.xc-b:disabled{opacity:.55;cursor:default;transform:none}
+.xc-b.ld{color:transparent!important}
+.xc-b.ld::after{content:"";position:absolute;inset:0;margin:auto;width:18px;height:18px;border-radius:50%;border:2px solid #fff7;border-top-color:#fff;animation:xspin .8s linear infinite}
+.xc-b:not(.p).ld::after{border-color:#6426314d;border-top-color:#642631}
+.xc-note{border-radius:12px;padding:10px 14px;font-size:14px;line-height:1.8;border:1px solid var(--line);color:var(--mute)}
+.xc-note ul{margin:4px 0 0;padding-inline-start:20px}
+.xc-note.ok{color:var(--ok);border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,transparent)}
+.xc-note.bad{color:var(--bad);border-color:var(--bad);background:color-mix(in srgb,var(--bad) 7%,transparent)}
+.xc-note.info{background:color-mix(in srgb,var(--g1) 10%,transparent);border-color:color-mix(in srgb,var(--g1) 50%,transparent)}
+.xc-empty{text-align:center;color:var(--mute);font-size:14px;padding:18px 10px;line-height:1.9}
+.xc-empty.big{display:flex;flex-direction:column;align-items:center;gap:8px;padding:44px 16px}.xc-empty.big b{color:var(--ink);font-size:16px}
+.xc-ol{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}.xc-ol:last-child{border-bottom:0}
+.xc-dt{color:var(--mute);font-size:12.5px}
+.xc-st{font-size:12px;padding:2px 10px;border-radius:999px;border:1px solid currentColor;margin-inline-start:auto;white-space:nowrap}
+.xc-st.rv{color:var(--warn)}.xc-st.pr{color:var(--pri)}.xc-st.ok{color:var(--ok)}.xc-st.bd{color:var(--bad)}.xc-st.cx{color:var(--mute)}
+.xc-filters{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px}
+.xc-op{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--bg)}
+.xc-op summary{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;padding:10px 12px;cursor:pointer;font-size:14px;list-style:none}.xc-op summary::-webkit-details-marker{display:none}
+.xc-op dl{margin:0;padding:4px 14px 12px;display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:13.5px}.xc-op dt{color:var(--mute)}.xc-op dd{margin:0;overflow-wrap:anywhere}
+.xc-lg{display:flex;flex-direction:column;margin-top:8px}.xc-lg b{font-size:14px;margin-bottom:2px}.xc-logs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.x-sum{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.x-sum span{font-size:12.5px;padding:3px 11px;border-radius:999px;border:1px solid var(--line);font-weight:600}
+.x-sum .ok{color:var(--ok);border-color:var(--ok)}.x-sum .w{color:var(--warn);border-color:var(--warn)}.x-sum .e{color:var(--bad);border-color:var(--bad)}
+.x-sum small{flex-basis:100%;color:var(--mute);font-size:12.5px;line-height:1.7}
+.bdg.src{color:var(--pri);border-color:var(--pri)}
+.x-m.rv{max-width:none;width:100%;animation:none}
+.x-ir{grid-template-columns:repeat(12,minmax(0,1fr))}
+.x-ir .it{grid-column:span 4}.x-ir .f-q,.x-ir .f-s{grid-column:span 2}.x-ir .w{grid-column:span 3}.x-ir .rm{grid-column:12;grid-row:1;align-self:end}
+.x-ir .f-sh{grid-column:span 3}.x-ir .f-n{grid-column:span 9}
 /* ===== التجاوب ===== */
 @media(max-width:1000px){
  .x-grid{grid-template-columns:1fr}
- .x-chat{height:calc(100dvh - 200px);min-height:460px}
+ .x-chat{height:calc(100dvh - 260px);min-height:460px}
+ .xc-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.xc-two,.xc-grid2,.xc-logs{grid-template-columns:1fr}
  .x-side{grid-template-columns:repeat(2,minmax(0,1fr))}
  .x-side .x-panel:last-child{grid-column:1/-1}
 }
@@ -292,7 +450,11 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
  .x-av{width:44px;height:44px;border-radius:14px}.x-av svg{width:22px;height:22px}
  .x-hero h1{font-size:20px;margin-bottom:0}.x-hero p,.hr-eye{display:none}
  .hr-r{width:100%}
- .x-chat{border-radius:16px;height:calc(100dvh - 190px);min-height:440px}
+ .x-chat{border-radius:16px;height:calc(100dvh - 250px);min-height:440px}
+ .xc-tabs button{padding:9px 12px;font-size:13.5px}.xc-box{padding:14px;border-radius:16px}
+ .xc-cards{gap:8px}.xc-card{padding:12px;gap:9px}.xc-ci{width:36px;height:36px}.xc-card b{font-size:16px}
+ .xc-two2,.xc-filters{grid-template-columns:1fr}.xc-op dl{grid-template-columns:1fr}
+ .x-ir .it,.x-ir .w,.x-ir .f-sh,.x-ir .f-n{grid-column:1/-1}.x-ir .f-q,.x-ir .f-s{grid-column:auto}.x-ir .rm{grid-column:auto;grid-row:auto}
  .x-head{padding:10px 11px;gap:6px}.x-head .x-ib{width:36px;height:36px}
  .x-id small{display:none}.x-hb{display:none}.x-id b{font-size:14.5px}#x_adm{display:none!important}
  .x-newb span{display:none}.x-newb{padding:0;width:36px;height:36px;justify-content:center}
@@ -314,6 +476,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 <script src="common.js"></script>
 <script src="ai.js"></script>
 <script src="ai-print.js"></script>
+<script src="ai-center.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const P={copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/>',
@@ -461,7 +624,7 @@ async function adminPanel(){
   const box=$("x_engp"),p=$("x_admin");box.hidden=false;p.textContent="جارٍ التحميل…";
   const r=await masAi({action:"status"},{retries:0});
   if(!r.ok){p.textContent=r.msg||"تعذّر تحميل حالة المحركات";return}
-  const d=r.data,role=id=>id===d.primary?"المحرك الأساسي":id===d.fallback?"المحرك الاحتياطي":"محرك إضافي";
+  const d=r.data;if(window.MAC)MAC.onStatus(d);const role=id=>id===d.primary?"المحرك الأساسي":id===d.fallback?"المحرك الاحتياطي":"محرك إضافي";
   p.innerHTML=d.providers.map(x=>'<div class="eg"><div class="eg-l"><span class="eg-ic">'+ic("spark")+'</span><div><b>'+esc(x.label||x.id)+'</b><small>'+role(x.id)+'</small></div></div><div class="eg-r"><span class="'+(x.key_configured?"k":"n")+'">'+(x.key_configured?"المفتاح موجود":"المفتاح غير مضبوط")+'</span><button type="button" data-t="'+esc(x.id)+'">اختبار</button></div></div>').join("")+
     '<div class="eng-sum">الأساسي: '+esc(ENG[d.primary]||d.primary||"—")+" · الاحتياطي: "+esc(ENG[d.fallback]||d.fallback||"—")+" · التحويل التلقائي: "+(d.auto_failover?"مفعّل":"موقوف")+" · المساعد: "+(d.enabled?"مفعّل":"موقوف")+'</div><a class="eng-link" href="settings.html">إعدادات المساعد ›</a>';
   p.onclick=async e=>{const t=e.target.closest("[data-t]");if(!t||t.disabled)return;t.disabled=true;const o=t.textContent;t.textContent="…";
@@ -481,15 +644,19 @@ function match(item){ // يتحقق من اسم الصنف مقابل الأصن
 }
 function validate(v){
   const E=[],W=[],today_=today();const seen={};
+  (v.notices||[]).forEach(x=>W.push(x));
   if(!v.section||v.section==="unknown")E.push("اختر القسم.");
   if(!v.date)E.push("حدّد التاريخ.");else if(v.date>today_)W.push("التاريخ في المستقبل.");
   if(!v.rows.length)E.push("لا توجد سطور.");
   v.rows.forEach((r,i)=>{const n=i+1,f=[];
+    (r._err||[]).forEach(x=>{E.push("سطر "+n+": "+x.t);f.push("bad")});
     if(!r.item){E.push("سطر "+n+": الصنف ناقص.");f.push("bad")}
-    if(r.qty==null){W.push("سطر "+n+": العدد غير محدد.");f.push("warn")}
+    if(r.qty==null&&!(r._err||[]).some(x=>x.k==="qty")){W.push("سطر "+n+": العدد غير محدد.");f.push("warn")}
     if(r.qty!=null&&r.scrap!=null&&r.scrap>r.qty){W.push("سطر "+n+": الهالك أكبر من العدد.");f.push("warn")}
     if(r.qty!=null&&r.qty>50000){W.push("سطر "+n+": عدد كبير غير معتاد ("+r.qty+").");f.push("warn")}
     if(v.section==="finish"&&r.item&&!["مشرط","مياه","صنفرة"].includes(r.item))W.push("سطر "+n+": التشطيب يقبل فقط مشرط أو مياه أو صنفرة.");const m=match(r.item);r._m=m;if(m.s==="no"){W.push("سطر "+n+": الصنف غير موجود في الأصناف المسجّلة.");f.push("warn")}else if(m.s==="near"){W.push("سطر "+n+": الاسم قريب من «"+m.sug+"».");f.push("warn")}
+    if(r.shift&&(v.section==="brush"||v.section==="finish")&&!["صباحي","مسائي","ليلي"].includes(r.shift)){W.push("سطر "+n+": الوردية يجب أن تكون صباحي أو مسائي أو ليلي.");f.push("warn")}
+    if(r._dup){W.push("سطر "+n+": يوجد "+r._dup+" سجل محفوظ مشابه بنفس اليوم (الصنف والعدد والعامل). تأكد أنه ليس تكرارًا.");f.push("warn")}
     const k=nz(r.item)+"|"+nz(r.worker);if(r.item&&seen[k]){W.push("سطر "+n+": مكرر مع سطر "+seen[k]+".")}else seen[k]=n;
     r._f=f.includes("bad")?"bad":f.length?"warn":"";});
   return{E,W};
@@ -497,41 +664,51 @@ function validate(v){
 function impDraw(d,m){
   const v=m.imp,host=d.querySelector(".x-imp"),CONF={high:"ثقة عالية",medium:"ثقة متوسطة",low:"ثقة منخفضة — راجع كل رقم"};
   const opts='<option value="">— اختر القسم —</option>'+Object.keys(SECN).map(k=>'<option value="'+k+'"'+(k===v.section?" selected":"")+">"+SECN[k]+"</option>").join("");
-  host.innerHTML='<div class="x-imp-h"><b>'+ic("clip")+'بيانات مستخرجة — راجعها قبل الحفظ</b><span class="bdg '+v.confidence+'">'+CONF[v.confidence]+'</span></div>'+
+  const SRCB={image:"قراءة صورة داخلية",chatgpt:"ChatGPT خارجي",internal:"مساعد داخلي"};
+  host.innerHTML='<div class="x-imp-h"><b>'+ic("clip")+'بيانات مستخرجة — راجعها قبل الحفظ</b>'+(v.source&&SRCB[v.source]?'<span class="bdg src">'+SRCB[v.source]+'</span>':"")+(v.confidence&&CONF[v.confidence]?'<span class="bdg '+v.confidence+'">'+CONF[v.confidence]+'</span>':"")+'</div>'+
     (v.notes?'<div class="x-meta">ملاحظة المساعد: '+esc(v.notes)+"</div>":"")+
-    '<div class="x-imp-m"><div><label>القسم</label><select data-f="section">'+opts+'</select></div><div><label>التاريخ</label><input type="date" data-f="date" value="'+esc(v.date||"")+'"></div></div>'+
-    '<div class="x-rows">'+v.rows.map((r,i)=>'<div class="x-ir" data-r="'+i+'"><div class="it"><label>الصنف</label><input list="x_cat" data-k="item" value="'+esc(r.item||"")+'" maxlength="120"></div><div><label>العدد</label><input data-k="qty" inputmode="numeric" value="'+(r.qty??"")+'"></div><div><label>الهالك</label><input data-k="scrap" inputmode="numeric" value="'+(r.scrap??"")+'"></div><button class="rm" type="button" data-rm="'+i+'" aria-label="حذف السطر">'+ic("x")+'</button><div class="w"><label>العامل</label><input data-k="worker" value="'+esc(r.worker||"")+'" maxlength="60"></div><div class="rn"></div></div>').join("")+"</div>"+
-    '<div class="x-chk"></div><div class="acts2"><button type="button" data-ia="add">'+ic("plus")+'سطر</button>'+(CANWRITE&&WS[v.section]?'<button type="button" class="p" data-ia="save">حفظ مباشرة</button>':"")+'<button type="button" class="p" data-ia="go">فتح القسم وتجهيز التسجيل</button><button type="button" data-ia="copy">'+ic("copy")+'نسخ كنص</button></div>';
+    '<div class="x-imp-m"><div><label>القسم</label><select data-f="section" aria-label="القسم">'+opts+'</select></div><div><label>التاريخ</label><input type="date" data-f="date" aria-label="التاريخ" value="'+esc(v.date||"")+'"></div></div>'+
+    '<div class="x-sum" aria-live="polite"></div>'+
+    '<div class="x-rows">'+v.rows.map((r,i)=>'<div class="x-ir" data-r="'+i+'"><div class="it"><label>الصنف</label><input list="x_cat" data-k="item" aria-label="الصنف" value="'+esc(r.item||"")+'" maxlength="120"></div><div class="f-q"><label>العدد</label><input data-k="qty" aria-label="العدد" inputmode="numeric" value="'+(r.qty??"")+'"></div><div class="f-s"><label>الهالك</label><input data-k="scrap" aria-label="الهالك" inputmode="numeric" value="'+(r.scrap??"")+'"></div><button class="rm" type="button" data-rm="'+i+'" aria-label="حذف السطر">'+ic("x")+'</button><div class="w"><label>العامل</label><input data-k="worker" aria-label="العامل" value="'+esc(r.worker||"")+'" maxlength="60"></div><div class="f-sh"><label>الوردية</label><input list="x_shifts" data-k="shift" aria-label="الوردية" value="'+esc(r.shift||"")+'" maxlength="20"></div><div class="f-n"><label>ملاحظات</label><input data-k="note" aria-label="ملاحظات" value="'+esc(r.note||"")+'" maxlength="300"></div><div class="rn"></div></div>').join("")+"</div>"+
+    '<div class="x-chk"></div><div class="acts2"><button type="button" data-ia="add">'+ic("plus")+'سطر</button>'+(CANWRITE&&WS[v.section]?'<button type="button" class="p" data-ia="save">حفظ مباشرة</button>':"")+'<button type="button" class="p" data-ia="go">فتح القسم وتجهيز التسجيل</button><button type="button" data-ia="copy">'+ic("copy")+'نسخ كنص</button><button type="button" data-ia="cancel">'+ic("x")+'إلغاء</button></div>';
   impCheck(d,m);
+  if(window.MAC)MAC.dupThenCheck(d,m);
 }
 function impCheck(d,m){
   const v=m.imp,{E,W}=validate(v);
   d.querySelectorAll(".x-ir").forEach(el=>{const r=v.rows[+el.dataset.r];el.className="x-ir "+(r._f||"");const rn=el.querySelector(".rn");
     rn.innerHTML=r._m&&r._m.s==="near"?'اقتراح: <button type="button" data-fix="'+el.dataset.r+'">'+esc(r._m.sug)+"</button>":r._m&&r._m.s==="ok"?'<span style="color:var(--ok);display:inline-flex;gap:4px;align-items:center">'+ic("check")+'صنف مسجّل</span>':""});
   d.querySelector(".x-chk").innerHTML=E.map(x=>'<div class="e">'+ic("x")+esc(x)+"</div>").join("")+W.map(x=>'<div class="w">'+ic("alert")+esc(x)+"</div>").join("")+(!E.length&&!W.length?'<div class="o">'+ic("check")+"لا توجد ملاحظات على البيانات</div>":"");
+  const nb=v.rows.filter(r=>r._f==="bad").length,nw=v.rows.filter(r=>r._f==="warn").length,sm=d.querySelector(".x-sum");
+  if(sm)sm.innerHTML='<span class="ok">'+(v.rows.length-nb-nw)+' صف صحيح</span><span class="w">'+W.length+' تحذير</span><span class="e">'+E.length+' خطأ</span>'+(v._dupInfo?'<small>'+esc(v._dupInfo)+'</small>':"");
   d.querySelector('[data-ia=go]').disabled=E.length>0;const sv=d.querySelector('[data-ia=save]');if(sv)sv.disabled=E.length>0;
 }
-$("x_msgs").addEventListener("input",e=>{
-  const w=e.target.closest(".x-m");if(!w||!cur||!cur.m[+w.dataset.i]||!cur.m[+w.dataset.i].imp)return;
-  const m=cur.m[+w.dataset.i],v=m.imp,el=e.target,f=el.dataset.f,k=el.dataset.k;
-  if(f)v[f]=el.value;else if(k){const r=v.rows[+el.closest(".x-ir").dataset.r];
-    r[k]=(k==="qty"||k==="scrap")?(el.value===""?null:Math.max(0,parseInt(el.value,10)||0)):(el.value.trim()||null)}
+const msgOf=w=>!w?null:w.dataset.rv?(window.MAC?MAC.rvMsg():null):((cur&&cur.m[+w.dataset.i])||null);
+const dupLater=(w,m)=>{clearTimeout(window._dq);window._dq=setTimeout(()=>{if(window.MAC)MAC.dupThenCheck(w,m)},500)};
+function impInput(e){
+  const w=e.target.closest(".x-m"),m=msgOf(w);if(!m||!m.imp)return;
+  const v=m.imp,el=e.target,f=el.dataset.f,k=el.dataset.k;
+  if(f){v[f]=el.value;v.rows.forEach(r=>{delete r._dup});dupLater(w,m)}
+  else if(k){const r=v.rows[+el.closest(".x-ir").dataset.r];
+    r[k]=(k==="qty"||k==="scrap")?(el.value===""?null:Math.max(0,parseInt(el.value,10)||0)):(el.value.trim()||null);
+    if(r._err)r._err=r._err.filter(x=>x.k!==k);
+    if(k==="item"||k==="qty"||k==="worker"){delete r._dup;dupLater(w,m)}}
   clearTimeout(window._sv);window._sv=setTimeout(save,400);impCheck(w,m);
-});
-$("x_msgs").addEventListener("click",e=>{
-  const w=e.target.closest(".x-m");if(!w||!cur)return;const m=cur.m[+w.dataset.i];if(!m||!m.imp)return;const v=m.imp;
+}
+$("x_msgs").addEventListener("input",impInput);$("rv_host").addEventListener("input",impInput);
+function impClick(e){
+  const w=e.target.closest(".x-m"),m=msgOf(w);if(!m||!m.imp)return;const v=m.imp;
   const rm=e.target.closest("[data-rm]"),fx=e.target.closest("[data-fix]"),ia=e.target.closest("[data-ia]");
   if(rm){v.rows.splice(+rm.dataset.rm,1);save();impDraw(w,m)}
-  else if(fx){v.rows[+fx.dataset.fix].item=v.rows[+fx.dataset.fix]._m.sug;save();impDraw(w,m)}
+  else if(fx){v.rows[+fx.dataset.fix].item=v.rows[+fx.dataset.fix]._m.sug;delete v.rows[+fx.dataset.fix]._dup;save();impDraw(w,m)}
   else if(ia){const a=ia.dataset.ia;
     if(a==="add"){v.rows.push({item:null,qty:null,scrap:null,worker:null,shift:null,note:null});save();impDraw(w,m)}
     else if(a==="copy"){const tx=(SECN[v.section]||"")+" — "+v.date+"\n"+v.rows.map(r=>[r.item,r.qty!=null?"العدد "+r.qty:"",r.scrap!=null?"هالك "+r.scrap:"",r.worker].filter(Boolean).join(" | ")).join("\n");navigator.clipboard.writeText(tx).then(()=>toast("تم النسخ","ok"),()=>toast("تعذّر النسخ","bad"))}
-    else if(a==="go"){const {E}=validate(v);if(E.length){toast(E[0],"bad");return}
-      const file=SEC_PAGE[v.section];if(!canSee(file)){toast("حسابك لا يملك صلاحية على "+SECN[v.section],"bad");return}
-      const rows=v.rows.filter(r=>r.item||r.qty!=null||r.scrap!=null).map(r=>({item:r.item,qty:r.qty,scrap:r.scrap,worker:r.worker,shift:r.shift,note:r.note,done:false}));
-      try{sessionStorage.setItem("masai_import",JSON.stringify({u:ME.id,sec:v.section,date:v.date,rows}))}catch(x){toast("تعذّر تجهيز البيانات","bad");return}
-      toast("جاري فتح "+SECN[v.section]+"… راجع كل سطر ثم احفظ","ok");setTimeout(()=>{location.href=file},500)}}
-});
+    else if(a==="cancel"){MAC.cancel(w,m)}
+    else if(a==="save"&&w.dataset.rv){writeSave(w,m)}
+    else if(a==="go"){MAC.go(w,m,ia)}}
+}
+$("x_msgs").addEventListener("click",impClick);$("rv_host").addEventListener("click",impClick);
 async function shrink(file){
   const url=URL.createObjectURL(file);
   try{const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
@@ -547,9 +724,9 @@ async function extractData(payload,label){
   setBusy(true);const my=++gen,chat=cur;
   const [r]=await Promise.all([masAi(Object.assign({action:"extract"},payload),{retries:0}),loadCat()]);
   if(my!==gen)return;setBusy(false);
-  if(!r.ok)chat.m.push({r:"a",t:r.msg||"تعذّر استخراج البيانات",err:1,q:label});
+  if(!r.ok){chat.m.push({r:"a",t:r.msg||"تعذّر استخراج البيانات",err:1,q:label});if(window.MAC)MAC.logFail(payload.image?"image":"internal",payload.image?"قراءة صورة":"استخراج من نص",r.msg||"تعذّر استخراج البيانات")}
   else{const v=r.data.vision;if(!v.rows.length)chat.m.push({r:"a",t:v.notes||"لم أجد بيانات إنتاج واضحة. جرّب نصًا أو صورة أوضح."});
-    else{if(!v.date)v.date=today();chat.m.push({r:"a",t:"بيانات مستخرجة",imp:v,meta:""})}}
+    else{if(!v.date)v.date=today();if(window.MAC)MAC.track(v,payload.image?"image":"internal",payload.image?"قراءة صورة":"استخراج من نص");chat.m.push({r:"a",t:"بيانات مستخرجة",imp:v,meta:""})}}
   chat.m=chat.m.slice(-40);save();if(cur===chat)render();renderList();
 }
 function setFill(on){fillMode=on;$("x_fillb").setAttribute("aria-pressed",String(on));$("ai_q").placeholder=on?(CANWRITE?"أمر: سجّل في الصب… أو احذف سجلات…":"اكتب أو الصق بيانات الإنتاج، مثال: جليز اليوم — طقم ٦ قطع ٣٠٠ وهالك ٥ (أحمد)…"):"اسأل عن إنتاج المصنع أو اطلب تقريرًا…";$("x_hint").textContent=on?(CANWRITE?"وضع الأوامر: لن يُنفَّذ أي شيء قبل مراجعتك وتأكيدك، ويمكن التراجع 7 أيام":"وضع التعبئة: سيُستخرج النص إلى جدول تراجعه وتعدّله قبل الحفظ"):"Enter للإرسال · Shift+Enter سطر جديد · المساعد لا يعدّل أي بيانات"}
@@ -630,7 +807,7 @@ async function writeCommand(text){
   else{const it=r.data.intent,nm=WS[it.section];
     if(it.op==="add"){
       if(!it.rows.length)say("لم أجد بيانات لتسجيلها في الأمر. اكتب الصنف والعدد.");
-      else{await loadCat();chat.m.push({r:"a",t:"بيانات",imp:{section:it.section,date:it.date||today(),confidence:"medium",notes:(nm?"":"القسم غير مدعوم للحفظ المباشر؛ يمكنك فتح القسم لتسجيلها. ")+(it.notes||""),rows:it.rows}})}
+      else{await loadCat();const iv={section:it.section,date:it.date||today(),confidence:"medium",notes:(nm?"":"القسم غير مدعوم للحفظ المباشر؛ يمكنك فتح القسم لتسجيلها. ")+(it.notes||""),rows:it.rows};if(window.MAC)MAC.track(iv,"internal","أمر تسجيل");chat.m.push({r:"a",t:"بيانات",imp:iv})}
     }else if(it.op==="delete"){
       if(!nm)say("الحذف المباشر متاح لأقسام الصب والبرشر والتشطيب فقط. حدّد القسم في الأمر.");
       else{const f=await masAi({action:"write_find",sec:it.section,date:it.date,from:it.from,to:it.to,item:it.item,worker:it.worker},{retries:0});
@@ -642,12 +819,17 @@ async function writeCommand(text){
 }
 async function writeSave(w,m){
   const v=m.imp,{E}=validate(v);if(E.length){toast(E[0],"bad");return}
+  if(window.MAC){await MAC.dup(v,true);impCheck(w,m)}
+  const dn=v.rows.filter(r=>r._dup).length;
   const rows=v.rows.filter(r=>r.item||r.qty!=null).map(r=>({item:r.item,qty:r.qty,scrap:r.scrap,worker:r.worker,shift:r.shift,note:r.note}));
-  if(!confirm("سيتم حفظ "+rows.length+" سجل في قسم "+WS[v.section]+" بتاريخ "+v.date+" مباشرة في قاعدة البيانات. يمكنك التراجع خلال 7 أيام. متابعة؟"))return;
+  if(!confirm("سيتم حفظ "+rows.length+" سجل في قسم "+WS[v.section]+" بتاريخ "+v.date+" مباشرة في قاعدة البيانات. يمكنك التراجع خلال 7 أيام."+(dn?"\n\nتنبيه: "+dn+" سطر يشبه سجلات محفوظة بنفس اليوم؛ تأكد أنه ليس تكرارًا.":"")+"\n\nمتابعة؟"))return;
   if(WBUSY)return;WBUSY=true;const btn=w.querySelector("[data-ia=save]");if(btn)btn.disabled=true;
   const r=await masAi({action:"write_add",sec:v.section,date:v.date,rows},{retries:0});WBUSY=false;
-  if(!r.ok){toast(r.msg||"تعذّر الحفظ","bad");if(btn)btn.disabled=false;return}
-  const i=cur.m.indexOf(m);cur.m[i]={r:"a",t:"تم حفظ "+r.data.count+" سجل في قسم "+WS[v.section]+" بتاريخ "+v.date+".",res:{log_id:r.data.log_id}};save();render();toast("تم الحفظ","ok");
+  if(!r.ok){toast(r.msg||"تعذّر الحفظ","bad");if(window.MAC)MAC.touch(v,"فشل",r.msg||"تعذّر الحفظ");if(btn)btn.disabled=false;return}
+  const txt="تم حفظ "+r.data.count+" سجل في قسم "+WS[v.section]+" بتاريخ "+v.date+".";
+  if(window.MAC)MAC.touch(v,"تم الاعتماد");
+  if(w.dataset.rv){MAC.rvDone(txt,r.data.log_id);toast("تم الحفظ","ok");return}
+  const i=cur.m.indexOf(m);cur.m[i]={r:"a",t:txt,res:{log_id:r.data.log_id}};save();render();toast("تم الحفظ","ok");
 }
 function delDraw(d,m){
   const v=m.del,host=d.querySelector(".x-imp"),n=v.sel.length;
@@ -747,7 +929,7 @@ async function labOpen(){
   if(ME.role==="admin"){$("x_adm").hidden=false;adminPanel()}
   $("x_lab").onclick=labOpen;
   if(CANMEM()){$("x_mem").hidden=false;$("x_mem").onclick=()=>{$("x_memp").hidden?openMem():($("x_memp").hidden=true)}}
-  $("x_adm").onclick=()=>{adminPanel();$("x_engp").scrollIntoView({behavior:"smooth",block:"nearest"})};
+  $("x_adm").onclick=()=>{adminPanel();MAC.tab("eng")};
   $("x_flt").onclick=()=>{$("x_filters").hidden=!$("x_filters").hidden};if(innerWidth<=700)$("x_filters").hidden=true;
   $("x_new").onclick=newChat;
   $("x_srch").oninput=renderList;
@@ -765,6 +947,7 @@ async function labOpen(){
   q.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("ai_go").click()}};
   $("ai_go").onclick=()=>{if(busy){stop();return}const v=q.value;if(v.trim().length<2){toast("اكتب سؤالك","bad");return}q.value="";fit();fillMode?(CANWRITE?writeCommand(v.trim()):extractData({text:v.trim()},v.trim().slice(0,60))):askQ(v)};
   addEventListener("online",()=>markOff(false));addEventListener("offline",()=>markOff(true));
+  MAC.init();
 })();
 </script>
 </body>
