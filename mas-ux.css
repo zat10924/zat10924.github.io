@@ -1,0 +1,43 @@
+/* MAS UX — تنسيقات مشتركة لكل الصفحات (هاتف + لابتوب) + اختيار التاريخ */
+
+/* ===== اختيار التاريخ ===== */
+input[type=date]{cursor:pointer;min-height:42px}
+.xd-q,.xd-r{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px;grid-column:1/-1;flex:1 1 100%;width:100%;min-width:0}
+.xd-q button,.xd-r button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;min-height:32px;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.xd-q button:hover,.xd-r button:hover{border-color:var(--pri);color:var(--pri)}
+.xd-q button.on,.xd-r button.on{background:var(--pri);border-color:transparent;color:var(--on-pri,#fff)}
+.xd-q button[data-s]{min-width:38px;padding-inline:8px;color:var(--mute);direction:ltr}
+@media print{.xd-q,.xd-r{display:none!important}}
+
+/* ===== كل الأقسام: لابتوب ===== */
+@media(min-width:1001px){
+ .wrap .tabs{width:fit-content;max-width:100%}
+ .wrap .tabs .btn,.wrap .tabs button{flex:0 0 auto;min-width:128px;padding-inline:22px}
+ .wrap .card .two{grid-template-columns:repeat(auto-fit,minmax(200px,280px));justify-content:start;gap:10px 16px}
+ .wrap .card>select,.wrap .card>input:not([type=checkbox]):not([type=radio]):not([type=file]),.wrap .card>textarea{max-width:460px}
+ .wrap .card>label{display:block}
+ .wrap .card>.row{justify-content:flex-start}
+ .wrap .kpis,.wrap .kpis.three,.wrap .kpis.mini.three{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));max-width:1100px}
+ .xd-q,.xd-r{max-width:460px}.xd-r{max-width:640px}
+ .scroll table{min-width:100%}
+}
+
+/* ===== كل الأقسام: هاتف ===== */
+@media(max-width:700px){
+ .wrap{padding-inline:12px}
+ .wrap h1{font-size:1.45rem;margin-bottom:8px}
+ .tabs{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+ .tabs::-webkit-scrollbar{display:none}
+ .tabs .btn,.tabs button{flex:1 0 auto;min-width:84px;padding-inline:14px}
+ .card{padding:14px}
+ .row .btn{flex:1 1 auto;min-height:44px}
+ input,select,textarea{font-size:16px}
+ .scroll{-webkit-overflow-scrolling:touch}
+ .scroll table th,.scroll table td{white-space:nowrap;padding-inline:10px}
+ .two{gap:10px}
+ .modal{max-height:92dvh}
+ .modal input[type=date]{width:100%}
+ .xd-r{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+ .xd-r::-webkit-scrollbar{display:none}.xd-r button{flex:none}
+ .xd-q button{min-height:34px}
+}

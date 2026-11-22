@@ -41,6 +41,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 
   <nav class="xc-tabs" id="xc_tabs" role="tablist" aria-label="أقسام مركز الذكاء الاصطناعي" hidden>
     <button type="button" role="tab" id="tb_ov" aria-controls="tp_ov" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span>نظرة عامة</span></button>
+    <button type="button" role="tab" id="tb_quick" aria-controls="tp_quick" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6l1-7z"/></svg><span>تسجيل سريع</span></button>
     <button type="button" role="tab" id="tb_chat" aria-controls="tp_chat" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z"/></svg><span>المحادثة الذكية</span></button>
     <button type="button" role="tab" id="tb_vis" aria-controls="tp_vis" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/></svg><span>قراءة الصور</span></button>
     <button type="button" role="tab" id="tb_ext" aria-controls="tp_ext" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg><span>الاستيراد الخارجي</span></button>
@@ -48,6 +49,28 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
     <button type="button" role="tab" id="tb_log" aria-controls="tp_log" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>سجل العمليات</span></button>
     <button type="button" role="tab" id="tb_eng" aria-controls="tp_eng" aria-selected="false" tabindex="-1" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h14"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/></svg><span>إعدادات المحركات</span></button>
   </nav>
+  <section class="xc-panel" id="tp_quick" role="tabpanel" aria-labelledby="tb_quick" tabindex="-1" hidden>
+    <div class="xc-box qk">
+      <div class="xc-hd"><h2>تسجيل الإنتاج بالذكاء الاصطناعي</h2><span class="xc-sm">كل الأقسام في مكان واحد</span></div>
+      <ol class="qk-flow" aria-hidden="true"><li>القسم</li><li>التاريخ</li><li>البيانات</li><li>مراجعة وحفظ</li></ol>
+      <div class="qk-step"><label id="qk_l1">١ · اختر القسم</label><div class="qk-secs" id="qk_secs" role="radiogroup" aria-labelledby="qk_l1"></div></div>
+      <div class="qk-step"><label for="qk_date">٢ · التاريخ</label><input type="date" id="qk_date"></div>
+      <div class="qk-step"><label for="qk_txt">٣ · اكتب أو قل أو صوّر السجل</label>
+        <textarea id="qk_txt" rows="5" maxlength="1500" dir="auto" placeholder="اختر القسم أولًا لتظهر هنا صيغة مثال…"></textarea>
+        <div class="qk-tools">
+          <button type="button" class="xc-b" id="qk_mic" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>إملاء صوتي</span></button>
+          <button type="button" class="xc-b" id="qk_cam"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/></svg><span>تصوير السجل</span></button>
+          <button type="button" class="xc-b" id="qk_gal"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 16l4-4 4 4 3-3 5 5"/></svg><span>من المعرض</span></button>
+          <button type="button" class="xc-b" id="qk_ex">ضع مثالًا</button>
+          <input type="file" id="qk_file_cam" accept="image/*" capture="environment" hidden><input type="file" id="qk_file" accept="image/*" hidden>
+        </div>
+        <div class="qk-pv" id="qk_pvw" hidden><img id="qk_pv" alt="معاينة صورة السجل"><button type="button" class="xc-b" id="qk_rm">إزالة الصورة</button></div>
+      </div>
+      <div class="xc-row"><button type="button" class="xc-b p qk-go" id="qk_go">حلّل وجهّز المراجعة</button><button type="button" class="xc-b" id="qk_clear">مسح</button></div>
+      <div id="qk_msg" class="xc-note" role="status" aria-live="polite" hidden></div>
+      <p class="xc-sm">لا يُحفظ أي شيء قبل مراجعتك. القسم والتاريخ اللذان تختارهما هنا هما المعتمدان دائمًا حتى لو ذُكر غيرهما في النص أو الصورة.</p>
+    </div>
+  </section>
   <section class="xc-panel" id="tp_ov" role="tabpanel" aria-labelledby="tb_ov" tabindex="-1" hidden>
     <div class="xc-cards">
       <article class="xc-card" id="ovc_conn" style="--d:0"><span class="xc-ci"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8 15.5a6 6 0 0 1 8 0M12 19v.01"/></svg></span><div><small>حالة الاتصال</small><b id="ov_conn">—</b><em id="ov_conn_s"></em></div></article>
@@ -58,7 +81,8 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
     <div class="xc-two">
       <section class="xc-box"><h2>ابدأ من هنا</h2>
         <div class="xc-start">
-          <button type="button" class="xc-b p" data-go="chat">اسأل المساعد</button>
+          <button type="button" class="xc-b p" data-go="quick">تسجيل إنتاج سريع</button>
+          <button type="button" class="xc-b" data-go="chat">اسأل المساعد</button>
           <button type="button" class="xc-b" data-go="ext">استيراد من ChatGPT</button>
           <button type="button" class="xc-b" data-go="vis">قراءة صورة سجل</button>
           <button type="button" class="xc-b" data-go="rev">مراجعة البيانات</button>
@@ -94,7 +118,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
           <button class="x-ib" id="x_img" type="button" aria-label="قراءة صورة سجل" title="تعبئة من صورة"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
           <button class="x-ib" id="x_fillb" type="button" aria-pressed="false" aria-label="وضع تعبئة البيانات" title="وضع تعبئة البيانات"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4zM14 7l3 3"/></svg></button>
           <input type="file" id="x_file" accept="image/*" hidden>
-          <textarea id="ai_q" rows="1" maxlength="1500" placeholder="اسأل عن إنتاج المصنع أو اطلب تقريرًا…" aria-label="سؤالك"></textarea>
+          <textarea id="ai_q" rows="1" maxlength="1500" placeholder="اسأل أو اطلب تقريرًا…" aria-label="سؤالك"></textarea>
           <button id="ai_go" class="x-send" type="button" aria-label="إرسال"><svg viewBox="0 0 24 24" class="s-send"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z"/></svg><svg viewBox="0 0 24 24" class="s-stop"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg></button>
         </div>
         <small class="x-hint" id="x_hint">Enter للإرسال · Shift+Enter سطر جديد · المساعد لا يعدّل أي بيانات</small>
@@ -171,8 +195,9 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
     <div class="xc-box">
       <div class="xc-hd"><h2>إعدادات المحركات</h2><button type="button" class="xc-b" id="eng_refresh">تحديث</button></div>
       <p>حالة المحركات واختبارها وسجلات الاستخدام. لا تظهر مفاتيح المزوّدين هنا؛ يظهر فقط إن كان المفتاح مضبوطًا.</p>
+      <div id="eng_health" class="eh" aria-live="polite"></div>
       <div id="eng_host"></div>
-      <div id="eng_logs" class="xc-logs"></div>
+      <details class="xc-det"><summary>السجلات التفصيلية (للمتابعة التقنية)</summary><div id="eng_logs" class="xc-logs"></div></details>
     </div>
   </section>
   <datalist id="x_shifts"><option value="صباحي"><option value="مسائي"><option value="ليلي"></datalist>
@@ -468,7 +493,114 @@ button.xc-card{cursor:pointer;transition:transform .18s,border-color .2s}button.
  .x-side{grid-template-columns:1fr}
  .x-ir{grid-template-columns:1fr 1fr auto}.x-ir .it,.x-ir .w{grid-column:1/-1}
 }
+/* ===== تسجيل سريع + لوحة حالة المحركات ===== */
+.qk-flow{display:flex;gap:6px;margin:0;padding:0;list-style:none;counter-reset:q;flex-wrap:wrap}
+.qk-flow li{counter-increment:q;font-size:12.5px;color:var(--mute);display:flex;align-items:center;gap:6px}
+.qk-flow li::before{content:counter(q);width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--g1) 30%,var(--card));color:var(--gd);font-weight:700;font-size:12px}
+.qk-flow li+li::after{content:"";display:none}
+.qk-step{display:flex;flex-direction:column;gap:6px;min-width:0}
+.qk-step>label{font-weight:700;color:var(--ink);font-size:14px;margin:0}
+.qk-secs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.qk-secs button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;min-height:48px;padding:8px 6px;font:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s,transform .12s}
+.qk-secs button:hover{border-color:var(--g1)}.qk-secs button:active{transform:scale(.97)}
+.qk-secs button[aria-checked=true]{background:linear-gradient(135deg,#8a3447,#642631);color:#fff;border-color:transparent;box-shadow:0 6px 14px #64263140}
+.qk-tools{display:flex;gap:8px;flex-wrap:wrap}
+.qk-tools .xc-b{display:inline-flex;align-items:center;gap:7px;min-height:44px}
+.qk-tools .xc-b svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.qk-tools .xc-b.rec{background:var(--bad);color:#fff;border-color:transparent;animation:xpulse2 1.2s ease-in-out infinite}
+@keyframes xpulse2{50%{opacity:.7}}
+.qk-pv{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.qk-pv img{max-height:140px;max-width:100%;border-radius:12px;border:1px solid var(--line)}
+.qk-go{min-height:48px;font-size:16px;flex:1 1 220px}
+.qk textarea{min-height:120px}
+.eh{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.eh-c{display:flex;flex-direction:column;gap:6px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+.eh-h{display:flex;align-items:center;gap:8px;font-weight:700}
+.eh-d{width:12px;height:12px;border-radius:50%;background:var(--mute);flex:none}
+.eh-c.g .eh-d{background:var(--ok)}.eh-c.y .eh-d{background:var(--warn)}.eh-c.r .eh-d{background:var(--bad)}
+.eh-c.g{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}.eh-c.y{border-color:color-mix(in srgb,var(--warn) 50%,var(--line))}.eh-c.r{border-color:color-mix(in srgb,var(--bad) 55%,var(--line))}
+.eh-s{font-size:14px}.eh-m{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12.5px;color:var(--mute)}
+.eh-t{grid-column:1/-1;font-size:12.5px;color:var(--mute)}
+.xc-det{border:1px solid var(--line);border-radius:12px;padding:8px 12px}.xc-det summary{cursor:pointer;font-weight:600;font-size:14px}
+@media(max-width:700px){.qk-secs{grid-template-columns:repeat(2,minmax(0,1fr))}.qk-tools .xc-b{flex:1 1 calc(50% - 8px);justify-content:center}.qk-flow{display:none}}
+@media(min-width:1001px){.xc-box.qk{max-width:900px;width:100%;margin-inline:auto}.qk #qk_date{max-width:280px}.qk-secs{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+/* ===== v2: تنظيم المحادثة (هاتف + لابتوب) واختيار التاريخ ===== */
+/* --- اختيار التاريخ --- */
+.xd-in{cursor:pointer;min-height:40px}
+.xd-q,.xd-r{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.xd-q button,.xd-r button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;min-height:32px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.xd-q button:hover,.xd-r button:hover{border-color:var(--g1);color:var(--pri)}
+.xd-q button.on,.xd-r button.on{background:linear-gradient(135deg,#8a3447,#642631);border-color:transparent;color:#fff}
+.xd-q button[data-s]{min-width:38px;padding-inline:8px;color:var(--mute);direction:ltr}
+.xd-r{flex:1 1 100%;margin:0;order:5}
+#x_flt{position:relative}
+#x_flt.has::after{content:"";position:absolute;top:6px;inset-inline-start:6px;width:9px;height:9px;border-radius:50%;background:var(--g1);box-shadow:0 0 0 2px var(--card)}
+.x-filters{padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--bg) 55%,var(--card));gap:8px 10px}
+.x-filters label{font-weight:600}
+.x-filters input[type=date]{max-width:none;width:150px;font-size:15px;padding:7px 10px}
+.x-filters select{font-size:15px;padding:7px 10px}
+
+/* --- لابتوب --- */
+@media(min-width:1001px){
+ .xw{max-width:1500px!important;padding:16px clamp(20px,3vw,44px) 28px!important}
+ .x-app.chat-on{gap:10px}
+ .x-app.chat-on .x-hero{padding:12px 20px;border-radius:16px}
+ .x-app.chat-on .x-hero p{display:none}
+ .x-app.chat-on .x-av{width:42px;height:42px;border-radius:13px}
+ .x-app.chat-on .x-hero h1{font-size:21px;margin:0}
+ .x-grid{grid-template-columns:minmax(0,1fr) 330px;align-items:start}
+ .x-chat{height:calc(100dvh - 215px);min-height:540px;max-height:none}
+ .x-side{position:sticky;top:12px;align-content:start;max-height:calc(100dvh - 215px);overflow-y:auto;padding-bottom:2px}
+ .x-side .x-panel:hover{transform:none}
+ .x-msgs{padding:22px max(20px,calc((100% - 860px)/2)) 16px}
+ .x-chips{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .x-head{padding:12px 18px;gap:9px}
+ .x-comp{padding:12px max(16px,calc((100% - 900px)/2)) 12px}
+ .x-box textarea{min-height:44px}
+ .x-list{max-height:min(300px,32dvh)}
+}
+
+/* --- هاتف --- */
+@media(max-width:700px){
+ .x-app.chat-on .x-hero{display:none}
+ .x-app.chat-on{gap:8px}
+ .xc-tabs{padding:4px;border-radius:14px}
+ .xc-tabs button{padding:8px 11px;font-size:14px}
+ .x-chat{height:calc(100dvh - 232px);min-height:430px;border-radius:16px}
+ .x-head{padding:9px 10px;gap:6px}
+ .x-id b{font-size:15.5px}
+ .x-head .x-ib,.x-newb{width:40px;height:40px;border-radius:12px}
+ .x-msgs{padding:14px 10px 10px;gap:14px}
+ .x-m.u{max-width:90%}
+ .x-m.a{grid-template-columns:minmax(0,1fr)}
+ .x-m.a>*{grid-column:1}
+ .x-m.a>.x-who{display:none}
+ .x-m.u .x-b,.x-m.a .x-b{font-size:16px;line-height:1.85}
+ .x-m.a .x-b{padding:12px 13px;border-start-start-radius:16px}
+ .ai-md{font-size:16px}
+ .x-sl{margin:4px 2px -4px}
+ .x-chips{grid-template-columns:1fr 1fr;margin-inline-start:0;gap:8px}
+ .x-chips button{flex-direction:column;align-items:flex-start;gap:8px;padding:11px 12px;min-height:92px}
+ .x-chips b{font-size:14.5px}.x-chips small{font-size:12px;line-height:1.45}
+ .x-chips .sic{width:34px;height:34px}
+ .x-acts button{padding:7px 11px;font-size:14px;min-height:36px}
+ .x-comp{padding:8px 10px calc(10px + env(safe-area-inset-bottom));gap:8px}
+ .x-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:10px}
+ .x-filters .fl{display:none}
+ .x-filters label,.x-filters input,.x-filters select{min-width:0}
+ .x-filters label{flex-direction:column;align-items:stretch;gap:3px;font-size:12.5px}
+ .x-filters input[type=date]{width:100%;font-size:16px}
+ .x-filters select{grid-column:1/-1;width:100%;max-width:none;font-size:16px}
+ .xd-r{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;grid-column:1/-1;padding-bottom:2px}
+ .xd-r::-webkit-scrollbar{display:none}.xd-r button{flex:none}
+ .x-box{padding:6px;gap:6px;border-radius:18px}
+ .x-box textarea{min-height:44px;font-size:16px;padding:9px 8px}
+ .x-box .x-ib{width:42px;height:42px}
+ .x-send{width:46px;height:46px;border-radius:14px}
+ .x-imp-m{grid-template-columns:1fr}
+ .xd-q{gap:5px}
+}
+@media(max-width:380px){.xc-tabs button span{font-size:13px}.x-id b{font-size:14.5px}}
 </style>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -477,6 +609,7 @@ button.xc-card{cursor:pointer;transition:transform .18s,border-color .2s}button.
 <script src="ai.js"></script>
 <script src="ai-print.js"></script>
 <script src="ai-center.js"></script>
+<script src="ai-dates.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const P={copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/>',
@@ -729,7 +862,7 @@ async function extractData(payload,label){
     else{if(!v.date)v.date=today();if(window.MAC)MAC.track(v,payload.image?"image":"internal",payload.image?"قراءة صورة":"استخراج من نص");chat.m.push({r:"a",t:"بيانات مستخرجة",imp:v,meta:""})}}
   chat.m=chat.m.slice(-40);save();if(cur===chat)render();renderList();
 }
-function setFill(on){fillMode=on;$("x_fillb").setAttribute("aria-pressed",String(on));$("ai_q").placeholder=on?(CANWRITE?"أمر: سجّل في الصب… أو احذف سجلات…":"اكتب أو الصق بيانات الإنتاج، مثال: جليز اليوم — طقم ٦ قطع ٣٠٠ وهالك ٥ (أحمد)…"):"اسأل عن إنتاج المصنع أو اطلب تقريرًا…";$("x_hint").textContent=on?(CANWRITE?"وضع الأوامر: لن يُنفَّذ أي شيء قبل مراجعتك وتأكيدك، ويمكن التراجع 7 أيام":"وضع التعبئة: سيُستخرج النص إلى جدول تراجعه وتعدّله قبل الحفظ"):"Enter للإرسال · Shift+Enter سطر جديد · المساعد لا يعدّل أي بيانات"}
+function setFill(on){fillMode=on;$("x_fillb").setAttribute("aria-pressed",String(on));$("ai_q").placeholder=on?(CANWRITE?"أمر: سجّل في الصب… أو احذف سجلات…":"اكتب أو الصق بيانات الإنتاج، مثال: جليز اليوم — طقم ٦ قطع ٣٠٠ وهالك ٥ (أحمد)…"):"اسأل أو اطلب تقريرًا…";$("x_hint").textContent=on?(CANWRITE?"وضع الأوامر: لن يُنفَّذ أي شيء قبل مراجعتك وتأكيدك، ويمكن التراجع 7 أيام":"وضع التعبئة: سيُستخرج النص إلى جدول تراجعه وتعدّله قبل الحفظ"):"Enter للإرسال · Shift+Enter سطر جديد · المساعد لا يعدّل أي بيانات"}
 
 /* LAB-START — مختبر التنبؤ: شبكة عصبية صغيرة مقابل طرق إحصائية على نفس البيانات (تجريبي، لا يدخل في إجابات المساعد) */
 const LAG=7,DAYS_AR=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
@@ -930,7 +1063,7 @@ async function labOpen(){
   $("x_lab").onclick=labOpen;
   if(CANMEM()){$("x_mem").hidden=false;$("x_mem").onclick=()=>{$("x_memp").hidden?openMem():($("x_memp").hidden=true)}}
   $("x_adm").onclick=()=>{adminPanel();MAC.tab("eng")};
-  $("x_flt").onclick=()=>{$("x_filters").hidden=!$("x_filters").hidden};if(innerWidth<=700)$("x_filters").hidden=true;
+  $("x_flt").onclick=()=>{$("x_filters").hidden=!$("x_filters").hidden};$("x_filters").hidden=true;
   $("x_new").onclick=newChat;
   $("x_srch").oninput=renderList;
   $("x_fillb").onclick=()=>setFill(!fillMode);loadCat();initWrite();

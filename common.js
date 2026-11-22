@@ -2157,3 +2157,8 @@ window.Bar={
     document.body.classList.toggle("hasbar",a.length>0);
   }
 };
+
+/* تحسينات مشتركة (تنسيق الهاتف/اللابتوب + اختيار التاريخ) لكل الصفحات */
+;(function(){if(window.__masUx)return;window.__masUx=1;var cs=document.currentScript,b=cs&&cs.src?cs.src.replace(/[^\/]*$/,""):"";
+var l=document.createElement("link");l.rel="stylesheet";l.href=b+"mas-ux.css";document.head.appendChild(l);
+var s=document.createElement("script");s.src=b+"mas-ux.js";s.defer=true;document.head.appendChild(s)})();

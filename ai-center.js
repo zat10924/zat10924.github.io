@@ -283,7 +283,7 @@
   if (typeof document === "undefined" || !document.getElementById("x_app")) return;
   const $ = id => document.getElementById(id);
   const MAC = window.MAC = {};
-  const TABS = ["ov", "chat", "vis", "ext", "rev", "log", "eng"];
+  const TABS = ["ov", "quick", "chat", "vis", "ext", "rev", "log", "eng"];
   const SRC = { internal: "مساعد داخلي", chatgpt: "ChatGPT خارجي", image: "صورة" };
   const STATS = ["قيد المراجعة", "تم التجهيز", "تم الاعتماد", "فشل", "أُلغي"];
   const SCLS = { "قيد المراجعة": "rv", "تم التجهيز": "pr", "تم الاعتماد": "ok", "فشل": "bd", "أُلغي": "cx" };
@@ -347,7 +347,7 @@
     try { sessionStorage.setItem("mas_ai_tab", id); } catch (e) { }
     if (id === "chat") { const bx = $("x_msgs"); bx.scrollTop = (cur && cur.m && cur.m.length) ? bx.scrollHeight : 0; }
     if (id === "ov" || id === "log") refresh();
-    if (id === "eng") engLogs();
+    if (id === "eng") { engLogs(); engHealth(); }
     if (focus) $("tb_" + id).focus();
   }
   MAC.tab = tab;
@@ -511,6 +511,107 @@
     } catch (x) { box.textContent = "تعذّر تحميل السجلات."; }
   }
 
+    /* ---------- تسجيل سريع: قسم + تاريخ + (نص / إملاء صوتي / صورة) ← مراجعة ← حفظ أو فتح القسم ---------- */
+  const QORDER = ["glaze", "deco", "spray", "casting", "brush", "repair", "finish", "fire"];
+  const QK = "mas_qk_sec_v1";
+  let QSEC = "", QIMG = null, QB = false, QREC = null;
+  const qExample = k => secName(k) + " — طقم ٦ قطع ٣٠٠ وهالك ٥ (أحمد)" + (k === "brush" || k === "finish" ? " صباحي" : "") + "\nكوب ٣٠٠ وهالك ٢ (محمد)";
+  function qSecs() {
+    const box = $("qk_secs"), ok = QORDER.filter(k => typeof SEC_PAGE !== "undefined" && SEC_PAGE[k] && canSee(SEC_PAGE[k]));
+    if (!ok.length) { box.innerHTML = '<div class="xc-empty">حسابك لا يملك صلاحية تسجيل في أي قسم.</div>'; return; }
+    box.innerHTML = ok.map(k => '<button type="button" role="radio" aria-checked="false" data-s="' + k + '">' + esc(secName(k)) + '</button>').join("");
+    let last = ""; try { last = localStorage.getItem(QK + (ME && ME.id)) || ""; } catch (e) { }
+    qPick(ok.indexOf(last) >= 0 ? last : "");
+  }
+  function qPick(k) {
+    QSEC = k; document.querySelectorAll("#qk_secs button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.s === k)));
+    $("qk_txt").placeholder = k ? "مثال:\n" + qExample(k) : "اختر القسم أولًا لتظهر هنا صيغة مثال…";
+    if (k) { try { localStorage.setItem(QK + (ME && ME.id), k); } catch (e) { } }
+  }
+  function qImg(img) {
+    QIMG = img; $("qk_pvw").hidden = !img; if (img) $("qk_pv").src = "data:" + img.mime + ";base64," + img.image;
+  }
+  async function qFile(f) {
+    if (!f) return;
+    if (!/^image\//.test(f.type)) { showMsg("qk_msg", "bad", ["اختر صورة (JPG أو PNG)."]); return; }
+    let d; try { d = await shrink(f); } catch (x) { showMsg("qk_msg", "bad", ["الصورة غير مدعومة، جرّب JPG أو PNG."]); return; }
+    qImg({ image: d.split(",")[1], mime: "image/jpeg" }); showMsg("qk_msg", "ok", ["تمت إضافة الصورة. اضغط «حلّل» عندما تكون جاهزًا."]);
+  }
+  function qMic() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition, b = $("qk_mic"); if (!SR) return;
+    b.hidden = false;
+    b.onclick = () => {
+      if (QREC) { QREC.stop(); return; }
+      const r = new SR(), ta = $("qk_txt"), base = ta.value ? ta.value.replace(/\s*$/, "\n") : "";
+      r.lang = "ar-EG"; r.interimResults = true; r.continuous = true; QREC = r;
+      r.onresult = e => { let t = ""; for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript + " "; ta.value = (base + t).slice(0, 1500); };
+      r.onerror = e => { showMsg("qk_msg", "bad", [e.error === "not-allowed" ? "لم يُسمح باستخدام الميكروفون. فعّله من إعدادات المتصفح." : "تعذّر الإملاء الصوتي، اكتب البيانات يدويًا."]); };
+      r.onend = () => { QREC = null; b.classList.remove("rec"); b.querySelector("span").textContent = "إملاء صوتي"; };
+      try { r.start(); b.classList.add("rec"); b.querySelector("span").textContent = "إيقاف الإملاء"; showMsg("qk_msg", "info", ["تحدّث الآن… مثال: طقم ستة قطع ثلاثمية وهالك خمسة أحمد"]); } catch (x) { QREC = null; }
+    };
+  }
+  async function qRun() {
+    if (QB || (typeof busy !== "undefined" && busy)) return;
+    if (!QSEC) { showMsg("qk_msg", "bad", ["اختر القسم أولًا (الخطوة ١)."]); $("qk_secs").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
+    const date = $("qk_date").value || today(), text = $("qk_txt").value.trim();
+    if (!text && !QIMG) { showMsg("qk_msg", "bad", ["اكتب بيانات الإنتاج أو قلها بالميكروفون، أو أضف صورة السجل."]); $("qk_txt").focus(); return; }
+    if (QREC) QREC.stop();
+    QB = true; const go = $("qk_go"); setLoad(go, true); showMsg("qk_msg", "info", ["جارٍ قراءة البيانات…"]);
+    try {
+      const payload = Object.assign({ action: "extract", hint: QSEC }, text ? { text } : {}, QIMG ? { image: QIMG.image, mime: QIMG.mime } : {});
+      const [r] = await Promise.all([masAi(payload, { retries: 0 }), loadCat()]);
+      if (!r.ok) { showMsg("qk_msg", "bad", [r.msg || "تعذّر استخراج البيانات الآن، حاول بعد قليل."]); MAC.logFail(QIMG ? "image" : "internal", secName(QSEC), r.msg || "فشل"); return; }
+      const v = r.data.vision;
+      if (!v || !v.rows || !v.rows.length) { showMsg("qk_msg", "bad", [(v && v.notes) || "لم أجد سطور إنتاج واضحة. وضّح الكتابة أو صوّر السجل بإضاءة أفضل."], "لا بيانات"); return; }
+      v.notices = v.notices || [];
+      if (v.section && v.section !== "unknown" && v.section !== QSEC) v.notices.push("رجّح المساعد أن البيانات تخص «" + secName(v.section) + "» لكنك اخترت «" + secName(QSEC) + "»؛ اعتمدنا اختيارك.");
+      if (v.date && v.date !== date) v.notices.push("ورد في المدخل تاريخ " + v.date + " لكن التاريخ المختار " + date + "؛ اعتمدنا المختار.");
+      v.section = QSEC; v.date = date;
+      await MAC.dup(v, true); MAC.track(v, QIMG ? "image" : "internal", "تسجيل سريع"); openReview(v);
+      showMsg("qk_msg", "ok", ["جاهز: " + v.rows.length + " سطر. راجعها ثم احفظ."]); tab("rev");
+    } catch (e) { showMsg("qk_msg", "bad", ["حدث خطأ غير متوقع. حاول مرة أخرى."]); }
+    finally { QB = false; setLoad(go, false); }
+  }
+  function qkInit() {
+    qSecs(); $("qk_date").value = today(); qMic();
+    $("qk_secs").addEventListener("click", e => { const b = e.target.closest("button[data-s]"); if (b) { qPick(b.dataset.s); $("qk_txt").focus({ preventScroll: true }); } });
+    $("qk_ex").onclick = () => { if (!QSEC) { showMsg("qk_msg", "bad", ["اختر القسم أولًا."]); return; } $("qk_txt").value = qExample(QSEC); };
+    $("qk_cam").onclick = () => $("qk_file_cam").click(); $("qk_gal").onclick = () => $("qk_file").click();
+    ["qk_file_cam", "qk_file"].forEach(id => $(id).onchange = async () => { const f = $(id).files[0]; $(id).value = ""; await qFile(f); });
+    $("qk_rm").onclick = () => qImg(null);
+    $("qk_clear").onclick = () => { $("qk_txt").value = ""; qImg(null); $("qk_date").value = today(); showMsg("qk_msg", "", []); };
+    $("qk_go").onclick = qRun;
+    $("qk_txt").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); qRun(); } });
+  }
+
+  /* ---------- لوحة حالة المحركات (آخر 24 ساعة) ---------- */
+  async function engHealth() {
+    if (!isAdmin()) return; const box = $("eng_health"); box.innerHTML = '<div class="eh-t">جارٍ فحص حالة المحركات…</div>';
+    try {
+      const since = new Date(Date.now() - 864e5).toISOString();
+      const [u, e] = await Promise.all([
+        db.from("ai_usage_log").select("provider,status,latency_ms,task,created_at").gte("created_at", since).order("id", { ascending: false }).limit(500),
+        db.from("ai_error_log").select("provider,error_class,http_status,created_at").gte("created_at", since).order("id", { ascending: false }).limit(200)]);
+      if (u.error) { box.innerHTML = '<div class="eh-t">تعذّر قراءة حالة المحركات (الصلاحية أو لم يُشغَّل ملف الـ Migration).</div>'; return; }
+      const P = {}; const get = p => P[p] || (P[p] = { n: 0, ok: 0, ms: [], err: null, fo: 0 });
+      (u.data || []).filter(x => x.provider && x.task !== "test").forEach(x => { const o = get(x.provider); o.n++; if (x.status === "ok") { o.ok++; if (x.latency_ms) o.ms.push(x.latency_ms); } if (x.failover) o.fo++; });
+      (e.data || []).forEach(x => { if (x.provider) { const o = get(x.provider); if (!o.err) o.err = x; } });
+      Object.keys(PN).forEach(k => get(k));
+      const tasks = {}; (u.data || []).forEach(x => { if (x.task && x.task !== "test") tasks[x.task] = (tasks[x.task] || 0) + 1; });
+      const TN = { ask: "أسئلة", extract: "استخراج بيانات", write_intent: "أوامر", tts: "صوت" };
+      const cards = Object.keys(P).map(k => {
+        const o = P[k], rate = o.n ? Math.round(o.ok / o.n * 100) : null, avg = o.ms.length ? Math.round(o.ms.reduce((a, b) => a + b, 0) / o.ms.length) : null;
+        let cls = "", msg = "لم يُستخدم خلال 24 ساعة";
+        if (rate !== null) { if (rate >= 90 && (avg === null || avg < 8000)) { cls = "g"; msg = "يعمل بشكل جيد"; } else if (rate >= 60 || (rate >= 90 && avg >= 8000)) { cls = "y"; msg = rate >= 90 ? "يعمل لكنه بطيء" : "أخطاء متقطعة"; } else { cls = "r"; msg = "أخطاء متكررة — راجع المفتاح أو الحدّ"; } }
+        return '<div class="eh-c ' + cls + '"><div class="eh-h"><i class="eh-d"></i>' + esc(PN[k] || k) + '</div><div class="eh-s">' + msg + '</div><div class="eh-m">' +
+          (rate !== null ? '<span>نجاح ' + rate + '%</span><span>' + o.n + ' طلب</span>' : '') + (avg !== null ? '<span>متوسط ' + (avg / 1000).toFixed(1) + ' ث</span>' : '') + (o.fo ? '<span>تحويل ' + o.fo + '</span>' : '') +
+          (o.err ? '<span>آخر خطأ: ' + esc(o.err.error_class || "") + (o.err.http_status ? " " + o.err.http_status : "") + " — " + esc(fmtT(o.err.created_at)) + '</span>' : '') + '</div></div>';
+      }).join("");
+      const tt = Object.keys(tasks).map(k => esc(TN[k] || k) + " " + tasks[k]).join(" · ");
+      box.innerHTML = cards + '<div class="eh-t">آخر 24 ساعة' + (tt ? " · " + tt : "") + '</div>';
+    } catch (x) { box.innerHTML = '<div class="eh-t">تعذّر فحص حالة المحركات.</div>'; }
+  }
+
   /* ---------- التشغيل بعد المصادقة ---------- */
   MAC.init = function () {
     // تبويبات
@@ -560,11 +661,12 @@
     $("lg_clear").onclick = () => { if (!opsLoad().length) return; if (confirm("مسح سجل العمليات من هذا الجهاز؟ لا يؤثر على أي بيانات في البرنامج.")) { opsSave([]); refresh(); logDraw(); toast("تم مسح السجل", "ok"); } };
     $("lg_st").innerHTML = '<option value="">كل الحالات</option>' + STATS.map(s => '<option>' + s + '</option>').join("");
     $("lg_src").innerHTML = '<option value="">كل المصادر</option>' + Object.keys(SRC).map(k => '<option value="' + k + '">' + SRC[k] + '</option>').join("");
-    $("eng_refresh").onclick = () => { try { adminPanel(); } catch (e) { } engLogs(); };
+    $("eng_refresh").onclick = () => { try { adminPanel(); } catch (e) { } engLogs(); engHealth(); };
+    qkInit();
     // تبويب البداية
     let st = ""; try { st = sessionStorage.getItem("mas_ai_tab") || ""; } catch (e) { }
     const h = (location.hash || "").slice(1);
-    drawRev(); refresh(); tab(TABS.indexOf(h) >= 0 ? h : TABS.indexOf(st) >= 0 ? st : "ov");
+    drawRev(); refresh(); tab(TABS.indexOf(h) >= 0 ? h : TABS.indexOf(st) >= 0 ? st : "quick");
     $("xc_tabs").hidden = false;
   };
 })();
