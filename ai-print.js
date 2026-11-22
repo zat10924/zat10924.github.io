@@ -56,7 +56,7 @@
     return '<section class="ap-' + kind + '">' + (s.title ? "<h3>" + inl(s.title) + "</h3>" : "") + inner + "</section>";
   }
   const dFull = d => { try { return new Date(d + "T00:00:00Z").toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }); } catch (e) { return String(d); } };
-  const periodText = p => !p || !p.from ? "" : (p.from === p.to || !p.to ? dFull(p.from) : dFull(p.from) + " ← " + dFull(p.to));
+  const periodText = p => !p || !p.from ? "" : (p.from === p.to || !p.to ? dFull(p.from) : dFull(p.from) + " إلى " + dFull(p.to));
 
   /* HTML كامل للتقرير (دالة نقية قابلة للاختبار) */
   function renderHtml(o) {

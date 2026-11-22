@@ -41,12 +41,12 @@
     const x = impLoad();
     if (!x || SEC_PAGE[x.sec] !== PAGE) { rmTray(); return; }
     const i = curRow(x);
-    if (i < 0) { rmTray(); impSave(null); if (typeof toast === "function") toast("خلّصت كل السطور ✓"); return; }
+    if (i < 0) { rmTray(); impSave(null); if (typeof toast === "function") toast("خلّصت كل السطور"); return; }
     const r = x.rows[i], E = typeof esc === "function" ? esc : s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     if (!tray) { tray = document.createElement("div"); tray.id = "masai-tray"; document.body.appendChild(tray); }
-    tray.innerHTML = '<div class="t1"><span>📥 من مركز الذكاء الاصطناعي · ' + E((typeof SEC_AR !== "undefined" && SEC_AR[x.sec]) || x.sec) + " · " + E(x.date) + "</span><span>سطر " + (i + 1) + " من " + x.rows.length + "</span></div>" +
+    tray.innerHTML = '<div class="t1"><span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-inline-end:4px"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>من مركز الذكاء الاصطناعي · ' + E((typeof SEC_AR !== "undefined" && SEC_AR[x.sec]) || x.sec) + " · " + E(x.date) + "</span><span>سطر " + (i + 1) + " من " + x.rows.length + "</span></div>" +
       '<div class="t2"><b>' + E(r.item || "—") + "</b>" + (r.qty != null ? " · العدد " + E(r.qty) : "") + (r.scrap != null ? " · هالك " + E(r.scrap) : "") + (r.worker ? " · " + E(r.worker) : "") + "</div>" +
-      '<div class="ta"><button type="button" class="p" data-t="fill">تعبئة</button><button type="button" data-t="done">تم ✓ التالي</button><button type="button" data-t="close">إغلاق</button></div>';
+      '<div class="ta"><button type="button" class="p" data-t="fill">تعبئة</button><button type="button" data-t="done">تم، التالي</button><button type="button" data-t="close">إغلاق</button></div>';
     tray.onclick = e => {
       const b = e.target.closest("button"); if (!b) return; const cx = impLoad(); if (!cx) return; const k = curRow(cx);
       if (b.dataset.t === "close") { impSave(null); rmTray(); }

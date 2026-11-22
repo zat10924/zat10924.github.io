@@ -20,8 +20,8 @@
     $("ai_to").value=Math.round(s.timeout_ms/1000);
     $("ai_lu").value=s.daily_limit_user;$("ai_lt").value=s.daily_limit_total;
     $("ai_state").textContent=okList?"":(r.ok||r.code==="unknown_action")
-      ?"⚠ نسخة الدالة mas-ai-hub على Supabase قديمة (لا تعرف أمر status). أعد نشرها من ملفات phase3b. القائمة المعروضة افتراضية."
-      :"⚠ تعذّر قراءة حالة المحركات: "+r.msg+" — القائمة المعروضة افتراضية.";
+      ?"تنبيه: نسخة الدالة mas-ai-hub على Supabase قديمة (لا تعرف أمر status). أعد نشرها من ملفات phase3b. القائمة المعروضة افتراضية."
+      :"تنبيه: تعذّر قراءة حالة المحركات: "+r.msg+" — القائمة المعروضة افتراضية.";
     $("ai_eng").innerHTML=prov.map(p=>`<div class="line fe"><span>${esc(p.label)} <span class="nums">· ${p.key_configured===null?"الحالة غير معروفة":p.key_configured?"المفتاح مضبوط":"المفتاح غير مضبوط"}</span></span><button class="btn ghost sm" data-t="${esc(p.id)}"${p.key_configured===false?" disabled":""}>اختبار الاتصال</button><span class="nums" id="ai_r_${esc(p.id)}"></span></div>`).join("");
     logs();
   }
@@ -33,7 +33,7 @@
     const row=(a,b)=>`<div class="line fe"><span>${a}</span><span class="nums">${b}</span></div>`;
     $("ai_ul").innerHTML=(u.data||[]).map(r=>row(dt(r.created_at)+" · "+esc(r.task||"—"),esc(PN[r.provider]||r.provider||"—")+" · "+esc(r.status)+(r.latency_ms?" · "+r.latency_ms+"ms":"")+(r.failover?" · تحويل":""))).join("")||'<small class="hint">لا استخدام بعد.</small>';
     $("ai_el").innerHTML=(e.data||[]).map(r=>row(dt(r.created_at),esc(PN[r.provider]||r.provider||"—")+" · "+esc(r.error_class||"")+(r.http_status?" · "+r.http_status:""))).join("")||'<small class="hint">لا أخطاء.</small>';
-    $("ai_fl").innerHTML=(f.data||[]).map(r=>row(dt(r.created_at),esc(r.from_provider)+" ← "+esc(r.to_provider)+" · "+esc(r.reason))).join("")||'<small class="hint">لا تحويلات.</small>';
+    $("ai_fl").innerHTML=(f.data||[]).map(r=>row(dt(r.created_at),esc(r.from_provider)+" إلى "+esc(r.to_provider)+" · "+esc(r.reason))).join("")||'<small class="hint">لا تحويلات.</small>';
   }
   async function save(){
     const b=$("ai_save");b.disabled=true;
@@ -56,7 +56,7 @@
       const id=b.dataset.t,out=$("ai_r_"+id);b.disabled=true;out.textContent="جارٍ الاختبار…";
       const r=await masAi({action:"test",provider:id});
       b.disabled=false;
-      out.textContent=!r.ok?"فشل: "+r.msg:r.data.ok?"يعمل ✓ "+r.data.latency_ms+"ms":"فشل: "+r.data.error_class+(r.data.http_status?" "+r.data.http_status:"");
+      out.textContent=!r.ok?"فشل: "+r.msg:r.data.ok?"يعمل · "+r.data.latency_ms+"ms":"فشل: "+r.data.error_class+(r.data.http_status?" "+r.data.http_status:"");
       logs();
     };
     load();

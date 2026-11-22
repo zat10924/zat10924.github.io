@@ -507,7 +507,7 @@
       box.innerHTML =
         sec("آخر الاستخدام", u.data, r => '<div class="xc-ol"><span class="xc-dt">' + esc(fmtT(r.created_at)) + '</span><span>' + esc(r.task || "—") + '</span><span>' + esc(PN[r.provider] || r.provider || "—") + ' · ' + esc(r.status) + (r.latency_ms ? ' · ' + r.latency_ms + 'ms' : '') + (r.failover ? ' · تحويل' : '') + '</span></div>') +
         sec("آخر الأخطاء", e.data, r => '<div class="xc-ol"><span class="xc-dt">' + esc(fmtT(r.created_at)) + '</span><span>' + esc(PN[r.provider] || r.provider || "—") + '</span><span>' + esc(r.error_class || "") + (r.http_status ? ' · ' + r.http_status : '') + '</span></div>') +
-        sec("التحويل الاحتياطي", f.data, r => '<div class="xc-ol"><span class="xc-dt">' + esc(fmtT(r.created_at)) + '</span><span>' + esc(r.from_provider) + ' ← ' + esc(r.to_provider) + '</span><span>' + esc(r.reason || "") + '</span></div>');
+        sec("التحويل الاحتياطي", f.data, r => '<div class="xc-ol"><span class="xc-dt">' + esc(fmtT(r.created_at)) + '</span><span>' + esc(r.from_provider) + ' إلى ' + esc(r.to_provider) + '</span><span>' + esc(r.reason || "") + '</span></div>');
     } catch (x) { box.textContent = "تعذّر تحميل السجلات."; }
   }
 
