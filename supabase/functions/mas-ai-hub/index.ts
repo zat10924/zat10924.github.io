@@ -1,9 +1,11 @@
 // mas-ai-hub — بوابة الذكاء الاصطناعي لـ MAS. المفاتيح من Secrets فقط، والبيانات بصلاحية المستخدم (RLS).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { buildPrompt, buildSsml, clampRate, detectTask, knowledgeBlock, safeVoice, SECTIONS, SYSTEM_PROMPT, validateAsk } from "./policy.ts";
+import { buildPrompt, buildSsml, clampRate, detectTask, knowledgeBlock, safeVoice, SECTIONS, splitFollowups, stripEmoji, SYSTEM_PROMPT, validateAsk } from "./policy.ts";
 import { keyFor, REGISTRY } from "./providers.ts";
 import { buildFilter, buildRows, cleanIds, WSECS } from "./writer.ts";
 import { runChain, runHedged } from "./orchestrator.ts";
+import { buildInsights, compactFacts, prevRange, daysBetween } from "./analytics.ts";
+import { extractUrls, gatherWeb, webEngineName, webIntent, type WebResult } from "./web.ts";
 
 // مهلة بدء المحرك الاحتياطي بالتوازي (مللي ثانية). يمكن ضبطها بسر HEDGE_MS (500–10000)
 const HEDGE_MS = Math.min(10000, Math.max(500, Number(Deno.env.get("HEDGE_MS")) || 2000));
@@ -91,6 +93,7 @@ Deno.serve(async (req) => {
     return json(req, {
       enabled: s.enabled, primary: s.primary_provider, fallback: s.fallback_provider, auto_failover: s.auto_failover,
       providers: Object.values(REGISTRY).map((p) => ({ id: p.id, label: p.label, key_configured: !!keyFor(p) })),
+      web_engine: webEngineName(keyFor(REGISTRY.gemini)),
     });
   }
 
@@ -286,34 +289,59 @@ Deno.serve(async (req) => {
   }
 
   const task = detectTask(v.q);
-  // بيانات بصلاحية المستخدم: RLS تُطبَّق لأن الاستدعاء بتوكنه (لا service role)
-  const { data: facts, error: fe } = await userDb.rpc("mas_ai_facts", { p_from: v.from, p_to: v.to, p_secs: v.secs });
+  // بيانات بصلاحية المستخدم: RLS تُطبَّق لأن الاستدعاء بتوكنه (لا service role).
+  // الفترة السابقة للمقارنة اختيارية: أي فشل فيها لا يعطّل الإجابة.
+  const span = daysBetween(v.from, v.to);
+  const pr = prevRange(v.from, v.to);
+  const noPrev = Promise.resolve({ data: null, error: null });
+  const [fr, pv] = await Promise.all([
+    userDb.rpc("mas_ai_facts", { p_from: v.from, p_to: v.to, p_secs: v.secs }),
+    task !== "general" && span <= 92 ? userDb.rpc("mas_ai_facts", { p_from: pr.from, p_to: pr.to, p_secs: v.secs }) : noPrev,
+  ]);
+  const { data: facts, error: fe } = fr;
   if (fe) {
     await log("ai_error_log", { provider: null, error_class: "data", message: fe.message?.slice(0, 300) });
     return json(req, { error: "data", message: "تعذّر تحميل بيانات المصنع." }, 502);
   }
+  const insights = buildInsights(facts, pv?.error ? null : pv?.data ?? null);
+
+  // الإنترنت: بحث وقراءة مواقع. تفعيله من الواجهة، والقرار بالاستخدام ذكي من الخادم (أو إجباري بزر «ابحث»)
+  let webRes: WebResult | null = null;
+  if (v.web) {
+    const urls = extractUrls(v.q);
+    const wi = v.web === "force" ? { use: true } : webIntent(v.q, task, urls.length > 0);
+    if (wi.use) {
+      try { webRes = await gatherWeb(v.q, { urls, geminiKey: keyFor(REGISTRY.gemini) }); }
+      catch (e) { webRes = { used: false, engine: "none", queries: [], sources: [], context: "<web>\nتعذّر الوصول للإنترنت الآن.\n</web>", note: String((e as Error)?.message ?? "").slice(0, 120) }; }
+    }
+  }
+
   let notes: string[] = [];
   // هوية المستخدم من حسابه على الخادم (لا من المتصفح): للمخاطبة بالاسم فقط
   const ROLE_AR: Record<string, string> = { admin: "مدير النظام", owner: "المالك", manager: "مسؤول قسم", worker: "عامل" };
   const who = String(prof?.full_name ?? "").replace(/[<>\r\n]+/g, " ").trim().slice(0, 60);
   if (who) notes.push(`المستخدم الحالي (من حسابه في النظام): الاسم «${who}»، الدور: ${ROLE_AR[prof?.role ?? ""] ?? "مستخدم"}. خاطبه باسمه عند الترحيب أو عندما يسأل من هو. لا تذكر عنه أي معلومة أخرى لا تعرفها.`);
+  notes.push(`تاريخ اليوم (القاهرة): ${cairoToday()}.`);
   if (task === "inventory") notes.push("تنبيه: لا توجد في النظام حالياً جداول أرصدة مخزون؛ لا تذكر أي أرصدة.");
   if (task === "orders") notes.push("تنبيه: بيانات الطلبيات غير مرفقة في هذه النسخة؛ اعتمد على الإنتاج فقط وصرّح بالنقص.");
-  let payload = facts;
-  if (JSON.stringify(payload).length > 60000) { payload = { ...facts, daily_production: [] }; notes.push("حُذف التفصيل اليومي لضيق الحجم."); }
+  if (!v.web && /(ابحث|على (ال)?(انترنت|إنترنت|نت)|https?:\/\/)/i.test(v.q)) notes.push("تنبيه: زر الإنترنت مغلق الآن؛ لا تدّعِ أنك بحثت أو فتحت أي رابط، واطلب من المستخدم تفعيله.");
+  const payload = compactFacts(facts, task, !!webRes?.used);
   const kb = await loadKb(admin);
-  const prompt = buildPrompt(v.q, task, payload, notes.join("\n"), kb);
+  const prompt = buildPrompt(v.q, task, payload, notes.join("\n"), kb, { insights, web: webRes?.context, history: v.history });
 
   const chain = buildChain(s);
   if (!chain[0]) return json(req, { error: "config", message: "المحرك الأساسي غير معرّف." }, 500);
 
   const t0 = Date.now();
-  const r = await runHedged(chain, { system: SYSTEM_PROMPT, prompt, timeoutMs: s.timeout_ms }, hooks, HEDGE_MS);
+  const r = await runHedged(chain, { system: SYSTEM_PROMPT, prompt, timeoutMs: webRes?.used ? Math.max(s.timeout_ms, 30000) : s.timeout_ms }, hooks, webRes?.used ? Math.max(HEDGE_MS, 6000) : HEDGE_MS);
   const ms = Date.now() - t0;
   if (r.ok) {
     await log("ai_usage_log", { task, provider: r.provider, model: r.model, status: "ok", latency_ms: ms,
       prompt_chars: prompt.length, response_chars: r.text.length, failover: r.failover });
-    return json(req, { answer: r.text, provider: r.provider, failover: r.failover, period: { from: v.from, to: v.to }, task });
+    const { answer, followups } = splitFollowups(stripEmoji(r.text));
+    const web = webRes ? { used: webRes.used, engine: webRes.engine, queries: webRes.queries, note: webRes.note ?? null,
+      sources: webRes.sources.slice(0, 8).map((x) => ({ title: stripEmoji(x.title).slice(0, 140), url: x.url })) } : null;
+    return json(req, { answer, followups: followups.map(stripEmoji), provider: r.provider, failover: r.failover, period: { from: v.from, to: v.to }, task, web });
   }
   await log("ai_usage_log", { task, provider: r.provider, status: r.error.cls === "safety" ? "blocked" : "error", latency_ms: ms,
     prompt_chars: prompt.length, failover: r.failover });
