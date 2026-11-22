@@ -284,6 +284,7 @@ function masAiMount(){
   (async()=>{
     if(typeof masAi!=="function")await load("ai.js");
     await load("ai-print.js"); /* الزر العائم متوقف: لا تحميل لـ mas-ai-core.js و mas-ai.js */
+    if(!/(^|\/)ai\.html$/.test(location.pathname))await load("ai-import-tray.js"); /* شريط تعبئة التسجيل من مركز الذكاء الاصطناعي */
   })();
 }
 const SUBS={
