@@ -876,7 +876,7 @@ function toggleTheme(){if(_masDesktopLight()){document.documentElement.dataset.t
     if(root&&root.matches&&root.matches("select"))list.push(root);
     if(root&&root.querySelectorAll)list.push(...root.querySelectorAll("select"));
     list.forEach(sel=>{
-      if(sel.dataset.smartSearchReady||sel.multiple||sel.disabled)return;
+      if(sel.dataset.smartSearchReady||!sel.multiple||sel.disabled)return;
       const options=[...sel.options].filter(o=>!o.disabled&&o.value!=="");
       if(options.length<12)return;
       sel.dataset.smartSearchReady="1";
@@ -1537,7 +1537,7 @@ function enhanceAll(root){
   root.querySelectorAll(COMBO_SEL).forEach(el=>{if(el.type!=="hidden")enhanceCombo(el)});
 }
 /* ===== قوائم ذكية بدل القوائم العادية (select): شاشة اختيار من تحت + بحث + أفاتار للعمال + الأخيرون ===== */
-const SP_SEL="#ov select,select[data-sp]";
+const SP_SEL="select:not([multiple]):not([size]):not([data-native])";
 const SP_HUES=[345,18,38,150,200,265,300,320];
 const spHue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%997;return SP_HUES[h%SP_HUES.length]};
 const spInit=s=>String(s).replace(/[^\p{L}\p{N}\s]/gu,"").trim().split(/\s+/).slice(0,2).map(w=>[...w][0]||"").join("")||"؟";
@@ -1559,7 +1559,7 @@ function spSub(name){
 }
 function spOpen(sel){
   if(!sel||sel.disabled||document.getElementById("spo"))return;
-  const worker=sel.id==="m-w",wrap=sel.closest(".spw"),lb=wrap&&wrap.previousElementSibling&&wrap.previousElementSibling.tagName==="LABEL"?wrap.previousElementSibling.textContent.trim():"اختيار";
+  const worker=sel.id==="m-w",wrap=sel.closest(".spw"),lb=wrap&&wrap.previousElementSibling&&wrap.previousElementSibling.tagName==="LABEL"?wrap.previousElementSibling.textContent.trim():(sel.getAttribute("aria-label")||"اختيار");
   const o=document.createElement("div");o.className="spo";o.id="spo";
   const total=spOpts(sel).length,srch=total>6;
   o.innerHTML=`<div class="sps" role="dialog" aria-modal="true"><div class="hd"><h4>${esc(lb)}</h4></div>${srch?'<div class="sq"><input type="search" id="spq" placeholder="'+(worker?"ابحث عن عامل…":"ابحث…")+'" autocomplete="off"></div>':""}<div class="ls" id="spl"></div><div class="ft" id="spf"></div></div>`;
@@ -1611,6 +1611,13 @@ function spEnhance(sel){
     b.disabled=sel.disabled;
   };
   sel._spr=upd;sel._spOpen=()=>spOpen(sel);
+  // تغيير القيمة من الكود (sel.value=... أو selectedIndex) يحدّث الزر فورًا
+  try{const dv=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value"),di=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"selectedIndex");
+    Object.defineProperty(sel,"value",{configurable:true,get(){return dv.get.call(this)},set(v){dv.set.call(this,v);upd()}});
+    Object.defineProperty(sel,"selectedIndex",{configurable:true,get(){return di.get.call(this)},set(v){di.set.call(this,v);upd()}})}catch(e){}
+  // إخفاء/إظهار القائمة الأصلية من الكود ينعكس على الزر
+  const vis=()=>{w.hidden=sel.hidden||sel.style.display==="none"};vis();
+  new MutationObserver(vis).observe(sel,{attributes:true,attributeFilter:["hidden","style"]});
   b.addEventListener("click",()=>spOpen(sel));
   sel.addEventListener("change",upd);
   new MutationObserver(()=>{upd();if(sel._spLive)sel._spLive()}).observe(sel,{childList:true,subtree:true,attributes:true,attributeFilter:["disabled"]});
@@ -1692,18 +1699,18 @@ function decoFind(lines,item,code){
 }
 function freeProduction(sec,done){
   if(roBlock())return;
-  if(!SEC_AR[sec]||sec==="repair"||sec==="casting"||sec==="brush"||sec==="finish")return;
-  const deco=sec==="deco",spr=sec==="spray",lab=deco?"كود الرسمة":"اللون",kind=deco?"code":"color";
+  if(!SEC_AR[sec]||sec==="casting"||sec==="brush"||sec==="finish")return;
+  const deco=sec==="deco",spr=sec==="spray",rep=sec==="repair",lab=deco?"كود الرسمة":"اللون",kind=deco?"code":"color";
   const rowHtml=()=>`<div class="itemblk mrow"><div class="ih"><b class="mn"></b><button type="button" class="rmi" aria-label="حذف الصنف">${ib("trash","حذف")}</button></div>
     <label>الصنف</label><input class="it" placeholder="اسم الصنف" autocomplete="off">
-    <div class="two"><div><label>${lab}${spr?" (لون الصنف — اختياري)":" (اختياري)"}</label><input class="sb" data-kind="${kind}" placeholder="${lab}" autocomplete="off"></div>
+    <div class="two"${rep?' style="grid-template-columns:1fr"':""}><div${rep?" hidden":""}><label>${lab}${spr?" (لون الصنف — اختياري)":" (اختياري)"}</label><input class="sb" data-kind="${kind}" placeholder="${lab}" autocomplete="off"></div>
     <div><label>الكمية</label><input type="number" class="mq2" min="1" inputmode="numeric"></div></div>${spr?'<label>لون الرش</label><input class="msc" data-kind="color" placeholder="لون الرش" autocomplete="off" maxlength="60">':""}</div>`;
-  openModal("إنتاج بدون طلبية · "+SEC_AR[sec],
-    `${XT(deco)}<div class="hint" style="margin:0 0 6px">سجّل أكتر من صنف مرة واحدة. بيتسجّل في إنتاج القسم وتقاريره من غير ما يتربط بطلبية.</div>
+  openModal(rep?"تسجيل تصليح":"إنتاج بدون طلبية · "+SEC_AR[sec],
+    `${XT(deco||rep)}<div class="hint" style="margin:0 0 6px">${rep?"سجّل أكتر من صنف لنفس العامل مرة واحدة.":"سجّل أكتر من صنف مرة واحدة. بيتسجّل في إنتاج القسم وتقاريره من غير ما يتربط بطلبية."}</div>
     <button type="button" class="btn ghost sm" id="mclr" hidden style="margin:0 0 6px">مسح المسودة</button>
     <div id="mrows"></div>
     <button type="button" class="btn ghost sm" id="madd" style="margin:6px 0 10px">＋ إضافة صنف آخر</button>
-    <label>التاريخ</label><input type="date" id="m-d" value="${today()}">${XF(deco)}`,async()=>{
+    <label>التاريخ</label><input type="date" id="m-d" value="${today()}">${rep?"":XF(deco)}`,async()=>{
     const box=document.getElementById("mrows"),els=[...box.querySelectorAll(".mrow")];
     const todo=[];
     for(let i=0;i<els.length;i++){
@@ -1719,12 +1726,17 @@ function freeProduction(sec,done){
     const d=document.getElementById("m-d").value||today(),xf=xfRead();
     const dl=deco?await decoLoadOpen():null;
     todo.forEach(t=>{const m=deco?decoFind(dl,t.item,t.sub):null;if(m){t.link=m;t.over=Math.max(t.q-Math.max(m.req-m.done,0),0);m.done+=t.q}});
-    if(!await reviewSave({title:"راجع الإنتاج قبل الحفظ",meta:[["القسم",SEC_AR[sec]],["التاريخ",fmtD(d)],...rvFields(xf)],
+    if(!await reviewSave({title:rep?"راجع التصليح قبل الحفظ":"راجع الإنتاج قبل الحفظ",meta:[["القسم",SEC_AR[sec]],["التاريخ",fmtD(d)],...rvFields(xf)],
       items:todo.map(t=>({title:t.item,rows:[...(t.sub?[[lab,t.sub]]:[]),["الكمية",nf(t.q)],...(t.link?[["هيتسجل على طلبية","مربوط تلقائيًا بطلبية "+t.item+" (كود "+_dn(t.sub)+")"]]:[...(deco&&t.sub?[["ملحوظة","مفيش طلبية مفتوحة بنفس الصنف والكود، هيتسجل بدون طلبية"]]:[])])],warn:t.over?"الكمية أكبر من المتبقي في الطلبية بـ "+nf(t.over)+" — هتتسجل زي ما هي":""})),
       total:todo.reduce((a,t)=>a+t.q,0)}))return false;
     let ok=0,off=0,linked=0,over=0;const bad=[];
     for(const t of todo){
       const id=uuid();
+      if(rep){ // التصليح: جدول repair_log (تاريخ/صنف/كمية/عامل)
+        let rs;try{rs=await db.from("repair_log").insert({repair_date:d,item:t.item,qty:t.q,worker:xf.worker||null})}catch(e){rs={error:{message:String(e)}}}
+        if(rs.error){bad.push(/worker/.test(rs.error.message||"")?"شغّل ملف setup_repair_worker.sql في Supabase الأول":t.item+": "+rs.error.message);continue}
+        ok++;t.el.remove();continue;
+      }
       if(t.link){ // مربوط تلقائيًا بطلبية زخرفة
         const lrow={line_id:t.link.id,qty:t.q,prod_date:d,client_id:id,...xf},sync={lv:"deco_lines_status",o:"deco_orders",oid:t.link.oid};
         let lr;try{lr=await insertRow("deco_production",lrow)}catch(e){lr={error:{message:String(e)}}}
@@ -1775,8 +1787,8 @@ function freeProduction(sec,done){
     draft.rows.forEach((r,n)=>{if(n>0||!box.querySelector(".mrow"))add(false);const el=box.lastElementChild;el.querySelector(".it").value=r.i;el.querySelector(".sb").value=r.s;el.querySelector(".mq2").value=r.q;if(spr&&r.c)el.querySelector(".msc").value=r.c});
     if(draft.x)for(const k in XID){const e=document.getElementById(XID[k]);if(e&&draft.x[k])e.value=draft.x[k]}
     toast("رجّعنا آخر مسودة اتكتبت");const cb=document.getElementById("mclr");if(cb){cb.hidden=false;cb.onclick=()=>{try{localStorage.removeItem(DK)}catch(e){}box.innerHTML="";add(true);cb.hidden=true;toast("اتمسحت المسودة")}}
-  }else add(!deco);
-  if(deco)spOpenWorker();
+  }else add(!(deco||rep));
+  if(deco||rep)spOpenWorker();
   modal.addEventListener("input",saveDraft);modal.addEventListener("click",e=>{if(e.target.closest(".rmi"))setTimeout(saveDraft,0)});
   window._clearFreeDraft=()=>{try{localStorage.removeItem(DK)}catch(e){}};window._saveFreeDraft=saveDraft;
   document.getElementById("madd").onclick=()=>add(true);

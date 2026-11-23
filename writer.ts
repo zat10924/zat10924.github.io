@@ -1,8 +1,9 @@
 // طبقة الكتابة الآمنة للمساعد: قائمة سماح صغيرة بالجداول التي تم التحقق من هيكلها، مع تحقق صارم من المدخلات.
-export const WSECS: Record<string, { table: string; date: string; text: "item" | "task"; label: string; scrap: boolean; shift: boolean; qtyMin: number }> = {
+export const WSECS: Record<string, { table: string; date: string; text: "item" | "task"; label: string; scrap: boolean; shift: boolean; qtyMin: number; note?: boolean }> = {
   casting: { table: "casting_log", date: "casting_date", text: "item", label: "الصب",   scrap: false, shift: false, qtyMin: 1 },
     brush:   { table: "brush_log",   date: "brush_date",   text: "item", label: "البرشر", scrap: true,  shift: true,  qtyMin: 0 },
       finish:  { table: "finish_log",  date: "finish_date",  text: "task", label: "التشطيب", scrap: true, shift: true,  qtyMin: 0 },
+  repair:  { table: "repair_log",  date: "repair_date",  text: "item", label: "التصليح", scrap: false, shift: false, qtyMin: 1, note: false },
       };
       const SHIFTS = ["صباحي", "مسائي", "ليلي"], TASKS = ["مشرط", "مياه", "صنفرة"], MAX_ROWS = 60;
       const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -30,7 +31,8 @@ export const WSECS: Record<string, { table: string; date: string; text: "item" |
                                         if (c.text === "task" && !TASKS.includes(label)) return { ok: false, message: `سطر ${n}: النشاط لازم يكون مشرط أو مياه أو صنفرة.` };
                                             const qty = int(r?.qty);
                                                 if (qty === null || qty < c.qtyMin || qty > 100000) return { ok: false, message: `سطر ${n}: العدد غير صالح.` };
-                                                    const row: Record<string, unknown> = { [c.date]: date, [c.text]: label, qty, worker: str(r?.worker, 80), note: str(r?.note, 300) };
+                                                    const row: Record<string, unknown> = { [c.date]: date, [c.text]: label, qty, worker: str(r?.worker, 80) };
+ if (c.note !== false) row.note = str(r?.note, 300);
                                                         if (c.scrap) {
                                                               const sc = int(r?.scrap) ?? 0;
                                                                     if (sc < 0 || sc > 100000) return { ok: false, message: `سطر ${n}: الهالك غير صالح.` };

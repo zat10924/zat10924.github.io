@@ -81,6 +81,7 @@ function draw(){
   document.getElementById("body").innerHTML=rs.length?rs.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${r.item?esc(r.item):'<span class="nums">'+NONE+'</span>'}</td><td>${r.w?esc(r.w):'<span class="nums">—</span>'}</td><td><b>${r.qty}</b></td><td class="noprint" style="white-space:nowrap"><button class="btn ghost sm" onclick="repForm(${r.id})">تعديل</button> <button class="btn ghost sm" onclick="del(${r.id})">حذف</button></td></tr>`).join(""):'<tr><td colspan="5" class="empty">مفيش تصليح مسجل</td></tr>';
 }
 function repForm(id){if(roBlock())return;
+  if(!id){freeProduction("repair",load);return} // تسجيل جديد: أكتر من صنف لنفس العامل
   const rec=id?rows.find(r=>r.id===id):null;
   const items=[...new Set(rows.map(r=>r.item).filter(Boolean))];
   wkLoad();

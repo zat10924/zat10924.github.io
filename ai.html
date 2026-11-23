@@ -126,6 +126,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
           </div>
           <button type="button" class="x-opt" id="x_img" aria-label="قراءة صورة سجل"><span class="oi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/></svg></span><span class="ot"><b>تعبئة من صورة</b><small>صوّر سجل الإنتاج وراجع الأسطر قبل الحفظ</small></span><em class="tag">مفعّل</em></button>
           <button type="button" class="x-opt" id="x_fillb" aria-pressed="false" aria-label="وضع تعبئة البيانات"><span class="oi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4zM14 7l3 3"/></svg></span><span class="ot"><b>وضع تعبئة البيانات</b><small>اكتب أو الصق بيانات لتتحول إلى جدول مراجعة</small></span><em class="tag">مفعّل</em></button>
+          <button type="button" class="x-opt" id="x_auto" aria-pressed="false" aria-label="القراءة الصوتية التلقائية"><span class="oi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></span><span class="ot"><b>القراءة الصوتية التلقائية</b><small>يقرأ لك كل إجابة بصوت عربي</small></span><em class="tag">مفعّل</em></button>
           <button type="button" class="x-opt" id="x_lab" aria-label="مختبر التنبؤ"><span class="oi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-6 4 4 8-10M15 5h5v5"/></svg></span><span class="ot"><b>مختبر التنبؤ</b><small>تجربة توقع الإنتاج (تجريبي)</small></span><em class="tag">مفعّل</em></button>
           <button type="button" class="x-opt" id="x_mem" hidden aria-label="ذاكرة المساعد"><span class="oi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4zM5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg></span><span class="ot"><b>ذاكرة المساعد</b><small>مصطلحات وتصحيحات المصنع</small></span><em class="tag">مفعّل</em></button>
           <button type="button" class="x-opt" id="x_adm" hidden aria-label="حالة المحركات"><span class="oi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V9M10 18V5M16 18v-7M21 18H3"/></svg></span><span class="ot"><b>حالة المحركات</b><small>المحركات والإنترنت والسجلات</small></span><em class="tag">مفعّل</em></button>
@@ -133,7 +134,8 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
         <div class="x-box">
           <button class="x-ib x-plus" id="x_tools" type="button" aria-label="أدوات" title="أدوات" aria-controls="x_sheet" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
           <input type="file" id="x_file" accept="image/*" hidden>
-          <textarea id="ai_q" rows="1" maxlength="1500" placeholder="اسأل أو اطلب تقريرًا…" aria-label="سؤالك"></textarea>
+          <textarea id="ai_q" rows="1" maxlength="1500" placeholder="اكتب سؤالك…" aria-label="سؤالك"></textarea>
+          <button class="x-ib x-mic" id="x_mic" type="button" aria-pressed="false" aria-label="إملاء صوتي" title="إملاء صوتي" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
           <button class="x-ib x-web" id="x_web" type="button" aria-pressed="true" aria-label="البحث في الإنترنت" title="البحث في الإنترنت وقراءة المواقع"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></button>
           <button id="ai_go" class="x-send" type="button" aria-label="إرسال"><svg viewBox="0 0 24 24" class="s-send" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg><svg viewBox="0 0 24 24" class="s-stop" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg></button>
         </div>
@@ -727,6 +729,14 @@ button.xc-card{cursor:pointer;transition:transform .18s,border-color .2s}button.
  .x-wel .x-chips button{flex-direction:column;align-items:flex-start;gap:8px;min-height:88px}
  .x-app .ai-md{font-size:16.5px}
 }
+
+.x-app .x-acts button.busy svg{animation:xpul 1s ease-in-out infinite}
+.x-app .x-acts button.on{color:var(--pri);background:color-mix(in srgb,var(--pri) 10%,transparent)}
+.x-app .x-mic.rec{color:#fff;background:var(--bad,#c0392b);animation:xpul 1.1s ease-in-out infinite}
+@keyframes xpul{50%{opacity:.45}}
+@media(prefers-reduced-motion:reduce){.x-app .x-acts button.busy svg,.x-app .x-mic.rec{animation:none}}
+.x-sheet .x-filters .spw{grid-column:1/-1}
+.x-sheet .x-filters .spb{margin:2px 0}
 </style>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -746,7 +756,7 @@ const P={copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6
  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',alert:'<path d="M12 4l9 16H3L12 4zM12 10v4M12 17.5v.01"/>',
  clip:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/>',spark:'<path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8L12 3z"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',edit:'<path d="M4 20l4-1 11-11-3-3L5 16l-1 4zM14 7l3 3"/>',trash:'<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',book:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4zM5 17a3 3 0 0 1 3-3h11M9 8h6"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>'};
-Object.assign(P,{globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',shield:'<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/>',camera:'<path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/>',news:'<path d="M5 5h11v14H7a2 2 0 0 1-2-2V5zM16 9h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5"/>'});
+Object.assign(P,{vol:'<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>',stop:'<rect x="7" y="7" width="10" height="10" rx="2"/>',globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',shield:'<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/>',camera:'<path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/>',news:'<path d="M5 5h11v14H7a2 2 0 0 1-2-2V5zM16 9h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5"/>'});
 const ic=n=>'<svg class="i" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>';
 const hostOf=(u,t)=>{try{const h=new URL(u).hostname.replace(/^www\./,"");return /vertexaisearch/.test(h)?(t||h):h}catch(e){return t||u}};
 function webHtml(w){const s=w.sources||[];return '<div class="x-webh">'+ic("globe")+'<span>بحث في الإنترنت'+(s.length?' · '+s.length+' مصدر':'')+'</span></div>'+(s.length?'<div class="x-src">'+s.map((x,k)=>'<a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer" title="'+esc(x.title||"")+'"><b>'+(k+1)+'</b><span>'+esc(hostOf(x.url,x.title))+'</span></a>').join("")+'</div>':"")}
@@ -807,7 +817,7 @@ function msgEl(m,i){
   const web=m.web&&m.web.used?m.web:null,src=web?(web.sources||[]):[];
   let body=mdToHtml(m.t);
   if(src.length)body=body.replace(/(^|[^\w\/=])\[(\d{1,2})\](?![(\w])/g,(x,p,n)=>src[n-1]?p+'<a class="cite" href="'+esc(src[n-1].url)+'" target="_blank" rel="noopener noreferrer" title="'+esc(src[n-1].title||"")+'">'+n+'</a>':x);
-  const acts=[["copy","copy","نسخ"],["regen","refresh","إعادة توليد"],["up","up","مفيدة"],["down","down","غير مفيدة"],["pdf","pdf","طباعة / PDF"],["csv","sheet","تصدير الجداول إلى Excel"]];
+  const acts=[["speak","vol","استماع"],["copy","copy","نسخ"],["regen","refresh","إعادة توليد"],["up","up","مفيدة"],["down","down","غير مفيدة"],["pdf","pdf","طباعة / PDF"],["csv","sheet","تصدير الجداول إلى Excel"]];
   if(!web)acts.push(["web","globe","أعد الإجابة مع البحث في الإنترنت"]);
   if(CANMEM())acts.push(["mem","book","حفظ تصحيح في ذاكرة المساعد"]);
   d.innerHTML=WHO+'<div class="x-b ai-md">'+body+'</div>'+(web?webHtml(web):(m.web&&m.web.note?'<div class="x-webh">'+ic("globe")+'<span>'+esc(m.web.note)+'</span></div>':""))+'<div class="x-meta">'+esc(m.meta||"")+'</div><div class="x-acts">'+acts.map(a=>'<button type="button" data-a="'+a[0]+'" aria-label="'+a[2]+'" title="'+a[2]+'" class="'+((a[0]==="up"||a[0]==="down")&&m.fb===a[0]?"on":"")+'">'+ic(a[1])+'</button>').join("")+'</div>'+(m.fu&&m.fu.length&&cur&&i===cur.m.length-1?'<div class="x-fu">'+m.fu.map(q=>'<button type="button" data-fq="'+esc(q)+'">'+esc(q)+'</button>').join("")+'</div>':"");
@@ -841,6 +851,7 @@ function newChat(){if(busy)stop();cur=null;render();renderList();closeDrawerMobi
 function histOf(chat){const a=chat.m.filter(x=>!x.err&&!x.imp&&!x.del&&!x.res&&x.t);let k=a.length-1;while(k>=0&&a[k].r!=="u")k--;return a.slice(Math.max(0,k-6),Math.max(0,k)).map(x=>({r:x.r,t:x.t}))}
 async function askQ(q,regen,opt){
   if(busy)return;q=q.trim();if(q.length<2){toast("اكتب سؤالك","bad");return}
+  stopSpeak();
   if(!cur){cur={id:uid(),title:q.slice(0,40),m:[],t:Date.now()};chats.unshift(cur)}
   if(!regen)cur.m.push({r:"u",t:q});
   save();render();renderList();
@@ -860,6 +871,7 @@ async function askQ(q,regen,opt){
     chat.m.push({r:"a",t:d.answer||"",q,fu:d.followups||[],web:d.web?{used:!!d.web.used,sources:(d.web.sources||[]).slice(0,8),note:d.web.used?"":(d.web.note||"")}:null,ctx:{q,period:d.period,section:$("ai_sec").value||""},meta:parts.join(" · ")});
     $("x_eng").hidden=false;$("x_eng").textContent="المحرك: "+p+(d.failover?" · تحويل تلقائي":"")}
   chat.m=chat.m.slice(-40);save();if(cur===chat)render();renderList();
+  if(r.ok&&autoOn()&&cur===chat){const bt=[...document.querySelectorAll("#x_msgs .x-m.a [data-a=speak]")].pop();if(bt)speakText(chat.m[chat.m.length-1].t,bt)}
 }
 function stop(){gen++;clearInterval(tick);setBusy(false);if(cur){cur.m.push({r:"a",t:"تم إيقاف التوليد.",err:1,q:[...cur.m].reverse().find(x=>x.r==="u")?.t});save();render()}}
 function markOff(off){const sb=$("x_sub");if(sb){sb.textContent=off?"غير متصل بالإنترنت":"مساعد المصنع الذكي";sb.classList.toggle("off",off)}$("x_st").classList.toggle("off",off);$("x_stt").textContent=off?"غير متصل — تحقّق من الإنترنت":CANWRITE?"متصل · الكتابة المفوّضة مفعّلة":"متصل · قراءة وتحليل فقط"}
@@ -875,6 +887,7 @@ $("x_msgs").onclick=async e=>{
   const sug=e.target.closest(".x-chips button");if(sug){const qv=sug.dataset.q||"";if(sug.dataset.send){askQ(qv);return}const q=$("ai_q");q.value=qv;q.dispatchEvent(new Event("input"));q.focus();return}
   const b=e.target.closest("[data-a]");if(!b)return;const w=b.closest(".x-m"),i=+w.dataset.i,m=cur.m[i],a=b.dataset.a;
   if(a==="copy"){try{await navigator.clipboard.writeText(m.t);toast("تم النسخ","ok")}catch(x){toast("تعذّر النسخ","bad")}}
+  else if(a==="speak"){const bt=e.target.closest("button");if(bt.classList.contains("on"))stopSpeak();else speakText(m.t,bt)}
   else if(a==="regen"||a==="retry"||a==="web"){if(busy)return;const q=m.q;cur.m.splice(i,1);askQ(q,true,a==="web"?{web:"force"}:null)}
   else if(a==="up"||a==="down"){m.fb=m.fb===a?"":a;save();b.parentNode.querySelectorAll("[data-a=up],[data-a=down]").forEach(x=>x.classList.toggle("on",x.dataset.a===m.fb));toast(m.fb?"شكرًا على تقييمك":"أُلغي التقييم","ok")}
   else if(a==="pdf"){const c=m.ctx||{};AiPrint.print({md:m.t,question:c.q||m.q,period:c.period,section:c.section,title:"تقرير الذكاء الاصطناعي"})}
@@ -1189,7 +1202,47 @@ async function labOpen(){
   };
 }
 
+/* ---------- الصوت: استماع للإجابة (Azure عبر الخادم) مع بديل صوت المتصفح ---------- */
+let AUDIO=null,SPK=0,SPKBTN=null;
+const AUTOK="mas_ai_auto_voice",autoOn=()=>{try{return localStorage.getItem(AUTOK)==="1"}catch(e){return false}};
+function plainForSpeech(md){let t=String(md||"");const m=t.match(/##\s*الخلاصة\s*\n([\s\S]*?)(?=\n##|$)/);if(m)t=m[1];
+  return t.replace(/\|[^\n]*\|/g," ").replace(/\[(\d{1,2})\]/g," ").replace(/[*#>`_\-]/g," ").replace(/\s+/g," ").trim().slice(0,700)}
+function vchunks(t){const parts=t.split(/(?<=[.!؟?،:؛])\s+/),out=[];let cur="";
+  for(const p of parts){if((cur+" "+p).length>180){if(cur)out.push(cur);cur=p.slice(0,180)}else cur=(cur+" "+p).trim()}
+  if(cur)out.push(cur);return out.slice(0,4)}
+function paintSpk(b,st){if(!b)return;b.classList.toggle("on",st!=="idle");b.classList.toggle("busy",st==="load");
+  b.innerHTML=ic(st==="idle"?"vol":"stop");const l=st==="idle"?"استماع":"إيقاف";b.title=l;b.setAttribute("aria-label",l)}
+function stopSpeak(){SPK++;try{AUDIO&&AUDIO.pause()}catch(e){}AUDIO=null;try{speechSynthesis.cancel()}catch(e){}paintSpk(SPKBTN,"idle");SPKBTN=null}
+async function speakText(md,btn){
+  stopSpeak();const my=SPK,txt=plainForSpeech(md);if(!txt)return;SPKBTN=btn;paintSpk(btn,"load");
+  const done=()=>{if(my===SPK){paintSpk(btn,"idle");SPKBTN=null}};let ok=true;
+  for(const c of vchunks(txt)){
+    if(my!==SPK)return;const r=await masAi({action:"speak",text:c});if(my!==SPK)return;
+    if(!r.ok||!r.data||!r.data.audio){ok=false;break}
+    paintSpk(btn,"play");
+    await new Promise(res=>{const a=new Audio("data:"+r.data.mime+";base64,"+r.data.audio);AUDIO=a;a.onended=res;a.onerror=res;a.play().catch(res)});
+  }
+  if(!ok&&my===SPK&&"speechSynthesis" in window){
+    const u=new SpeechSynthesisUtterance(txt);u.lang="ar-SA";u.rate=.95;
+    const v=speechSynthesis.getVoices().find(x=>/^ar/i.test(x.lang));if(v)u.voice=v;
+    paintSpk(btn,"play");u.onend=done;u.onerror=done;speechSynthesis.speak(u);return}
+  done();
+}
+/* إملاء صوتي داخل خانة الكتابة */
+function wireMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition,b=$("x_mic");if(!SR||!b)return;b.hidden=false;let rec=null;
+  b.onclick=()=>{
+    if(rec){rec.stop();return}
+    const q=$("ai_q"),base=q.value.trim();rec=new SR();rec.lang="ar-EG";rec.interimResults=true;rec.continuous=false;
+    rec.onresult=e=>{let t="";for(const r of e.results)t+=r[0].transcript;q.value=(base?base+" ":"")+t;q.dispatchEvent(new Event("input"))};
+    rec.onerror=e=>toast(e.error==="not-allowed"?"فعّل الميكروفون من إعدادات المتصفح":"تعذّر الإملاء الصوتي","bad");
+    rec.onend=()=>{rec=null;b.classList.remove("rec");b.setAttribute("aria-pressed","false")};
+    try{rec.start();b.classList.add("rec");b.setAttribute("aria-pressed","true")}catch(e){rec=null}
+  };
+}
+
 /* ---------- واجهة: الدرج، قائمة الأدوات، الإنترنت، الارتفاع ---------- */
+
 const wide=()=>matchMedia("(min-width:1000px)").matches;
 function closeDrawerMobile(){if(!wide())setDrawer(false)}
 function setDrawer(v){const s=$("x_shell");s.classList.toggle("hist-open",v);$("x_hist").setAttribute("aria-expanded",String(v))}
@@ -1219,6 +1272,9 @@ function wireUi(){
   $("x_ctx").onclick=e=>{const b=e.target.closest("[data-cx]");if(!b)return;
     if(b.dataset.cx==="fill")setFill(false);
     else{["ai_from","ai_to","ai_sec"].forEach(id=>{$(id).value=""});$("ai_from").dispatchEvent(new Event("change",{bubbles:true}));ctxDraw()}};
+  const au=$("x_auto"),paintAu=()=>au.setAttribute("aria-pressed",String(autoOn()));paintAu();
+  au.onclick=()=>{try{localStorage.setItem(AUTOK,autoOn()?"0":"1")}catch(e){}paintAu();if(!autoOn())stopSpeak();toast(autoOn()?"القراءة التلقائية مفعّلة":"القراءة التلقائية متوقفة","ok")};
+  wireMic();
   ctxDraw();
   const fit=()=>requestAnimationFrame(fitChat);
   addEventListener("resize",fit);addEventListener("orientationchange",fit);if(window.visualViewport)visualViewport.addEventListener("resize",fit);

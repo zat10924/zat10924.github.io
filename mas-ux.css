@@ -6,7 +6,6 @@ input[type=date]{cursor:pointer;min-height:42px}
 .xd-q button,.xd-r button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;min-height:32px;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
 .xd-q button:hover,.xd-r button:hover{border-color:var(--pri);color:var(--pri)}
 .xd-q button.on,.xd-r button.on{background:var(--pri);border-color:transparent;color:var(--on-pri,#fff)}
-.xd-q button[data-s]{min-width:38px;padding-inline:8px;color:var(--mute);direction:ltr}
 @media print{.xd-q,.xd-r{display:none!important}}
 
 /* ===== كل الأقسام: لابتوب ===== */
@@ -36,8 +35,43 @@ input[type=date]{cursor:pointer;min-height:42px}
  .scroll table th,.scroll table td{white-space:nowrap;padding-inline:10px}
  .two{gap:10px}
  .modal{max-height:92dvh}
- .modal input[type=date]{width:100%}
  .xd-r{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
  .xd-r::-webkit-scrollbar{display:none}.xd-r button{flex:none}
  .xd-q button{min-height:34px}
 }
+
+/* ===== مكوّن التاريخ ===== */
+.xd{display:flex;align-items:stretch;gap:6px;width:100%;margin:4px 0 8px}
+.xd-f{position:relative;flex:1;min-width:0;display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--bg) 55%,var(--card));color:var(--ink);transition:border-color .2s,box-shadow .2s,background .2s}
+.xd-f:hover{border-color:var(--gold,var(--pri))}
+.xd-f:focus-within{background:var(--card);border-color:var(--gold,var(--pri));box-shadow:0 0 0 3px color-mix(in srgb,var(--gold,var(--pri)) 28%,transparent)}
+.xd-f>svg{flex:none;width:20px;height:20px;stroke:var(--pri);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.xd-t{flex:1;min-width:0;font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:rtl}
+.xd-t.ph{font-weight:400;color:var(--mute,var(--ink2));opacity:.85}
+.xd-tag{flex:none;font-size:12px;font-weight:700;color:var(--pri);background:color-mix(in srgb,var(--pri) 11%,transparent);padding:2px 10px;border-radius:999px}
+.xd-f>input.xd-in{position:absolute!important;inset:0;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important;opacity:0;cursor:pointer;font-size:16px;border:0!important;box-shadow:none!important;background:transparent!important}
+.xd-st{flex:none;width:48px;min-height:48px;display:grid;place-items:center;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--pri);cursor:pointer;transition:background .2s,border-color .2s}
+.xd-st svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.xd-st:hover{border-color:var(--pri);background:color-mix(in srgb,var(--pri) 8%,var(--card))}
+.xd-st:active{transform:scale(.96)}
+.xd.dis{opacity:.55;pointer-events:none}
+.xd-nostep{margin:4px 0 8px}
+.xd-q{gap:8px;margin:0 0 8px}
+.xd-q button{min-height:34px;padding:4px 14px;font-weight:600}
+.two .xd,.fe .xd{margin-bottom:0}
+@media(max-width:700px){.xd-t{font-size:15.5px}.xd-f{padding:0 12px}.xd-tag{display:none}}
+
+/* ===== القوائم المنسدلة: مقاس وخط وسهم موحّد في كل البرنامج ===== */
+.spw[hidden]{display:none!important}
+.spb,.cbw>input,.xd-f,input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=hidden]):not([type=color]),textarea{min-height:48px;font-size:16px}
+.spb{padding:6px 8px 6px 12px;font-weight:600;line-height:1.4}
+.spb .t{font-size:16px}
+.spb .t.ph,.cbw>input::placeholder,input::placeholder,textarea::placeholder{font-size:16px;font-weight:400;opacity:.8}
+.spb .ch{display:grid!important;width:32px;height:32px;border-radius:10px}
+.cbw>input{padding-inline-end:52px}
+.cbb{width:32px;height:32px;border-radius:10px;top:12px}
+@media print{.xd-st,.xd-tag{display:none}.xd-f{border:0;padding:0;min-height:0}.xd-f>svg{display:none}}
+
+/* زر «إضافة صنف آخر» بعرض كامل تحت الصفوف، والتاريخ بعده في سطر مستقل */
+#madd,#m-xadd{display:flex!important;width:100%;justify-content:center;align-items:center;min-height:46px;margin:8px 0 12px!important}
+.modal label{display:block}
