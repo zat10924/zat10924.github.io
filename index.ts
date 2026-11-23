@@ -1,35 +1,9 @@
 // mas-ai-hub — بوابة الذكاء الاصطناعي لـ MAS. المفاتيح من Secrets فقط، والبيانات بصلاحية المستخدم (RLS).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { buildPrompt, buildSsml, clampRate, detectTask, knowledgeBlock, safeVoice, SECTIONS, splitFollowups, stripEmoji, SYSTEM_PROMPT, validateAsk } from "./policy.ts";
+import { buildPrompt, buildSsml, clampRate, detectTask, safeVoice, SECTIONS, SYSTEM_PROMPT, validateAsk } from "./policy.ts";
 import { keyFor, REGISTRY } from "./providers.ts";
-import { buildFilter, buildRows, cleanIds, WSECS } from "./writer.ts";
-import { runChain, runHedged } from "./orchestrator.ts";
-import { buildInsights, compactFacts, prevRange, daysBetween } from "./analytics.ts";
-import { extractUrls, gatherWeb, webEngineName, webIntent, type WebResult } from "./web.ts";
+import { runChain } from "./orchestrator.ts";
 
-// مهلة بدء المحرك الاحتياطي بالتوازي (مللي ثانية). يمكن ضبطها بسر HEDGE_MS (500–10000)
-const HEDGE_MS = Math.min(10000, Math.max(500, Number(Deno.env.get("HEDGE_MS")) || 2000));
-
-// ذاكرة المساعد (مصطلحات معتمدة). أي خطأ هنا لا يعطّل الإجابة.
-// deno-lint-ignore no-explicit-any
-async function loadKb(admin: any): Promise<string> {
-  try {
-    const { data } = await admin.from("ai_knowledge").select("kind,term,meaning").eq("active", true).order("id").limit(60);
-    return knowledgeBlock(data ?? []);
-  } catch { return ""; }
-}
-// سلسلة المحركات: الأساسي ثم الاحتياطي ثم أي محرك آخر مفتاحه مضبوط (مثل OpenRouter) عند تفعيل التحويل التلقائي
-// deno-lint-ignore no-explicit-any
-function buildChain(s: any) {
-  const first = REGISTRY[s.primary_provider];
-  const chain = first ? [first] : [];
-  if (s.auto_failover) {
-    const second = s.fallback_provider ? REGISTRY[s.fallback_provider] : undefined;
-    if (second && !chain.includes(second)) chain.push(second);
-    for (const p of Object.values(REGISTRY)) if (!chain.includes(p) && keyFor(p)) chain.push(p);
-  }
-  return chain;
-}
 const URL_ = Deno.env.get("SUPABASE_URL")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!; // يُحقن تلقائياً في الخادم فقط
@@ -62,7 +36,7 @@ Deno.serve(async (req) => {
   const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
 
   // 2) الصلاحية
-  const { data: prof } = await admin.from("profiles").select("role,active,full_name").eq("id", uid).maybeSingle();
+  const { data: prof } = await admin.from("profiles").select("role,active").eq("id", uid).maybeSingle();
   if (!prof || prof.active === false || !ALLOWED_ROLES.includes(prof.role)) return json(req, { error: "forbidden" }, 403);
   if (prof.role === "manager") { // مسؤول القسم: لازم صلاحية التقارير. أي خطأ في القراءة = رفض
     const { data: pm, error: pe } = await admin.from("profiles").select("view_all").eq("id", uid).maybeSingle();
@@ -93,7 +67,6 @@ Deno.serve(async (req) => {
     return json(req, {
       enabled: s.enabled, primary: s.primary_provider, fallback: s.fallback_provider, auto_failover: s.auto_failover,
       providers: Object.values(REGISTRY).map((p) => ({ id: p.id, label: p.label, key_configured: !!keyFor(p) })),
-      web_engine: webEngineName(keyFor(REGISTRY.gemini)),
     });
   }
 
@@ -108,7 +81,9 @@ Deno.serve(async (req) => {
     await log("ai_usage_log", { task: "test", provider: p.id, model: r.ok ? r.model : null, status: r.ok ? "ok" : "error", latency_ms: ms });
     return json(req, r.ok ? { ok: true, provider: p.id, latency_ms: ms }
                           : { ok: false, provider: p.id, latency_ms: ms, error_class: r.error.cls, http_status: r.error.status });
-  }  // ---- صوت المساعد: Azure Speech بصوت مصري (ar-EG-SalmaNeural افتراضيًا) ----
+  }
+
+  // ---- صوت المساعد: Azure Speech بصوت مصري (ar-EG-SalmaNeural افتراضيًا) ----
   if (action === "speak") {
     const key = Deno.env.get("AZURE_SPEECH_KEY")?.trim();
     const region = Deno.env.get("AZURE_SPEECH_REGION")?.trim() ?? "";
@@ -140,94 +115,6 @@ Deno.serve(async (req) => {
   }
 
 
-  // ---- تفويض الكتابة: شخص واحد فقط (ai_write_policy). كل كتابة بصلاحية المستخدم نفسه (RLS)، وتُسجَّل وتقبل التراجع 7 أيام ----
-  if (typeof action === "string" && action.startsWith("write_")) {
-    const { data: wp } = await admin.from("ai_write_policy").select("user_id,enabled").eq("id", 1).maybeSingle();
-    const canWrite = !!wp && wp.enabled === true && wp.user_id === uid && (prof.role === "admin" || prof.role === "manager");
-    if (action === "write_status") return json(req, { can_write: canWrite, sections: canWrite ? Object.entries(WSECS).map(([id, v]) => ({ id, label: v.label })) : [] });
-    if (!canWrite) return json(req, { error: "forbidden", message: "الكتابة المباشرة مفوّضة لشخص واحد فقط." }, 403);
-    const today = cairoToday();
-    const sec = String(body?.sec ?? "");
-    const c = WSECS[sec];
-    const bad = (m: string, st = 400) => json(req, { error: "bad_request", message: m }, st);
-
-    // أمر نصي ← نية منظّمة (للعرض والتأكيد فقط؛ لا ينفّذ شيئًا)
-    if (action === "write_intent") {
-      const text = typeof body?.text === "string" ? body.text.trim().slice(0, 2000) : "";
-      if (text.length < 3) return bad("اكتب الأمر.");
-      const sys = "أنت محلّل أوامر لنظام مصنع خزف. حوّل أمر المستخدم إلى JSON فقط، ولا تخمّن أي اسم أو رقم غير مذكور (اجعله null). الشكل: " +
-        '{"op":"add|delete|none","section":"casting|brush|finish|glaze|deco|spray|repair|fire|unknown","date":"YYYY-MM-DD أو null","from":"YYYY-MM-DD أو null","to":"YYYY-MM-DD أو null","item":"اسم الصنف أو النشاط أو null","worker":"أو null","notes":"أي غموض","rows":[{"item":"","qty":0,"scrap":null,"worker":null,"shift":null,"note":null}]}. ' +
-        "op=add إذا طلب تسجيل/إضافة بيانات (ضع السطور في rows). op=delete إذا طلب حذف سجلات (ضع شروط البحث date أو from/to وitem وworker ولا تضع rows). غير ذلك op=none. الأقسام: الصب=casting، البرشر=brush، التشطيب=finish، الجليز=glaze، الزخرفة=deco، الرش=spray، التصليح=repair، الحريق=fire. تاريخ اليوم " + today + ".";
-      const r = await runHedged(buildChain(s), { system: sys, prompt: text, timeoutMs: Math.max(s.timeout_ms, 20000), json: true }, hooks, HEDGE_MS);
-      if (!r.ok) return json(req, { error: r.error.cls, message: "تعذّر فهم الأمر الآن، حاول بعد قليل." }, 503);
-      let j: any; try { j = JSON.parse(r.text.replace(/^```json|```$/g, "").trim()); } catch { j = null; }
-      const sx = (v: unknown, n: number) => { const x = typeof v === "string" ? v.trim().slice(0, n) : ""; return x || null; };
-      const dt = (v: unknown) => /^\d{4}-\d{2}-\d{2}$/.test(String(v ?? "")) ? String(v) : null;
-      const num = (v: unknown) => { const n = Number(v); return v == null || v === "" || !Number.isFinite(n) ? null : Math.min(1_000_000, Math.max(0, Math.round(n))); };
-      const rows = (Array.isArray(j?.rows) ? j.rows : []).slice(0, 60).map((x: any) => ({ item: sx(x?.item, 120), qty: num(x?.qty), scrap: num(x?.scrap), worker: sx(x?.worker, 80), shift: sx(x?.shift, 20), note: sx(x?.note, 300) }));
-      await log("ai_usage_log", { task: "intent", provider: r.provider, model: r.model, status: "ok", latency_ms: 0, failover: r.failover });
-      return json(req, { intent: {
-        op: ["add", "delete"].includes(j?.op) ? j.op : "none",
-        section: (SECTIONS as readonly string[]).includes(j?.section) ? j.section : "unknown",
-        date: dt(j?.date), from: dt(j?.from), to: dt(j?.to), item: sx(j?.item, 80), worker: sx(j?.worker, 80), notes: sx(j?.notes, 300) ?? "", rows } });
-    }
-
-    if (!c) return bad("هذا القسم غير مدعوم للكتابة المباشرة. الأقسام المدعومة: الصب والبرشر والتشطيب.");
-
-    if (action === "write_add") {
-      const b = buildRows(sec, String(body?.date ?? ""), body?.rows, today, () => crypto.randomUUID());
-      if (!b.ok) return bad(b.message);
-      const { data: ins, error } = await userDb.from(c.table).insert(b.rows).select("id");
-      if (error) { await log("ai_error_log", { provider: "write", error_class: "add_" + (error.code ?? "x"), message: String(error.message).slice(0, 200) }); return bad("تعذّر الحفظ. راجع البيانات أو صلاحياتك على القسم.", 400); }
-      const ids = (ins ?? []).map((r: any) => r.id);
-      const { data: lg } = await admin.from("ai_action_log").insert({ user_id: uid, action: "add", section: sec, row_ids: ids }).select("id").single();
-      return json(req, { ok: true, count: ids.length, log_id: lg?.id ?? null });
-    }
-
-    if (action === "write_find") {
-      const f = buildFilter(body, today);
-      if (!f.ok) return bad(f.message);
-      let q = userDb.from(c.table).select("*").gte(c.date, f.f.from).lte(c.date, f.f.to)
-        .order(c.date, { ascending: false }).order("id", { ascending: false }).limit(f.f.limit);
-      if (f.f.item) q = q.ilike(c.text, `%${f.f.item}%`);
-      if (f.f.worker) q = q.ilike("worker", `%${f.f.worker}%`);
-      const { data, error } = await q;
-      if (error) return bad("تعذّر البحث.", 400);
-      return json(req, { sec, rows: (data ?? []).map((r: any) => ({ id: r.id, date: r[c.date], item: r[c.text], qty: r.qty, scrap: r.scrap ?? null, shift: r.shift ?? null, worker: r.worker ?? null, note: r.note ?? null })) });
-    }
-
-    if (action === "write_delete") {
-      const ids = cleanIds(body?.ids);
-      if (!ids || body?.confirm !== true) return bad("حدّد السجلات (حتى 50) وأكّد الحذف.");
-      const { data: before, error: e1 } = await userDb.from(c.table).select("*").in("id", ids);
-      if (e1 || !before?.length) return bad("لم أجد هذه السجلات (أو لا تملك صلاحية قراءتها).", 404);
-      const { data: del, error: e2 } = await userDb.from(c.table).delete().in("id", before.map((r: any) => r.id)).select("id");
-      if (e2) { await log("ai_error_log", { provider: "write", error_class: "del_" + (e2.code ?? "x"), message: String(e2.message).slice(0, 200) }); return bad("تعذّر الحذف.", 400); }
-      const gone = new Set((del ?? []).map((r: any) => r.id));
-      if (!gone.size) return bad("لم يُحذف شيء: الصلاحيات الحالية تمنع الحذف.", 403);
-      const snap = before.filter((r: any) => gone.has(r.id));
-      const { data: lg } = await admin.from("ai_action_log").insert({ user_id: uid, action: "delete", section: sec, row_ids: [...gone], before_data: snap }).select("id").single();
-      return json(req, { ok: true, deleted: gone.size, log_id: lg?.id ?? null });
-    }
-
-    return bad("أمر كتابة غير معروف.");
-  }  // التراجع عن آخر عملية كتابة (7 أيام، مرة واحدة، لصاحبها فقط)
-  if (action === "write_undo") {
-    const { data: wp } = await admin.from("ai_write_policy").select("user_id,enabled").eq("id", 1).maybeSingle();
-    if (!wp || wp.enabled !== true || wp.user_id !== uid) return json(req, { error: "forbidden" }, 403);
-    const lid = Number(body?.log_id);
-    const { data: lg } = Number.isInteger(lid) ? await admin.from("ai_action_log").select("*").eq("id", lid).eq("user_id", uid).is("undone_at", null)
-      .gte("at", new Date(Date.now() - 7 * 864e5).toISOString()).maybeSingle() : { data: null };
-    const c = lg ? WSECS[lg.section] : null;
-    if (!lg || !c) return json(req, { error: "bad_request", message: "لا يمكن التراجع (انتهت المدة أو تم التراجع من قبل)." }, 404);
-    const res = lg.action === "delete"
-      ? await userDb.from(c.table).insert(lg.before_data)
-      : await userDb.from(c.table).delete().in("id", lg.row_ids);
-    if (res.error) return json(req, { error: "db", message: "تعذّر التراجع." }, 400);
-    await admin.from("ai_action_log").update({ undone_at: new Date().toISOString() }).eq("id", lid);
-    return json(req, { ok: true });
-  }
-
   // ---- تعبئة بيانات: استخراج منظّم من نص أو صورة. لا يكتب في قاعدة البيانات؛ المستخدم يراجع ويحفظ بنفسه ----
   if (action === "extract" || action === "vision") {
     if (!s.enabled) return json(req, { error: "disabled", message: "المساعد الذكي موقوف من الإعدادات." }, 503);
@@ -244,11 +131,10 @@ Deno.serve(async (req) => {
     const hint = SECTIONS.includes(body?.hint) ? body.hint : "";
     const sys = "أنت أداة استخراج بيانات لمصنع خزف. استخرج فقط ما هو مكتوب صراحةً في المدخل. ممنوع التخمين أو اختراع أي اسم أو رقم؛ ما لم يتضح اجعله null. أعد JSON فقط بهذا الشكل: " +
       '{"section":"casting|brush|glaze|deco|spray|repair|finish|fire|unknown","date":"YYYY-MM-DD أو null","confidence":"high|medium|low","notes":"ملاحظات عن الغموض أو الأرقام غير الواضحة","rows":[{"item":"اسم الصنف","qty":رقم_صحيح_أو_null,"scrap":رقم_صحيح_أو_null,"worker":"اسم العامل أو null","shift":"الوردية أو null","note":"ملاحظة أو null"}]}';
-    const prompt = (hint ? "القسم المرجّح: " + hint + "\n" : "") + "تاريخ اليوم: " + cairoToday() + "\n" + (await loadKb(admin)) + (text ? "النص:\n" + text : "الصورة المرفقة تحتوي سجل إنتاج. استخرج سطوره.");
-    // الصور: Gemini مرتين (محاولة ثانية عند 503 العابر) ثم OpenRouter فقط إن ضُبط له نموذج رؤية OPENROUTER_VISION_MODEL
-    const chain = img ? [REGISTRY.gemini, REGISTRY.gemini, ...(Deno.env.get("OPENROUTER_VISION_MODEL")?.trim() && keyFor(REGISTRY.openrouter) ? [REGISTRY.openrouter] : [])] : buildChain(s);
+    const prompt = (hint ? "القسم المرجّح: " + hint + "\n" : "") + "تاريخ اليوم: " + cairoToday() + "\n" + (text ? "النص:\n" + text : "الصورة المرفقة تحتوي سجل إنتاج. استخرج سطوره.");
+    const chain = img ? [REGISTRY.gemini] : [REGISTRY[s.primary_provider], ...(s.auto_failover && s.fallback_provider ? [REGISTRY[s.fallback_provider]] : [])].filter(Boolean);
     const t0 = Date.now();
-    const r = await runHedged(chain, { system: sys, prompt, timeoutMs: Math.max(s.timeout_ms, 30000), json: true, image: img ? { mime, data: img } : undefined }, hooks, img ? Math.max(HEDGE_MS, 8000) : HEDGE_MS);
+    const r = await runChain(chain, { system: sys, prompt, timeoutMs: Math.max(s.timeout_ms, 25000), json: true, image: img ? { mime, data: img } : undefined }, hooks);
     const ms = Date.now() - t0;
     if (!r.ok) {
       await log("ai_usage_log", { task: "extract", provider: r.provider, status: "error", latency_ms: ms });
@@ -270,7 +156,9 @@ Deno.serve(async (req) => {
     return json(req, { vision, provider: r.provider, failover: r.failover });
   }
 
-  if (action !== "ask") return json(req, { error: "unknown_action" }, 400);  // ---- سؤال ----
+  if (action !== "ask") return json(req, { error: "unknown_action" }, 400);
+
+  // ---- سؤال ----
   if (!s.enabled) return json(req, { error: "disabled", message: "المساعد الذكي موقوف من الإعدادات." }, 503);
   const v = validateAsk(body, cairoToday());
   if (!v.ok) return json(req, { error: "bad_request", message: v.error }, 400);
@@ -289,59 +177,30 @@ Deno.serve(async (req) => {
   }
 
   const task = detectTask(v.q);
-  // بيانات بصلاحية المستخدم: RLS تُطبَّق لأن الاستدعاء بتوكنه (لا service role).
-  // الفترة السابقة للمقارنة اختيارية: أي فشل فيها لا يعطّل الإجابة.
-  const span = daysBetween(v.from, v.to);
-  const pr = prevRange(v.from, v.to);
-  const noPrev = Promise.resolve({ data: null, error: null });
-  const [fr, pv] = await Promise.all([
-    userDb.rpc("mas_ai_facts", { p_from: v.from, p_to: v.to, p_secs: v.secs }),
-    task !== "general" && span <= 92 ? userDb.rpc("mas_ai_facts", { p_from: pr.from, p_to: pr.to, p_secs: v.secs }) : noPrev,
-  ]);
-  const { data: facts, error: fe } = fr;
+  // بيانات بصلاحية المستخدم: RLS تُطبَّق لأن الاستدعاء بتوكنه (لا service role)
+  const { data: facts, error: fe } = await userDb.rpc("mas_ai_facts", { p_from: v.from, p_to: v.to, p_secs: v.secs });
   if (fe) {
     await log("ai_error_log", { provider: null, error_class: "data", message: fe.message?.slice(0, 300) });
     return json(req, { error: "data", message: "تعذّر تحميل بيانات المصنع." }, 502);
   }
-  const insights = buildInsights(facts, pv?.error ? null : pv?.data ?? null);
-
-  // الإنترنت: بحث وقراءة مواقع. تفعيله من الواجهة، والقرار بالاستخدام ذكي من الخادم (أو إجباري بزر «ابحث»)
-  let webRes: WebResult | null = null;
-  if (v.web) {
-    const urls = extractUrls(v.q);
-    const wi = v.web === "force" ? { use: true } : webIntent(v.q, task, urls.length > 0);
-    if (wi.use) {
-      try { webRes = await gatherWeb(v.q, { urls, geminiKey: keyFor(REGISTRY.gemini) }); }
-      catch (e) { webRes = { used: false, engine: "none", queries: [], sources: [], context: "<web>\nتعذّر الوصول للإنترنت الآن.\n</web>", note: String((e as Error)?.message ?? "").slice(0, 120) }; }
-    }
-  }
-
   let notes: string[] = [];
-  // هوية المستخدم من حسابه على الخادم (لا من المتصفح): للمخاطبة بالاسم فقط
-  const ROLE_AR: Record<string, string> = { admin: "مدير النظام", owner: "المالك", manager: "مسؤول قسم", worker: "عامل" };
-  const who = String(prof?.full_name ?? "").replace(/[<>\r\n]+/g, " ").trim().slice(0, 60);
-  if (who) notes.push(`المستخدم الحالي (من حسابه في النظام): الاسم «${who}»، الدور: ${ROLE_AR[prof?.role ?? ""] ?? "مستخدم"}. خاطبه باسمه عند الترحيب أو عندما يسأل من هو. لا تذكر عنه أي معلومة أخرى لا تعرفها.`);
-  notes.push(`تاريخ اليوم (القاهرة): ${cairoToday()}.`);
   if (task === "inventory") notes.push("تنبيه: لا توجد في النظام حالياً جداول أرصدة مخزون؛ لا تذكر أي أرصدة.");
   if (task === "orders") notes.push("تنبيه: بيانات الطلبيات غير مرفقة في هذه النسخة؛ اعتمد على الإنتاج فقط وصرّح بالنقص.");
-  if (!v.web && /(ابحث|على (ال)?(انترنت|إنترنت|نت)|https?:\/\/)/i.test(v.q)) notes.push("تنبيه: زر الإنترنت مغلق الآن؛ لا تدّعِ أنك بحثت أو فتحت أي رابط، واطلب من المستخدم تفعيله.");
-  const payload = compactFacts(facts, task, !!webRes?.used);
-  const kb = await loadKb(admin);
-  const prompt = buildPrompt(v.q, task, payload, notes.join("\n"), kb, { insights, web: webRes?.context, history: v.history });
+  let payload = facts;
+  if (JSON.stringify(payload).length > 60000) { payload = { ...facts, daily_production: [] }; notes.push("حُذف التفصيل اليومي لضيق الحجم."); }
+  const prompt = buildPrompt(v.q, task, payload, notes.join("\n"));
 
-  const chain = buildChain(s);
+  const chain = [REGISTRY[s.primary_provider]];
+  if (s.auto_failover && s.fallback_provider && REGISTRY[s.fallback_provider]) chain.push(REGISTRY[s.fallback_provider]);
   if (!chain[0]) return json(req, { error: "config", message: "المحرك الأساسي غير معرّف." }, 500);
 
   const t0 = Date.now();
-  const r = await runHedged(chain, { system: SYSTEM_PROMPT, prompt, timeoutMs: webRes?.used ? Math.max(s.timeout_ms, 30000) : s.timeout_ms }, hooks, webRes?.used ? Math.max(HEDGE_MS, 6000) : HEDGE_MS);
+  const r = await runChain(chain, { system: SYSTEM_PROMPT, prompt, timeoutMs: s.timeout_ms }, hooks);
   const ms = Date.now() - t0;
   if (r.ok) {
     await log("ai_usage_log", { task, provider: r.provider, model: r.model, status: "ok", latency_ms: ms,
       prompt_chars: prompt.length, response_chars: r.text.length, failover: r.failover });
-    const { answer, followups } = splitFollowups(stripEmoji(r.text));
-    const web = webRes ? { used: webRes.used, engine: webRes.engine, queries: webRes.queries, note: webRes.note ?? null,
-      sources: webRes.sources.slice(0, 8).map((x) => ({ title: stripEmoji(x.title).slice(0, 140), url: x.url })) } : null;
-    return json(req, { answer, followups: followups.map(stripEmoji), provider: r.provider, failover: r.failover, period: { from: v.from, to: v.to }, task, web });
+    return json(req, { answer: r.text, provider: r.provider, failover: r.failover, period: { from: v.from, to: v.to }, task });
   }
   await log("ai_usage_log", { task, provider: r.provider, status: r.error.cls === "safety" ? "blocked" : "error", latency_ms: ms,
     prompt_chars: prompt.length, failover: r.failover });
