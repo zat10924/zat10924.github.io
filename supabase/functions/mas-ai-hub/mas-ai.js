@@ -136,7 +136,7 @@
       <button class="ib" id="mai-full" type="button" aria-label="حجم كامل">${ic("full")}</button>
       <button class="ib" id="mai-min" type="button" aria-label="تصغير">${ic("min")}</button></header>
     <div class="m" id="mai-msgs" aria-live="polite"></div>
-    <div class="chips" id="mai-chips"><button class="chip cam" type="button" data-cam="1">📷 اقرأ صورة</button>
+    <div class="chips" id="mai-chips"><button class="chip cam" type="button" data-cam="1"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-inline-end:4px"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/></svg>اقرأ صورة</button>
       <button class="chip" type="button" data-q="ملخص إنتاج النهارده">ملخص النهارده</button>
       <button class="chip" type="button" data-q="أعلى نسب الهالك الشهر ده">أعلى هالك</button>
       <button class="chip" type="button" data-q="قارن بين الأقسام الشهر ده">قارن الأقسام</button></div>
@@ -288,7 +288,7 @@
       const b = document.createElement("button"); b.type = "button"; b.className = "retry"; b.textContent = "إعادة المحاولة";
       b.onclick = () => { wait.remove(); busy = false; ask(q, Object.assign({}, ctx, { silentUser: true })); }; wait.appendChild(document.createElement("br")); wait.appendChild(b); remember("b", r.msg); scroll(); return;
     }
-    const PN = { gemini: "Gemini", groq: "Groq" };
+    const PN = { gemini: "Gemini", groq: "Groq", openrouter: "OpenRouter" };
     const meta = "المحرك: " + (PN[r.data.provider] || r.data.provider) + (r.data.failover ? " (تحويل تلقائي)" : "") + " · " + r.data.period.from + " ← " + r.data.period.to + (sec ? " · " + (SEC_AR[sec] || sec) : "");
     const pctx = { q, period: r.data.period, section: sec };
     wait.classList.remove("wait"); wait.innerHTML = md(r.data.answer); const s = document.createElement("small"); s.className = "meta"; s.textContent = meta; wait.appendChild(s); addPrint(wait, r.data.answer, pctx);
@@ -303,7 +303,7 @@
 
   function greet() {
     const d = document.createElement("div"); d.className = "hero";
-    d.innerHTML = "<b>أهلًا، أنا ماسي 👋</b><p>مساعدك الذكي في المصنع: بحلّل الإنتاج والهالك، وبقرأ الصور وأوجّهها لقسمها.</p><ul><li>اسألني عن الإنتاج والهالك والأقسام</li><li>صوّر ورقة التسجيل وأنا أحوّلها لبيانات</li><li>قول «افتح قسم الحريق» وأفتحه لك</li></ul>";
+    d.innerHTML = "<b>أهلًا، أنا ماسي</b><p>مساعدك الذكي في المصنع: بحلّل الإنتاج والهالك، وبقرأ الصور وأوجّهها لقسمها.</p><ul><li>اسألني عن الإنتاج والهالك والأقسام</li><li>صوّر ورقة التسجيل وأنا أحوّلها لبيانات</li><li>قول «افتح قسم الحريق» وأفتحه لك</li></ul>";
     msgs.appendChild(d);
   }
 
@@ -342,7 +342,7 @@
     busy = false; sendB.disabled = false; wait.classList.remove("wait");
     if (!r.ok) { wait.textContent = r.msg; setState("error", r.msg); return; }
     renderImport(wait, r.data.vision); setState("done");
-    remember("u", "📷 صورة"); remember("b", "قرأت الصورة واستخرجت " + r.data.vision.rows.length + " سطر");
+    remember("u", "صورة"); remember("b", "قرأت الصورة واستخرجت " + r.data.vision.rows.length + " سطر");
     if (!panel.classList.contains("open")) orb.classList.add("unread");
   };
 
@@ -365,7 +365,7 @@
       rowsEl.innerHTML = st.rows.map((r, i) => '<div class="imp-r" data-i="' + i + '"><div class="it"><label>الصنف</label><input data-k="item" value="' + esc(r.item || "") + '"></div>' +
         '<div><label>العدد</label><input data-k="qty" inputmode="numeric" value="' + (r.qty ?? "") + '"></div>' +
         '<div><label>الهالك</label><input data-k="scrap" inputmode="numeric" value="' + (r.scrap ?? "") + '"></div>' +
-        '<button class="x" type="button" aria-label="حذف السطر">✕</button>' +
+        '<button class="x" type="button" aria-label="حذف السطر"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-inline-end:4px"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
         '<div class="it"><label>العامل</label><input data-k="worker" value="' + esc(r.worker || "") + '"></div></div>').join("");
     };
     draw();
@@ -424,12 +424,12 @@
     const x = impLoad();
     if (!x || SEC_PAGE[x.sec] !== PAGE) { rmTray(); return; }
     const i = curRow(x);
-    if (i < 0) { rmTray(); impSave(null); toast("خلّصت كل سطور الصورة ✓"); return; }
+    if (i < 0) { rmTray(); impSave(null); toast("خلّصت كل سطور الصورة"); return; }
     const r = x.rows[i];
     if (!tray) { tray = document.createElement("div"); tray.id = "masai-tray"; document.body.appendChild(tray); }
-    tray.innerHTML = '<div class="t1"><span>📷 من الصورة · ' + esc(SEC_AR[x.sec]) + " · " + esc(x.date) + "</span><span>سطر " + (i + 1) + " من " + x.rows.length + "</span></div>" +
+    tray.innerHTML = '<div class="t1"><span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-inline-end:4px"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/></svg>من الصورة · ' + esc(SEC_AR[x.sec]) + " · " + esc(x.date) + "</span><span>سطر " + (i + 1) + " من " + x.rows.length + "</span></div>" +
       '<div class="t2"><b>' + esc(r.item || "—") + "</b>" + (r.qty != null ? " · العدد " + r.qty : "") + (r.scrap != null ? " · هالك " + r.scrap : "") + (r.worker ? " · " + esc(r.worker) : "") + "</div>" +
-      '<div class="ta"><button type="button" class="p" data-t="fill">تعبئة</button><button type="button" data-t="done">تم ✓ التالي</button><button type="button" data-t="close">إغلاق</button></div>';
+      '<div class="ta"><button type="button" class="p" data-t="fill">تعبئة</button><button type="button" data-t="done">تم، التالي</button><button type="button" data-t="close">إغلاق</button></div>';
     tray.onclick = e => {
       const b = e.target.closest("button"); if (!b) return; const cx = impLoad(); if (!cx) return; const k = curRow(cx);
       if (b.dataset.t === "close") { impSave(null); rmTray(); }
