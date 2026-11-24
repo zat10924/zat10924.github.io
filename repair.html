@@ -132,12 +132,88 @@ function stImport(){if(roBlock())return;
   if(f)f.onchange=async()=>{const t=f.files[0];if(t)document.getElementById("i-txt").value=await t.text()};
 }
 function stItems(){return[...new Set([...stock.map(r=>r.item),...rows.map(r=>r.item)].filter(Boolean))]}
+/* إضافة/تسوية جرد: أكتر من صنف ولون في مرة واحدة (التعديل لحركة واحدة بيفضل في stForm) */
+function stMulti(adj){if(roBlock())return;
+  const items=stItems();
+  const rowHtml=()=>`<div class="itemblk mrow"><div class="ih"><b class="mn"></b><span><button type="button" class="btn ghost sm rmc" style="margin-inline-end:6px">＋ لون آخر لنفس الصنف</button><button type="button" class="rmi" aria-label="حذف الصنف">حذف</button></span></div>
+    <label>الصنف</label><input class="it" list="s-items" placeholder="اسم الصنف" autocomplete="off">
+    <div class="two"><div><label>اللون (اختياري)</label><input class="sb" data-kind="color" placeholder="اللون" autocomplete="off" maxlength="80"></div>
+    <div><label>${adj?"الكمية الفعلية الآن":"الكمية"}</label><input type="number" class="mq2" ${adj?'min="0"':'min="1"'} inputmode="numeric"></div></div><div class="nums sc" style="margin:2px 0 4px"></div></div>`;
+  openModal(adj?"تسوية جرد":"إضافة للتصليح",`<label>التاريخ</label><input type="date" id="s-d" value="${today()}">
+    <div class="hint" style="margin:6px 0">${adj?"اكتب الموجود فعلًا لكل صنف ولون، والفرق عن المتبقي الحالي هو اللي هيتسجّل.":"سجّل أكتر من صنف أو لون في مرة واحدة."}</div>
+    <datalist id="s-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
+    <div id="srows"></div>
+    <button type="button" class="btn ghost sm" id="sadd" style="margin:6px 0 10px">＋ إضافة صنف آخر</button>
+    <label>ملاحظة (اختياري، لكل السطور)</label><input id="s-n" maxlength="300">`,async()=>{
+    const els=[...document.getElementById("srows").querySelectorAll(".mrow")],todo=[];
+    for(let i=0;i<els.length;i++){
+      const el=els[i],item=el.querySelector(".it").value.trim(),color=el.querySelector(".sb").value.trim(),qv=el.querySelector(".mq2").value.trim();
+      if(!item&&!color&&!qv)continue;
+      if(!item){toast("اكتب اسم الصنف رقم "+(i+1));return false}
+      let q=parseInt(qv);
+      if(isNaN(q)||(!adj&&q<1)||(adj&&q<0)){toast("اكتب كمية صحيحة للصنف: "+item+(color?" · "+color:""));return false}
+      todo.push({item,color,q,actual:q});
+    }
+    if(!todo.length){toast("اكتب صنف واحد على الأقل");return false}
+    if(adj){
+      const seen=new Set();
+      for(const r of todo){const k=bk(r.item,r.color);if(seen.has(k)){toast("الصنف «"+r.item+(r.color?" · "+r.color:"")+"» مكرر في التسوية");return false}seen.add(k)}
+      for(const r of todo){r.cur=leftOf(r.item,r.color)||0;r.q=r.actual-r.cur}
+      const diff=todo.filter(r=>r.q!==0);
+      if(!diff.length){toast("الجرد مطابق، مفيش فرق");return false}
+      todo.length=0;todo.push(...diff);
+    }
+    const d=document.getElementById("s-d").value||today(),note=document.getElementById("s-n").value.trim()||null;
+    if(!await reviewSave({title:"راجع الجرد قبل الحفظ",meta:[["التاريخ",fmtD(d)],["النوع",adj?"تسوية جرد":"دخل التصليح"]],
+      items:todo.map(r=>({title:r.item,rows:[...(r.color?[["اللون",r.color]]:[]),...(adj?[["الموجود فعلًا",nf(r.actual)]]:[]),[adj?"الفرق":"الكمية",(r.q>0?"+":"")+nf(r.q)]]})),
+      ...(adj?{}:{total:todo.reduce((a,r)=>a+r.q,0)})}))return false;
+    const kind=adj?"adjust":"in";
+    const{error}=await db.from("repair_stock").insert(todo.map(r=>({stock_date:d,item:r.item,color:r.color||null,qty:r.q,kind,note,client_id:(crypto.randomUUID?crypto.randomUUID():null)})));
+    if(error&&/color/.test(error.message||"")){toast("شغّل ملف setup_repair_color.sql في Supabase الأول");return false}
+    if(error&&/repair_stock/.test(error.message||"")){toast("شغّل ملف setup_repair_stock.sql في Supabase الأول");return false}
+    if(error){toast("خطأ: "+error.message);return false}
+    await loadStock();toast("تم حفظ "+todo.length+" سطر");
+  },"حفظ الكل");
+  const box=document.getElementById("srows");
+  const renum=()=>{const r=[...box.querySelectorAll(".mrow")];r.forEach((e,i)=>{e.querySelector(".mn").textContent="صنف "+(i+1);e.querySelector(".rmi").hidden=r.length<2})};
+  const add=(focus,preset)=>{
+    box.insertAdjacentHTML("beforeend",rowHtml());
+    const el=box.lastElementChild;enhanceAll(el);renum();
+    if(preset)el.querySelector(".it").value=preset;
+    el.querySelector(".rmi").onclick=()=>{el.remove();renum()};
+    const hintEl=el.querySelector(".sc"),upd=()=>{ // المتبقي الحالي في الجرد لنفس الصنف واللون (وفرق التسوية لو عامل تسوية)
+      const it=el.querySelector(".it").value.trim(),co=el.querySelector(".sb").value.trim(),cur=leftOf(it,co);
+      if(!it){hintEl.textContent="";return}
+      if(cur===null){hintEl.textContent="صنف جديد في الجرد";return}
+      const qv=el.querySelector(".mq2").value.trim(),n=parseInt(qv);
+      hintEl.textContent="المتبقي الحالي: "+nf(cur)+(adj&&qv!==""&&!isNaN(n)?" ← الفرق: "+(n-cur>0?"+":"")+nf(n-cur):"");
+    };
+    el.addEventListener("input",upd);el.addEventListener("change",upd);
+    el.querySelector(".rmc").onclick=()=>{ // لون آخر لنفس الصنف: سطر جديد بنفس الاسم والتركيز على اللون
+      add(false,el.querySelector(".it").value.trim());
+      const n=box.lastElementChild;n.scrollIntoView({block:"nearest",behavior:"smooth"});n.querySelector(".sb").focus();
+    };
+    // Enter: ينقل للحقل اللي بعده، ومن الكمية في آخر سطر يفتح سطر جديد (من غير ما يحفظ بالغلط)
+    el.addEventListener("keydown",e=>{
+      if(e.key!=="Enter"||e.target.tagName!=="INPUT"||e.defaultPrevented)return;
+      e.preventDefault();e.stopPropagation();
+      const f=[...el.querySelectorAll("input:not([type=hidden])")],i=f.indexOf(e.target);
+      if(i>=0&&i<f.length-1)f[i+1].focus();
+      else if(el===box.lastElementChild)add(true);
+      else{const n=el.nextElementSibling;if(n)n.querySelector(".it").focus()}
+    });
+    if(focus){el.querySelector(".it").focus();el.scrollIntoView({block:"nearest",behavior:"smooth"})}
+  };
+  add(true);
+  document.getElementById("sadd").onclick=()=>add(true);
+}
 function stForm(id,adjust){if(roBlock())return;
+  if(!id){stMulti(!!adjust);return} // إضافة جديدة: أكتر من صنف ولون مرة واحدة
   const rec=id?stock.find(r=>r.id===id):null,adj=rec?rec.kind==="adjust":!!adjust;
   const items=stItems();
   openModal(rec?"تعديل حركة جرد":adj?"تسوية جرد":"إضافة للتصليح",`<label>التاريخ</label><input type="date" id="s-d" value="${rec?rec.d:today()}">
-    <label>الصنف</label><input id="s-item" list="s-items" value="${rec?esc(rec.item):""}"><datalist id="s-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
-    <label>اللون (اختياري)</label><input id="s-color" maxlength="80" value="${rec?esc(rec.color):""}">
+    <label>الصنف</label><input id="s-item" class="it" list="s-items" autocomplete="off" value="${rec?esc(rec.item):""}"><datalist id="s-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
+    <label>اللون (اختياري)</label><input id="s-color" class="sb" data-kind="color" autocomplete="off" maxlength="80" value="${rec?esc(rec.color):""}">
     <label>${adj?"الكمية الفعلية الموجودة الآن":"الكمية"}${rec&&adj?" (الفرق، موجب أو سالب)":""}</label><input type="number" id="s-q" inputmode="numeric" ${rec?"":'min="1"'} value="${rec?rec.qty:""}">
     <label>ملاحظة (اختياري)</label><input id="s-n" maxlength="300" value="${rec?esc(rec.note):""}">`,async()=>{
     const item=document.getElementById("s-item").value.trim();
