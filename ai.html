@@ -460,7 +460,7 @@ button.xc-card{cursor:pointer;transition:transform .18s,border-color .2s}button.
 .bdg.src{color:var(--pri);border-color:var(--pri)}
 .x-m.rv{max-width:none;width:100%;animation:none}
 .x-ir{grid-template-columns:repeat(12,minmax(0,1fr))}
-.x-ir .it{grid-column:span 4}.x-ir .f-q,.x-ir .f-s{grid-column:span 2}.x-ir .w{grid-column:span 3}.x-ir .rm{grid-column:12;grid-row:1;align-self:end}
+.x-ir .it{grid-column:span 3}.x-ir .f-c{grid-column:span 2}.x-ir .f-q,.x-ir .f-s{grid-column:span 2}.x-ir .w{grid-column:span 3}.x-ir .rm{grid-column:12;grid-row:1;align-self:end}
 .x-ir .f-sh{grid-column:span 3}.x-ir .f-n{grid-column:span 9}
 /* ===== التجاوب ===== */
 @media(max-width:1000px){
@@ -480,7 +480,7 @@ button.xc-card{cursor:pointer;transition:transform .18s,border-color .2s}button.
  .xc-tabs button{padding:9px 12px;font-size:13.5px}.xc-box{padding:14px;border-radius:16px}
  .xc-cards{gap:8px}.xc-card{padding:12px;gap:9px}.xc-ci{width:36px;height:36px}.xc-card b{font-size:16px}
  .xc-two2,.xc-filters{grid-template-columns:1fr}.xc-op dl{grid-template-columns:1fr}
- .x-ir .it,.x-ir .w,.x-ir .f-sh,.x-ir .f-n{grid-column:1/-1}.x-ir .f-q,.x-ir .f-s{grid-column:auto}.x-ir .rm{grid-column:auto;grid-row:auto}
+ .x-ir .it,.x-ir .f-c,.x-ir .w,.x-ir .f-sh,.x-ir .f-n{grid-column:1/-1}.x-ir .f-q,.x-ir .f-s{grid-column:auto}.x-ir .rm{grid-column:auto;grid-row:auto}
  .x-head{padding:10px 11px;gap:6px}.x-head .x-ib{width:36px;height:36px}
  .x-id small{display:none}.x-hb{display:none}.x-id b{font-size:14.5px}
  .x-newb span{display:none}.x-newb{padding:0;width:36px;height:36px;justify-content:center}
@@ -492,7 +492,7 @@ button.xc-card{cursor:pointer;transition:transform .18s,border-color .2s}button.
  .x-filters input,.x-filters select{flex:1;max-width:none;min-width:110px}.x-filters small{display:none}
  .x-hint{display:none}
  .x-side{grid-template-columns:1fr}
- .x-ir{grid-template-columns:1fr 1fr auto}.x-ir .it,.x-ir .w{grid-column:1/-1}
+ .x-ir{grid-template-columns:1fr 1fr auto}.x-ir .it,.x-ir .f-c,.x-ir .w{grid-column:1/-1}
 }
 /* ===== تسجيل سريع + لوحة حالة المحركات ===== */
 .qk-flow{display:flex;gap:6px;margin:0;padding:0;list-style:none;counter-reset:q;flex-wrap:wrap}
@@ -938,7 +938,7 @@ function validate(v){
     if(v.section==="finish"&&r.item&&!["مشرط","مياه","صنفرة"].includes(r.item))W.push("سطر "+n+": التشطيب يقبل فقط مشرط أو مياه أو صنفرة.");const m=match(r.item);r._m=m;if(m.s==="no"){W.push("سطر "+n+": الصنف غير موجود في الأصناف المسجّلة.");f.push("warn")}else if(m.s==="near"){W.push("سطر "+n+": الاسم قريب من «"+m.sug+"».");f.push("warn")}
     if(r.shift&&(v.section==="brush"||v.section==="finish")&&!["صباحي","مسائي","ليلي"].includes(r.shift)){W.push("سطر "+n+": الوردية يجب أن تكون صباحي أو مسائي أو ليلي.");f.push("warn")}
     if(r._dup){W.push("سطر "+n+": يوجد "+r._dup+" سجل محفوظ مشابه بنفس اليوم (الصنف والعدد والعامل). تأكد أنه ليس تكرارًا.");f.push("warn")}
-    const k=nz(r.item)+"|"+nz(r.worker);if(r.item&&seen[k]){W.push("سطر "+n+": مكرر مع سطر "+seen[k]+".")}else seen[k]=n;
+    const k=nz(r.item)+"|"+nz(r.color)+"|"+nz(r.worker);if(r.item&&seen[k]){W.push("سطر "+n+": مكرر مع سطر "+seen[k]+".")}else seen[k]=n;
     r._f=f.includes("bad")?"bad":f.length?"warn":"";});
   return{E,W};
 }
@@ -950,7 +950,7 @@ function impDraw(d,m){
     (v.notes?'<div class="x-meta">ملاحظة المساعد: '+esc(v.notes)+"</div>":"")+
     '<div class="x-imp-m"><div><label>القسم</label><select data-f="section" aria-label="القسم">'+opts+'</select></div><div><label>التاريخ</label><input type="date" data-f="date" aria-label="التاريخ" value="'+esc(v.date||"")+'"></div></div>'+
     '<div class="x-sum" aria-live="polite"></div>'+
-    '<div class="x-rows">'+v.rows.map((r,i)=>'<div class="x-ir" data-r="'+i+'"><div class="it"><label>الصنف</label><input list="x_cat" data-k="item" aria-label="الصنف" value="'+esc(r.item||"")+'" maxlength="120"></div><div class="f-q"><label>العدد</label><input data-k="qty" aria-label="العدد" inputmode="numeric" value="'+(r.qty??"")+'"></div><div class="f-s"><label>الهالك</label><input data-k="scrap" aria-label="الهالك" inputmode="numeric" value="'+(r.scrap??"")+'"></div><button class="rm" type="button" data-rm="'+i+'" aria-label="حذف السطر">'+ic("x")+'</button><div class="w"><label>العامل</label><input data-k="worker" aria-label="العامل" value="'+esc(r.worker||"")+'" maxlength="60"></div><div class="f-sh"><label>الوردية</label><input list="x_shifts" data-k="shift" aria-label="الوردية" value="'+esc(r.shift||"")+'" maxlength="20"></div><div class="f-n"><label>ملاحظات</label><input data-k="note" aria-label="ملاحظات" value="'+esc(r.note||"")+'" maxlength="300"></div><div class="rn"></div></div>').join("")+"</div>"+
+    '<div class="x-rows">'+v.rows.map((r,i)=>'<div class="x-ir" data-r="'+i+'"><div class="it"><label>الصنف</label><input list="x_cat" data-k="item" aria-label="الصنف" value="'+esc(r.item||"")+'" maxlength="120"></div><div class="f-c"><label>اللون</label><input data-k="color" aria-label="اللون" value="'+esc(r.color||"")+'" maxlength="80"></div><div class="f-q"><label>العدد</label><input data-k="qty" aria-label="العدد" inputmode="numeric" value="'+(r.qty??"")+'"></div><div class="f-s"><label>الهالك</label><input data-k="scrap" aria-label="الهالك" inputmode="numeric" value="'+(r.scrap??"")+'"></div><button class="rm" type="button" data-rm="'+i+'" aria-label="حذف السطر">'+ic("x")+'</button><div class="w"><label>العامل</label><input data-k="worker" aria-label="العامل" value="'+esc(r.worker||"")+'" maxlength="60"></div><div class="f-sh"><label>الوردية</label><input list="x_shifts" data-k="shift" aria-label="الوردية" value="'+esc(r.shift||"")+'" maxlength="20"></div><div class="f-n"><label>ملاحظات</label><input data-k="note" aria-label="ملاحظات" value="'+esc(r.note||"")+'" maxlength="300"></div><div class="rn"></div></div>').join("")+"</div>"+
     '<div class="x-chk"></div><div class="acts2"><button type="button" data-ia="add">'+ic("plus")+'سطر</button>'+(CANWRITE&&WS[v.section]?'<button type="button" class="p" data-ia="save">حفظ مباشرة</button>':"")+'<button type="button" class="p" data-ia="go">فتح القسم وتجهيز التسجيل</button><button type="button" data-ia="copy">'+ic("copy")+'نسخ كنص</button><button type="button" data-ia="cancel">'+ic("x")+'إلغاء</button></div>';
   impCheck(d,m);
   if(window.MAC)MAC.dupThenCheck(d,m);
