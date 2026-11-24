@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
     if ((used ?? 0) >= s.daily_limit_user) return json(req, { error: "quota", message: "تم بلوغ حد الاستخدام اليومي." }, 429);
     const hint = SECTIONS.includes(body?.hint) ? body.hint : "";
     const sys = "أنت أداة استخراج بيانات لمصنع خزف. استخرج فقط ما هو مكتوب صراحةً في المدخل. ممنوع التخمين أو اختراع أي اسم أو رقم؛ ما لم يتضح اجعله null. أعد JSON فقط بهذا الشكل: " +
-      '{"section":"casting|brush|glaze|deco|spray|repair|finish|fire|unknown","date":"YYYY-MM-DD أو null","confidence":"high|medium|low","notes":"ملاحظات عن الغموض أو الأرقام غير الواضحة","rows":[{"item":"اسم الصنف","qty":رقم_صحيح_أو_null,"scrap":رقم_صحيح_أو_null,"worker":"اسم العامل أو null","shift":"الوردية أو null","note":"ملاحظة أو null"}]}';
+      '{"section":"casting|brush|glaze|deco|spray|repair|finish|fire|unknown","date":"YYYY-MM-DD أو null","confidence":"high|medium|low","notes":"ملاحظات عن الغموض أو الأرقام غير الواضحة","rows":[{"item":"اسم الصنف","color":"لون الصنف إن كُتب وإلا null","qty":رقم_صحيح_أو_null,"scrap":رقم_صحيح_أو_null,"worker":"اسم العامل أو null","shift":"الوردية أو null","note":"ملاحظة أو null"}]}';
     const prompt = (hint ? "القسم المرجّح: " + hint + "\n" : "") + "تاريخ اليوم: " + cairoToday() + "\n" + (await loadKb(admin)) + (text ? "النص:\n" + text : "الصورة المرفقة تحتوي سجل إنتاج. استخرج سطوره.");
     // الصور: Gemini مرتين (محاولة ثانية عند 503 العابر) ثم OpenRouter فقط إن ضُبط له نموذج رؤية OPENROUTER_VISION_MODEL
     const chain = img ? [REGISTRY.gemini, REGISTRY.gemini, ...(Deno.env.get("OPENROUTER_VISION_MODEL")?.trim() && keyFor(REGISTRY.openrouter) ? [REGISTRY.openrouter] : [])] : buildChain(s);
@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
     const int = (v: unknown) => { const n = Number(v); return v == null || v === "" || !Number.isFinite(n) ? null : Math.min(1_000_000, Math.max(0, Math.round(n))); };
     const str = (v: unknown, n: number) => { const t = typeof v === "string" ? v.trim().slice(0, n) : ""; return t || null; };
     const rows = (Array.isArray(j?.rows) ? j.rows : []).slice(0, 60).map((x: any) => ({
-      item: str(x?.item, 80), qty: int(x?.qty), scrap: int(x?.scrap), worker: str(x?.worker, 60), shift: str(x?.shift, 30), note: str(x?.note, 120),
+      item: str(x?.item, 80), color: str(x?.color, 60), qty: int(x?.qty), scrap: int(x?.scrap), worker: str(x?.worker, 60), shift: str(x?.shift, 30), note: str(x?.note, 120),
     })).filter((x: any) => x.item || x.qty !== null || x.scrap !== null);
     const vision = {
       section: (SECTIONS as readonly string[]).includes(j?.section) ? j.section : "unknown",
