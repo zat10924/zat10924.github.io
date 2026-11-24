@@ -33,7 +33,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
   <div class="card noprint">
     <div class="two"><div><label>من</label><input type="date" id="f-from"></div><div><label>إلى</label><input type="date" id="f-to"></div></div>
     <label>الصنف</label><select data-sp="1" id="f-item"><option value="">الكل</option></select>
-    <div class="row"><button class="btn" id="f-go">عرض</button><button class="btn ghost" id="f-csv">تصدير Excel</button><button class="btn ghost" onclick="window.print()">طباعة</button></div>
+    <div class="row"><button class="btn" id="f-go">عرض</button><button class="btn ghost" id="f-csv">تصدير Excel</button><button class="btn ghost" onclick="rPrint('log')">طباعة</button></div>
   </div>
   <div class="total" id="total"></div>
   <div class="nums" id="brk" style="margin-bottom:10px"></div>
@@ -43,9 +43,9 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
     <div class="kpis mini three" id="stStats"></div>
     <div class="row noprint" style="margin-bottom:12px"><button class="btn" id="st-add" style="flex:1">+ إضافة للتصليح</button><button class="btn ghost" id="st-adj" style="flex:1">تسوية جرد</button></div>
     <div class="row noprint" style="margin-bottom:10px"><button class="btn ghost" id="st-imp" style="flex:1">استيراد من Excel</button><button class="btn ghost" id="st-csv" style="flex:1">تصدير</button><button class="btn ghost" id="st-prt" style="flex:1">طباعة</button></div>
-    <div class="noprint" style="margin:0 0 10px"><label>نبّهني لما المتبقي يوصل لـ (قطعة أو أقل)</label><input type="number" id="st-low" min="0" inputmode="numeric" style="max-width:160px"></div>
+    <div class="noprint" style="margin:0 0 10px"><label>الحد العام للتنبيه (قطعة أو أقل) — ولكل صنف حد خاص من زر ⚙</label><input type="number" id="st-low" min="0" inputmode="numeric" style="max-width:160px"></div>
     <div class="nums" id="stNote" style="margin:0 2px 10px"></div>
-    <div class="scroll" id="stTbl"><table><thead><tr><th>الصنف</th><th>دخل التصليح</th><th>اتصلّح</th><th>المتبقي</th></tr></thead><tbody id="stBody"></tbody></table></div>
+    <div class="scroll" id="stTbl"><table><thead><tr><th>الصنف</th><th>دخل التصليح</th><th>اتصلّح</th><th>المتبقي</th><th>التوقع</th></tr></thead><tbody id="stBody"></tbody></table></div>
     <h3 style="margin:18px 2px 8px">حركات الجرد</h3>
     <div class="scroll"><table><thead><tr><th>التاريخ</th><th>الصنف</th><th>الكمية</th><th>النوع</th><th class="noprint"></th></tr></thead><tbody id="mvBody"></tbody></table></div>
   </div>
@@ -76,35 +76,99 @@ async function loadStock(){
   stock=data.map(r=>({id:r.id,d:r.stock_date,item:r.item,color:r.color||"",qty:r.qty,kind:r.kind,note:r.note||""}));
   drawStock();
 }
-const bk=(i,c)=>norm(i)+"|"+norm(c);
+/* الجرد على مستوى الصنف: الصنف بيتحسب مرة واحدة بإجمالي كل ألوانه (الألوان بتظهر كتفصيل تحت الصنف).
+   مطابقة ذكية للاسم: نفس الصنف حتى لو اختلف ترتيب الكلمات أو التشكيل أو «ال» أو المسافات. ما بنطابقش لو الفرق رقم (مقاس/عدد) */
+const tk=s=>norm(s).replace(/[^\u0600-\u06FFa-z0-9]+/g," ").split(" ").filter(Boolean).map(t=>t.replace(/^ال(?=.{3,})/,"")).sort();
+const ik=i=>tk(i).join(" ");
+const ck=(i,c)=>ik(i)+"|"+tk(c).join(" ");
+const bk=ck;
+function sim(a,b){
+  const A=tk(a),B=tk(b),SA=new Set(A),SB=new Set(B);if(!SA.size||!SB.size)return 0;
+  let n=0;SA.forEach(t=>{if(SB.has(t))n++});
+  const j=n/(SA.size+SB.size-n),diff=[...SA].filter(t=>!SB.has(t)).concat([...SB].filter(t=>!SA.has(t)));
+  if(diff.some(t=>/\d/.test(t)))return Math.min(j,.5);
+  const small=Math.min(SA.size,SB.size);
+  if(n===small&&small>=2&&Math.abs(SA.size-SB.size)<=1)return Math.max(j,.85);
+  return j;
+}
+function fuzzyFind(list,item,cache){
+  const key=ik(item);if(cache&&cache.has(key))return cache.get(key);
+  let best=null,bs=0,second=0;
+  list.forEach(o=>{const sc=sim(item,o.name);if(sc>bs){second=bs;bs=sc;best=o}else if(sc>second)second=sc});
+  const r=best&&bs>=.75&&bs-second>=.15?best:null;if(cache)cache.set(key,r);return r;
+}
+function addCol(o,color,f,q){const k=tk(color).join(" ");let c=o.cols.get(k);if(!c){c={color:color||"",inn:0,rep:0};o.cols.set(k,c)}c[f]+=q}
 function balances(){
   const m=new Map();
-  stock.forEach(r=>{const k=bk(r.item,r.color);let o=m.get(k);if(!o){o={name:r.item,color:r.color,first:r.d,inn:0,rep:0,counted:true};m.set(k,o)}o.inn+=r.qty;if(r.d<o.first)o.first=r.d});
-  const extra=new Map();
-  rows.forEach(r=>{if(!r.item)return;const k=bk(r.item,r.color),o=m.get(k);
-    if(o){if(r.d>=o.first)o.rep+=r.qty}
-    else{let e=extra.get(k);if(!e){e={name:r.item,color:r.color,first:"",inn:0,rep:0,counted:false};extra.set(k,e)}e.rep+=r.qty}});
-  const list=[...m.values()].map(o=>({...o,left:o.inn-o.rep})).sort((a,b)=>a.left-b.left||a.name.localeCompare(b.name,"ar"));
-  return{list,extra:[...extra.values()]};
+  stock.forEach(r=>{const k=ik(r.item);let o=m.get(k);
+    if(!o){o={key:k,name:r.item,first:r.d,inn:0,rep:0,recent:0,counted:true,alts:new Set(),cols:new Map()};m.set(k,o)}
+    else if(r.item!==o.name)o.alts.add(r.item);
+    o.inn+=r.qty;addCol(o,r.color,"inn",r.qty);if(r.d<o.first)o.first=r.d});
+  const base=[...m.values()],fc=new Map(),extra=new Map(),fuzzy=new Map(),cut=addDays(today(),-13);
+  rows.forEach(r=>{if(!r.item)return;const k=ik(r.item);let o=m.get(k),viaF=false;
+    if(!o){o=fuzzyFind(base,r.item,fc);viaF=!!o}
+    if(o){if(r.d>=o.first){o.rep+=r.qty;addCol(o,r.color,"rep",r.qty);if(r.d>=cut)o.recent+=r.qty;
+      if(viaF){const fk=r.item+"|"+o.key;let f=fuzzy.get(fk);if(!f){f={from:r.item,to:o.name,qty:0};fuzzy.set(fk,f)}f.qty+=r.qty}}}
+    else{let e=extra.get(k);if(!e){e={key:k,name:r.item,first:"",inn:0,rep:0,recent:0,counted:false,alts:new Set(),cols:new Map()};extra.set(k,e)}e.rep+=r.qty}});
+  const t=today();
+  const list=base.map(o=>{const left=o.inn-o.rep,win=Math.max(1,Math.min(14,Math.round((Date.parse(t)-Date.parse(o.first))/864e5)+1)),rate=o.recent/win;
+    const colors=[...o.cols.values()].filter(c=>c.color).map(c=>({color:c.color,left:c.inn-c.rep}));
+    return{...o,left,rate,days:left>0&&rate>0?left/rate:null,colors}}).sort((a,b)=>a.left-b.left||a.name.localeCompare(b.name,"ar"));
+  return{list,extra:[...extra.values()].map(o=>({...o,left:o.inn-o.rep,colors:[]})),fuzzy};
 }
-function leftOf(item,color){if(!item)return null;const k=bk(item,color),o=balances().list.find(x=>bk(x.name,x.color)===k);return o?o.left:null}
+/* المتبقي للصنف (إجمالي كل الألوان). byColor=true: لو اللون مكتوب بنرجّع متبقي اللون ده بس (للتسوية) */
+function leftOf(item,color,byColor){if(!item)return null;const{list}=balances(),o=list.find(x=>x.key===ik(item))||fuzzyFind(list,item);if(!o)return null;
+  if(byColor&&color){const c=o.cols.get(tk(color).join(" "));return c?c.inn-c.rep:null}
+  return o.left}
+/* حد تنبيه لكل صنف (محفوظ على الجهاز) — لو مفيش حد للصنف بنستخدم الحد العام */
+const THR_K="repair_low_items";
+const thrMap=()=>{try{return JSON.parse(localStorage.getItem(THR_K)||"{}")||{}}catch(e){return{}}};
+const thrOf=o=>{const v=thrMap()[o.key];return v==null?LOW():v};
+const isLow=o=>o.counted&&o.left>0&&((thrOf(o)>0&&o.left<=thrOf(o))||(o.days!=null&&o.days<=3));
+let stView=[];
 function drawStock(){
   const body=document.getElementById("stBody");if(!body)return;
-  if(!stockOk){body.innerHTML='<tr><td colspan="4" class="empty">شغّل ملف setup_repair_stock.sql في Supabase الأول</td></tr>';document.getElementById("mvBody").innerHTML="";document.getElementById("stStats").innerHTML="";return}
-  const{list,extra}=balances();
+  if(!stockOk){body.innerHTML='<tr><td colspan="5" class="empty">شغّل ملف setup_repair_stock.sql في Supabase الأول</td></tr>';document.getElementById("mvBody").innerHTML="";document.getElementById("stStats").innerHTML="";return}
+  const{list,extra,fuzzy}=balances();stView=list;
   const tot=list.reduce((a,o)=>a+Math.max(o.left,0),0),done=list.reduce((a,o)=>a+o.rep,0);
-  const lowV=LOW(),nlow=lowV>0?list.filter(o=>o.left>0&&o.left<=lowV).length:0,nout=list.filter(o=>o.left<=0).length;
+  const nlow=list.filter(isLow).length,nout=list.filter(o=>o.left<=0).length;
   kpis("stStats",[["المتبقي للتصليح",tot,"var(--pri)"],["اتصلّح من الجرد",done,"var(--ok)"],["قربت تخلص / خلصت",nlow+nout,nlow+nout?"var(--warn)":undefined]]);
-  const neg=list.filter(o=>o.left<0).length;
-  document.getElementById("stNote").textContent=neg?"تنبيه: "+neg+" صنف تصليحه أكبر مما دخل الجرد — راجع الكميات أو اعمل تسوية.":"";
-  const row=o=>`<tr><td>${esc(o.name)}${o.color?' <span class="nums">· '+esc(o.color)+'</span>':""}</td><td>${o.counted?nf(o.inn):"—"}</td><td>${nf(o.rep)}</td><td><b style="color:${!o.counted?"var(--mute)":o.left<0?"var(--bad)":o.left===0?"var(--mute)":(LOW()>0&&o.left<=LOW())?"var(--warn)":"var(--ok)"}">${o.counted?nf(o.left):"غير مجرود"}</b></td></tr>`;
-  body.innerHTML=list.length||extra.length?list.map(row).join("")+extra.map(row).join(""):'<tr><td colspan="4" class="empty">لسه مفيش جرد — اضغط «إضافة للتصليح»</td></tr>';
+  const negs=list.map((o,i)=>[o,i]).filter(x=>x[0].left<0);let h="";
+  if(negs.length){
+    h+='<div style="margin-bottom:8px"><b style="color:var(--bad)">تنبيه: '+negs.length+' صنف تصليحه أكبر مما دخل الجرد</b>'
+      +negs.slice(0,8).map(([o,i])=>'<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:4px 0"><span>'+esc(o.name)+' <b style="color:var(--bad)">'+nf(o.left)+'</b></span><button class="btn ghost sm noprint" onclick="stSettle(['+i+'])">تسوية</button></div>').join("")
+      +(negs.length>1?'<button class="btn sm noprint" style="width:100%;margin-top:4px" onclick="stSettle(['+negs.map(x=>x[1]).join(",")+'])">تسوية الكل ('+negs.length+')</button>':"")
+      +'<div class="nums" style="margin-top:4px">التسوية بتضيف الناقص لدخل التصليح فيبقى المتبقي صفر. لو الموجود فعلًا غير كده استخدم «تسوية جرد».</div></div>';
+  }
+  if(fuzzy.size)h+='<div class="nums">اتطابق تلقائيًا '+fuzzy.size+' اسم متشابه: '+[...fuzzy.values()].slice(0,5).map(f=>'«'+esc(f.from)+'» ← «'+esc(f.to)+'» ('+nf(f.qty)+')').join("، ")+'</div>';
+  document.getElementById("stNote").innerHTML=h;
+  const fcst=o=>{if(!o.counted)return"—";if(o.left<=0)return"خلص";if(o.days==null)return"—";const d=Math.ceil(o.days);return'<span style="color:'+(d<=3?"var(--warn)":"var(--mute)")+'">~'+nf(d)+' يوم</span>'};
+  const row=(o,i)=>{const tm=thrMap()[o.key];return`<tr><td>${esc(o.name)}${o.colors&&o.colors.length?'<div class="nums">'+o.colors.map(c=>esc(c.color)+' '+nf(c.left)).join(" · ")+'</div>':""}${o.alts&&o.alts.size?'<div class="nums">يضم: '+[...o.alts].slice(0,3).map(esc).join("، ")+'</div>':""}</td><td>${o.counted?nf(o.inn):"—"}</td><td>${nf(o.rep)}</td><td><b style="color:${!o.counted?"var(--mute)":o.left<0?"var(--bad)":o.left===0?"var(--mute)":isLow(o)?"var(--warn)":"var(--ok)"}">${o.counted?nf(o.left):"غير مجرود"}</b></td><td>${fcst(o)}${o.counted?' <button class="btn ghost sm noprint" onclick="stThr('+i+')" aria-label="حد التنبيه">'+(tm!=null?"حد "+nf(tm):"⚙")+'</button>':""}</td></tr>`};
+  body.innerHTML=list.length||extra.length?list.map((o,i)=>row(o,i)).join("")+extra.map(o=>row(o,-1)).join(""):'<tr><td colspan="5" class="empty">لسه مفيش جرد — اضغط «إضافة للتصليح»</td></tr>';
   document.getElementById("mvBody").innerHTML=stock.length?stock.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${esc(r.item)}${r.color?' <span class="nums">· '+esc(r.color)+'</span>':""}${r.note?'<div class="nums">'+esc(r.note)+'</div>':""}</td><td><b>${r.qty>0?"+":""}${nf(r.qty)}</b></td><td>${r.kind==="adjust"?"تسوية":"دخل التصليح"}</td><td class="noprint" style="white-space:nowrap"><button class="btn ghost sm" onclick="stForm(${r.id})">تعديل</button> <button class="btn ghost sm" onclick="stDel(${r.id})">حذف</button></td></tr>`).join(""):'<tr><td colspan="5" class="empty">مفيش حركات</td></tr>';
+}
+function stThr(i){const o=stView[i];if(!o)return;const cur=thrMap()[o.key];
+  openModal("حد التنبيه: "+o.name,`<label>نبّهني لما المتبقي يوصل لـ (قطعة أو أقل)</label><input type="number" id="t-v" min="0" inputmode="numeric" value="${cur==null?"":cur}"><div class="hint">سيبه فاضي علشان يرجع للحد العام (${nf(LOW())}). وبنبّهك كمان لو المتبقي يكفي ٣ أيام أو أقل حسب معدل تصليح آخر ١٤ يوم.</div>`,async()=>{
+    const v=document.getElementById("t-v").value.trim(),mp=thrMap();
+    if(v==="")delete mp[o.key];else mp[o.key]=Math.max(0,parseInt(v)||0);
+    try{localStorage.setItem(THR_K,JSON.stringify(mp))}catch(e){}
+    drawStock();toast("تم حفظ الحد");
+  },"حفظ");
+}
+async function stSettle(idx){if(roBlock())return;
+  const todo=idx.map(i=>stView[i]).filter(o=>o&&o.left<0).map(o=>{const w=(o.colors||[]).slice().sort((a,b)=>a.left-b.left)[0];return{item:o.name,color:w?w.color:"",q:-o.left}});
+  if(!todo.length)return;
+  const d=today();
+  if(!await reviewSave({title:"راجع التسوية قبل الحفظ",meta:[["التاريخ",fmtD(d)],["النوع","تسوية عجز الجرد"]],items:todo.map(r=>({title:r.item,rows:[...(r.color?[["اللون",r.color]]:[]),["الفرق","+"+nf(r.q)]]}))}))return;
+  const{error}=await db.from("repair_stock").insert(todo.map(r=>({stock_date:d,item:r.item,color:r.color||null,qty:r.q,kind:"adjust",note:"تسوية تلقائية لعجز الجرد",client_id:(crypto.randomUUID?crypto.randomUUID():null)})));
+  if(error&&/color/.test(error.message||"")){toast("شغّل ملف setup_repair_color.sql في Supabase الأول");return}
+  if(error){toast("خطأ: "+error.message);return}
+  await loadStock();toast("تمت تسوية "+todo.length+" صنف");
 }
 const LOW=()=>{try{return parseInt(localStorage.getItem("repair_low"))||0}catch(e){return 0}};
 function stCsv(){
   const q=s=>'"'+String(s??"").replace(/"/g,'""')+'"',{list,extra}=balances();
-  const csv="\uFEFF"+["الصنف,اللون,دخل التصليح,اتصلّح,المتبقي",...list.map(o=>[o.name,o.color,o.inn,o.rep,o.left].map(q).join(",")),...extra.map(o=>[o.name,o.color,"غير مجرود",o.rep,""].map(q).join(","))].join("\n");
+  const csv="\uFEFF"+["الصنف,تفصيل الألوان (المتبقي),دخل التصليح,اتصلّح,المتبقي",...list.map(o=>[o.name,(o.colors||[]).map(c=>c.color+" "+c.left).join(" / "),o.inn,o.rep,o.left].map(q).join(",")),...extra.map(o=>[o.name,"","غير مجرود",o.rep,""].map(q).join(","))].join("\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="جرد-التصليح.csv";a.click();
 }
 /* استيراد: الصق من Excel أو اختر ملف CSV — كل سطر: الصنف ثم اللون (اختياري) ثم الكمية */
@@ -158,7 +222,7 @@ function stMulti(adj){if(roBlock())return;
     if(adj){
       const seen=new Set();
       for(const r of todo){const k=bk(r.item,r.color);if(seen.has(k)){toast("الصنف «"+r.item+(r.color?" · "+r.color:"")+"» مكرر في التسوية");return false}seen.add(k)}
-      for(const r of todo){r.cur=leftOf(r.item,r.color)||0;r.q=r.actual-r.cur}
+      for(const r of todo){r.cur=leftOf(r.item,r.color,true)||0;r.q=r.actual-r.cur}
       const diff=todo.filter(r=>r.q!==0);
       if(!diff.length){toast("الجرد مطابق، مفيش فرق");return false}
       todo.length=0;todo.push(...diff);
@@ -182,7 +246,7 @@ function stMulti(adj){if(roBlock())return;
     if(preset)el.querySelector(".it").value=preset;
     el.querySelector(".rmi").onclick=()=>{el.remove();renum()};
     const hintEl=el.querySelector(".sc"),upd=()=>{ // المتبقي الحالي في الجرد لنفس الصنف واللون (وفرق التسوية لو عامل تسوية)
-      const it=el.querySelector(".it").value.trim(),co=el.querySelector(".sb").value.trim(),cur=leftOf(it,co);
+      const it=el.querySelector(".it").value.trim(),co=el.querySelector(".sb").value.trim(),cur=leftOf(it,co,true);
       if(!it){hintEl.textContent="";return}
       if(cur===null){hintEl.textContent="صنف جديد في الجرد";return}
       const qv=el.querySelector(".mq2").value.trim(),n=parseInt(qv);
@@ -222,7 +286,7 @@ function stForm(id,adjust){if(roBlock())return;
     if(!q&&q!==0||isNaN(q)){toast("اكتب كمية صحيحة");return false}
     let kind=adj?"adjust":"in";
     if(adj&&!rec){ // التسوية: المستخدم يكتب الموجود فعلًا، والفرق عن المتبقي الحالي هو اللي يتسجّل
-      const cur=leftOf(item,document.getElementById("s-color").value.trim())||0;q=q-cur;
+      const cur=leftOf(item,document.getElementById("s-color").value.trim(),true)||0;q=q-cur;
       if(q===0){toast("الجرد مطابق، مفيش فرق");return false}
     }
     if(!adj&&q<1){toast("اكتب كمية صحيحة");return false}
@@ -311,7 +375,89 @@ document.getElementById("st-add").onclick=()=>stForm(0,false);
 document.getElementById("st-adj").onclick=()=>stForm(0,true);
 document.getElementById("st-imp").onclick=stImport;
 document.getElementById("st-csv").onclick=stCsv;
-document.getElementById("st-prt").onclick=()=>window.print();
+document.getElementById("st-prt").onclick=()=>rPrint("stock");
+/* ===== طباعة ذكية للتصليح (السجل + الجرد): اختيار الأقسام، ترتيب حسب الأهمية، ملاحظات ذكية، وطباعة نظيفة بعنوان وتاريخ ===== */
+const RP_CFG={
+  stock:{title:"جرد التصليح",secs:[["kpi","الأرقام الرئيسية والملاحظات"],["attn","أصناف تحتاج انتباه (عجز / خلصت / قربت تخلص)"],["stale","أصناف راكدة (متبقي ومفيش تصليح آخر ١٤ يوم)"],["all","كل الأصناف"],["unc","أصناف اتصلّحت وغير مجرودة"],["mv","آخر حركات الجرد"]],
+    pre:[["ملخص للإدارة",["kpi","attn","stale"]],["كامل",["kpi","attn","stale","all","unc","mv"]]],def:["kpi","attn","all"]},
+  log:{title:"سجل التصليح",secs:[["kpi","الأرقام الرئيسية"],["items","الإجمالي لكل صنف"],["workers","الإجمالي لكل عامل"],["days","التفصيل بالتاريخ مع إجمالي كل يوم"]],
+    pre:[["ملخص",["kpi","items","workers"]],["كامل",["kpi","items","workers","days"]]],def:["kpi","items","workers","days"]}
+};
+const rpTbl=(h,r)=>'<table><thead><tr>'+h.map(x=>'<th>'+x+'</th>').join("")+'</tr></thead><tbody>'+r.join("")+'</tbody></table>';
+const rpTr=c=>'<tr>'+c.map(x=>'<td>'+x+'</td>').join("")+'</tr>';
+const rpSec=(id,t,b)=>'<section data-ps="'+id+'"><h3>'+t+'</h3>'+b+'</section>';
+const rpKpi=a=>'<div class="rp-kpis">'+a.map(([l,v,c])=>'<div class="rp-k"><small>'+l+'</small><b'+(c?' class="'+c+'"':"")+'>'+v+'</b></div>').join("")+'</div>';
+const rpNm=o=>esc(o.name)+(o.colors&&o.colors.length?'<div class="rp-s">'+o.colors.map(c=>esc(c.color)+" "+nf(c.left)).join(" · ")+'</div>':"")+(o.alts&&o.alts.size?'<div class="rp-s">يضم: '+[...o.alts].slice(0,3).map(esc).join("، ")+'</div>':"");
+const rpDays=o=>!o.counted?"—":o.left<=0?"خلص":o.days==null?"—":"~"+nf(Math.ceil(o.days))+" يوم";
+function rpStockHtml(ids,B,mv,t){
+  const{list,extra}=B,out=[],has=id=>ids.includes(id);
+  const att=list.filter(o=>o.left<=0||isLow(o)).sort((a,b)=>(a.left<=0?a.left-1e6:(a.days==null?1e5:a.days))-(b.left<=0?b.left-1e6:(b.days==null?1e5:b.days)));
+  const cut=addDays(t,-14),stale=list.filter(o=>o.left>0&&o.recent===0&&o.first<=cut).sort((a,b)=>b.left-a.left);
+  const neg=list.filter(o=>o.left<0),tot=list.reduce((a,o)=>a+Math.max(o.left,0),0),done=list.reduce((a,o)=>a+o.rep,0);
+  const why=o=>o.left<0?"عجز "+nf(-o.left):o.left===0?"خلص":(thrOf(o)>0&&o.left<=thrOf(o))?"وصل لحد التنبيه ("+nf(thrOf(o))+")":"يكفي ~"+nf(Math.ceil(o.days))+" يوم";
+  if(has("kpi")){
+    const notes=[];
+    const soon=list.filter(o=>o.days!=null&&o.left>0).sort((a,b)=>a.days-b.days)[0];
+    if(neg.length)notes.push("أكبر عجز: «"+esc(neg[0].name)+"» ("+nf(neg[0].left)+") — يُراجع أو يتسوّى.");
+    if(soon)notes.push("أقرب صنف للخلاص: «"+esc(soon.name)+"» (~"+nf(Math.ceil(soon.days))+" يوم بمعدل آخر ١٤ يوم).");
+    if(stale.length)notes.push(nf(stale.length)+" صنف راكد: متبقي منه "+nf(stale.reduce((a,o)=>a+o.left,0))+" قطعة ومفيش تصليح له آخر ١٤ يوم.");
+    if(extra.length)notes.push(nf(extra.length)+" صنف اتصلّح وغير موجود في الجرد.");
+    out.push(rpSec("kpi","الأرقام الرئيسية",rpKpi([["عدد الأصناف",nf(list.length)],["المتبقي للتصليح",nf(tot)],["اتصلّح من الجرد",nf(done)],["تحتاج انتباه",nf(att.length),att.length?"rp-warn":""],["عجز",nf(neg.length),neg.length?"rp-bad":""]])+(notes.length?'<ul class="rp-n">'+notes.map(n=>"<li>"+n+"</li>").join("")+"</ul>":"")));
+  }
+  if(has("attn"))out.push(rpSec("attn","أصناف تحتاج انتباه",att.length?rpTbl(["الصنف","المتبقي","التوقع","السبب"],att.map(o=>rpTr([rpNm(o),'<b class="'+(o.left<0?"rp-bad":"rp-warn")+'">'+nf(o.left)+"</b>",rpDays(o),why(o)]))):'<div class="rp-e">مفيش أصناف تحتاج انتباه</div>'));
+  if(has("stale"))out.push(rpSec("stale","أصناف راكدة",stale.length?rpTbl(["الصنف","المتبقي","من تاريخ الجرد"],stale.map(o=>rpTr([rpNm(o),nf(o.left),fmtD(o.first)]))):'<div class="rp-e">مفيش أصناف راكدة</div>'));
+  if(has("all"))out.push(rpSec("all","كل الأصناف",list.length?rpTbl(["الصنف","دخل التصليح","اتصلّح","المتبقي","التوقع"],list.map(o=>rpTr([rpNm(o),nf(o.inn),nf(o.rep),'<b class="'+(o.left<0?"rp-bad":isLow(o)?"rp-warn":"")+'">'+nf(o.left)+"</b>",rpDays(o)]))):'<div class="rp-e">مفيش جرد</div>'));
+  if(has("unc")&&extra.length)out.push(rpSec("unc","أصناف اتصلّحت وغير مجرودة",rpTbl(["الصنف","اتصلّح"],extra.map(o=>rpTr([esc(o.name),nf(o.rep)])))));
+  if(has("mv")&&mv.length)out.push(rpSec("mv","آخر حركات الجرد",rpTbl(["التاريخ","الصنف","الكمية","النوع"],mv.slice(0,30).map(r=>rpTr([fmtD(r.d),esc(r.item)+(r.color?" · "+esc(r.color):""),(r.qty>0?"+":"")+nf(r.qty),r.kind==="adjust"?"تسوية":"دخل التصليح"])))));
+  return out.join("");
+}
+function rpLogHtml(ids,rs,CAP){
+  const out=[],has=id=>ids.includes(id),sum=rs.reduce((a,r)=>a+r.qty,0),days=new Set(rs.map(r=>r.d)).size;
+  const grp=k=>{const m=new Map();rs.forEach(r=>{const v=k(r);m.set(v,(m.get(v)||0)+r.qty)});return[...m].sort((a,b)=>b[1]-a[1])};
+  const gi=grp(r=>r.item||NONE),gw=grp(r=>r.w||"—"),pc=v=>sum?Math.round(v/sum*100)+"%":"";
+  if(has("kpi"))out.push(rpSec("kpi","الأرقام الرئيسية",rpKpi([["إجمالي التصليح",nf(sum)],["عدد السجلات",nf(rs.length)],["أيام الشغل",nf(days)],["المتوسط لليوم",days?nf(Math.round(sum/days)):"0"],["أكتر صنف",gi[0]?esc(gi[0][0]):"—"]])));
+  if(has("items"))out.push(rpSec("items","الإجمالي لكل صنف",gi.length?rpTbl(["الصنف","الكمية","النسبة"],gi.map(([k,v])=>rpTr([esc(k),nf(v),pc(v)]))):'<div class="rp-e">مفيش بيانات</div>'));
+  if(has("workers"))out.push(rpSec("workers","الإجمالي لكل عامل",gw.length?rpTbl(["العامل","الكمية","النسبة"],gw.map(([k,v])=>rpTr([esc(k),nf(v),pc(v)]))):'<div class="rp-e">مفيش بيانات</div>'));
+  if(has("days")){
+    const m=new Map();rs.slice().sort((x,y)=>y.d.localeCompare(x.d)).forEach(r=>{(m.get(r.d)||m.set(r.d,[]).get(r.d)).push(r)});
+    let n=0,cut=false;const trs=[];
+    for(const[d,a]of m){
+      if(n>=CAP){cut=true;break}
+      trs.push('<tr class="rp-d"><td colspan="3">'+(typeof fmtDW==="function"?fmtDW(d):fmtD(d))+'</td><td>'+nf(a.reduce((x,r)=>x+r.qty,0))+'</td></tr>');
+      a.forEach(r=>{n++;trs.push(rpTr([r.item?esc(r.item):NONE,r.color?esc(r.color):"—",r.w?esc(r.w):"—","<b>"+nf(r.qty)+"</b>"]))});
+    }
+    out.push(rpSec("days","التفصيل بالتاريخ",rs.length?rpTbl(["الصنف","اللون","العامل","الكمية"],trs)+(cut?'<div class="rp-e">اتعرض أول '+nf(CAP)+' سجل. ضيّق الفترة لباقي التفاصيل.</div>':""):'<div class="rp-e">مفيش بيانات</div>'));
+  }
+  return out.join("");
+}
+function rPrint(kind){
+  const C=RP_CFG[kind];if(!C)return;
+  let saved=null;try{saved=JSON.parse(localStorage.getItem("rp_"+kind)||"null")}catch(e){}
+  const on=id=>saved&&saved.s?saved.s.includes(id):C.def.includes(id);
+  const flt=kind==="log"?(()=>{const f=document.getElementById("f-from").value,t=document.getElementById("f-to").value,i=document.getElementById("f-item").value;return[f?"من "+fmtD(f):"",t?"إلى "+fmtD(t):"",i?(i==="__none"?NONE:i):"",Q?"بحث: "+Q:""].filter(Boolean).join(" · ")})():"";
+  openModal("خيارات الطباعة",`<div class="row" style="margin-bottom:6px">${C.pre.map((p,i)=>`<button type="button" class="btn ghost sm" data-pre="${i}">${p[0]}</button>`).join("")}</div>
+    ${C.secs.map(([id,lb])=>`<label style="display:flex;gap:8px;align-items:center;margin:6px 0;cursor:pointer"><input type="checkbox" class="rpx" data-id="${id}" ${on(id)?"checked":""} style="width:auto"><span>${lb}</span></label>`).join("")}
+    <label>اتجاه الصفحة</label><select id="rp-o"><option value="portrait">طولي</option><option value="landscape">عرضي</option></select>
+    <label>عنوان التقرير (اختياري)</label><input id="rp-t" maxlength="80" placeholder="${C.title}">
+    <label>ملاحظة أعلى التقرير (اختياري)</label><input id="rp-n" maxlength="200">
+    <label>اسم المُعِد (اختياري)</label><input id="rp-by" maxlength="60" value="${esc((saved&&saved.by)||"")}" placeholder="الافتراضي: اسم المستخدم الحالي">`,async()=>{
+    const ids=[...document.querySelectorAll(".rpx:checked")].map(x=>x.dataset.id);
+    if(!ids.length){toast("اختار قسم واحد على الأقل");return false}
+    const ttl=document.getElementById("rp-t").value.trim()||C.title,note=document.getElementById("rp-n").value.trim(),by=document.getElementById("rp-by").value.trim()||(typeof ME!=="undefined"&&ME&&ME.name)||"",land=document.getElementById("rp-o").value==="landscape";
+    try{localStorage.setItem("rp_"+kind,JSON.stringify({s:ids,by:document.getElementById("rp-by").value.trim()}))}catch(e){}
+    const t=today(),body=kind==="stock"?rpStockHtml(ids,balances(),stock,t):rpLogHtml(ids,filtered(),400);
+    if(!body){toast("مفيش حاجة للطباعة");return false}
+    const css=document.createElement("style");css.id="rp-css";
+    css.textContent="#rp-root{display:none}@media print{@page{size:A4 "+(land?"landscape":"portrait")+";margin:12mm}body.rprint>*:not(#rp-root){display:none!important}body.rprint #rp-root{display:block!important;direction:rtl;color:#111;background:#fff;font-size:11pt;line-height:1.6}#rp-root h2{margin:0 0 2px;font-size:17pt;color:#642631}#rp-root h3{margin:14px 0 6px;font-size:12.5pt;color:#642631;border-bottom:1.5px solid #E8DCC0;padding-bottom:3px;break-after:avoid}#rp-root .rp-sub{font-size:9.5pt;color:#6b5a3a;margin-bottom:6px}#rp-root .rp-note{border:1px dashed #cdbf9f;border-radius:6px;padding:5px 10px;margin:6px 0;font-size:10.5pt}#rp-root table{width:100%;border-collapse:collapse;margin:4px 0 8px}#rp-root th{background:#642631!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:5px 8px;text-align:right;font-size:10.5pt}#rp-root td{border-bottom:1px solid #ddd;padding:4px 8px;font-size:10.5pt;vertical-align:top}#rp-root tr{break-inside:avoid}#rp-root tr.rp-d td{background:#F3EAEC!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:700;color:#421B24}#rp-root .rp-s{font-size:8.5pt;color:#6b5a3a}#rp-root .rp-kpis{display:flex;gap:8px;flex-wrap:wrap}#rp-root .rp-k{border:1px solid #cdbf9f;border-radius:8px;padding:5px 12px;min-width:90px}#rp-root .rp-k small{display:block;font-size:8.5pt;color:#6b5a3a}#rp-root .rp-k b{font-size:13pt}#rp-root .rp-n{margin:8px 0 0;padding-inline-start:20px;font-size:10.5pt}#rp-root .rp-bad{color:#b00020;font-weight:700}#rp-root .rp-warn{color:#b26a00;font-weight:700}#rp-root .rp-e{color:#6b5a3a;font-size:10pt;padding:4px 0}#rp-root .rp-f{margin-top:14px;padding-top:6px;border-top:1px dashed #cdbf9f;font-size:8.5pt;color:#6b5a3a}}";
+    document.head.appendChild(css);
+    const root=document.createElement("div");root.id="rp-root";
+    root.innerHTML='<h2>إدارة الأقسام — '+esc(ttl)+'</h2><div class="rp-sub">'+fmtD(t)+" · "+new Date().toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"})+(by?" · أعدّه: "+esc(by):"")+(flt?" · "+esc(flt):"")+'</div>'+(note?'<div class="rp-note">'+esc(note)+'</div>':"")+body+'<div class="rp-f">'+(kind==="stock"?"التوقع = المتبقي ÷ معدل تصليح الصنف في آخر ١٤ يوم. الصنف بيتحسب بإجمالي كل ألوانه.":"الأرقام حسب الفلاتر المختارة وقت الطباعة.")+'</div>';
+    document.body.appendChild(root);document.body.classList.add("rprint");
+    let fin=false;const clean=()=>{if(fin)return;fin=true;document.body.classList.remove("rprint");root.remove();css.remove()};
+    addEventListener("afterprint",clean,{once:true});setTimeout(clean,60000);setTimeout(()=>window.print(),250);
+  },"طباعة");
+  document.querySelectorAll("#ov [data-pre]").forEach(b=>b.onclick=()=>{const p=C.pre[+b.dataset.pre][1];document.querySelectorAll("#ov .rpx").forEach(x=>{x.checked=p.includes(x.dataset.id)})});
+}
 {const lw=document.getElementById("st-low");lw.value=LOW()||"";lw.onchange=()=>{try{localStorage.setItem("repair_low",String(parseInt(lw.value)||0))}catch(e){}drawStock()}}
 (async()=>{if(await requireAuth("repair.html")){renderNav("repair.html");searchBox("tbl",q=>{Q=q;draw()},"بحث بالصنف أو اللون أو العامل…");dateChips("f-from","f-to",draw);skel("body",4);if(tab!=="log")setTab();load().finally(settle)}})();
 </script>
