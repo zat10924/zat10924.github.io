@@ -917,11 +917,22 @@ async function adminPanel(){
 const nz=s=>String(s||"").toLowerCase().replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/\s+/g," ").trim();
 async function loadCat(){if(ITEMS)return ITEMS;try{const r=await db.from("catalog").select("name");ITEMS=(r.data||[]).map(x=>x.name).filter(Boolean)}catch(e){ITEMS=[]}
   const dl=$("x_cat")||Object.assign(document.createElement("datalist"),{id:"x_cat"});dl.innerHTML=ITEMS.map(n=>'<option value="'+esc(n)+'">').join("");document.body.appendChild(dl);return ITEMS}
-function match(item){ // يتحقق من اسم الصنف مقابل الأصناف المسجّلة
+/* مطابقة ذكية: تتجاهل ترتيب الكلمات (بهار مضلع كبير = بهار كبير مضلع) والتشكيل والهمزات واختلاف الإملاء البسيط، وترجّع أقرب 3 أصناف */
+const _toks=s=>nz(s).replace(/[ؤ]/g,"و").replace(/[ئ]/g,"ي").replace(/[^\u0600-\u06FFa-z0-9 ]/g," ").split(" ").filter(Boolean).map(w=>w.length>3?w.replace(/^ال/,""):w);
+const _lev=(a,b)=>{if(a===b)return 0;const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]};
+const _ts=(a,b)=>a===b?1:Math.max(0,1-_lev(a,b)/Math.max(a.length,b.length));
+function _score(n,c){
+  const A=_toks(n),B=_toks(c);if(!A.length||!B.length)return 0;
+  const used=new Set();let sum=0;
+  A.forEach(a=>{let bi=-1,bs=0;B.forEach((b,i)=>{if(used.has(i))return;const s=_ts(a,b);if(s>bs){bs=s;bi=i}});if(bi>=0&&bs>=0.6){used.add(bi);sum+=bs}});
+  let sc=sum/Math.max(A.length,B.length);
+  const x=nz(n),y=nz(c);if(x&&y&&(x.includes(y)||y.includes(x)))sc=Math.max(sc,0.7);
+  return sc}
+function match(item){ // يتحقق من اسم الصنف مقابل الأصناف المسجّلة ويقترح أقرب الأصناف
   if(!item||!ITEMS||!ITEMS.length)return{s:"unk"};const n=nz(item);
   if(ITEMS.some(c=>nz(c)===n))return{s:"ok"};
-  const near=ITEMS.find(c=>{const k=nz(c);return k.includes(n)||n.includes(k)});
-  return near?{s:"near",sug:near}:{s:"no"};
+  const ranked=ITEMS.map(c=>({c,sc:_score(item,c)})).filter(x=>x.sc>=0.5).sort((a,b)=>b.sc-a.sc).slice(0,3);
+  return ranked.length?{s:"near",sug:ranked[0].c,sc:ranked[0].sc,alts:ranked.map(x=>x.c)}:{s:"no"};
 }
 function validate(v){
   const E=[],W=[],today_=today();const seen={};
@@ -935,7 +946,7 @@ function validate(v){
     if(r.qty==null&&!(r._err||[]).some(x=>x.k==="qty")){W.push("سطر "+n+": العدد غير محدد.");f.push("warn")}
     if(r.qty!=null&&r.scrap!=null&&r.scrap>r.qty){W.push("سطر "+n+": الهالك أكبر من العدد.");f.push("warn")}
     if(r.qty!=null&&r.qty>50000){W.push("سطر "+n+": عدد كبير غير معتاد ("+r.qty+").");f.push("warn")}
-    if(v.section==="finish"&&r.item&&!["مشرط","مياه","صنفرة"].includes(r.item))W.push("سطر "+n+": التشطيب يقبل فقط مشرط أو مياه أو صنفرة.");const m=match(r.item);r._m=m;if(m.s==="no"){W.push("سطر "+n+": الصنف غير موجود في الأصناف المسجّلة.");f.push("warn")}else if(m.s==="near"){W.push("سطر "+n+": الاسم قريب من «"+m.sug+"».");f.push("warn")}
+    if(v.section==="finish"&&r.item&&!["مشرط","مياه","صنفرة"].includes(r.item))W.push("سطر "+n+": التشطيب يقبل فقط مشرط أو مياه أو صنفرة.");const m=match(r.item);r._m=m;if(m.s==="no"){W.push("سطر "+n+": الصنف غير موجود في الأصناف المسجّلة.");f.push("warn")}else if(m.s==="near"){W.push("سطر "+n+": الاسم غير مطابق، أقرب صنف «"+m.sug+"»"+(m.alts&&m.alts.length>1?" (أو "+m.alts.slice(1).join("، ")+")":"")+".");f.push("warn")}
     if(r.shift&&(v.section==="brush"||v.section==="finish")&&!["صباحي","مسائي","ليلي"].includes(r.shift)){W.push("سطر "+n+": الوردية يجب أن تكون صباحي أو مسائي أو ليلي.");f.push("warn")}
     if(r._dup){W.push("سطر "+n+": يوجد "+r._dup+" سجل محفوظ مشابه بنفس اليوم (الصنف والعدد والعامل). تأكد أنه ليس تكرارًا.");f.push("warn")}
     const k=nz(r.item)+"|"+nz(r.color)+"|"+nz(r.worker);if(r.item&&seen[k]){W.push("سطر "+n+": مكرر مع سطر "+seen[k]+".")}else seen[k]=n;
@@ -951,14 +962,14 @@ function impDraw(d,m){
     '<div class="x-imp-m"><div><label>القسم</label><select data-f="section" aria-label="القسم">'+opts+'</select></div><div><label>التاريخ</label><input type="date" data-f="date" aria-label="التاريخ" value="'+esc(v.date||"")+'"></div></div>'+
     '<div class="x-sum" aria-live="polite"></div>'+
     '<div class="x-rows">'+v.rows.map((r,i)=>'<div class="x-ir" data-r="'+i+'"><div class="it"><label>الصنف</label><input list="x_cat" data-k="item" aria-label="الصنف" value="'+esc(r.item||"")+'" maxlength="120"></div><div class="f-c"><label>اللون</label><input data-k="color" aria-label="اللون" value="'+esc(r.color||"")+'" maxlength="80"></div><div class="f-q"><label>العدد</label><input data-k="qty" aria-label="العدد" inputmode="numeric" value="'+(r.qty??"")+'"></div><div class="f-s"><label>الهالك</label><input data-k="scrap" aria-label="الهالك" inputmode="numeric" value="'+(r.scrap??"")+'"></div><button class="rm" type="button" data-rm="'+i+'" aria-label="حذف السطر">'+ic("x")+'</button><div class="w"><label>العامل</label><input data-k="worker" aria-label="العامل" value="'+esc(r.worker||"")+'" maxlength="60"></div><div class="f-sh"><label>الوردية</label><input list="x_shifts" data-k="shift" aria-label="الوردية" value="'+esc(r.shift||"")+'" maxlength="20"></div><div class="f-n"><label>ملاحظات</label><input data-k="note" aria-label="ملاحظات" value="'+esc(r.note||"")+'" maxlength="300"></div><div class="rn"></div></div>').join("")+"</div>"+
-    '<div class="x-chk"></div><div class="acts2"><button type="button" data-ia="add">'+ic("plus")+'سطر</button>'+(CANWRITE&&WS[v.section]?'<button type="button" class="p" data-ia="save">حفظ مباشرة</button>':"")+'<button type="button" class="p" data-ia="go">فتح القسم وتجهيز التسجيل</button><button type="button" data-ia="copy">'+ic("copy")+'نسخ كنص</button><button type="button" data-ia="cancel">'+ic("x")+'إلغاء</button></div>';
+    '<div class="x-chk"></div><div class="acts2"><button type="button" data-ia="add">'+ic("plus")+'سطر</button>'+(CANWRITE&&WS[v.section]?'<button type="button" class="p" data-ia="save">حفظ مباشرة</button>':"")+'<button type="button" class="p" data-ia="go">فتح القسم وتجهيز التسجيل</button><button type="button" data-ia="fixall">'+ic("check")+'تصحيح الأسماء المقترحة</button><button type="button" data-ia="copy">'+ic("copy")+'نسخ كنص</button><button type="button" data-ia="cancel">'+ic("x")+'إلغاء</button></div>';
   impCheck(d,m);
   if(window.MAC)MAC.dupThenCheck(d,m);
 }
 function impCheck(d,m){
   const v=m.imp,{E,W}=validate(v);
   d.querySelectorAll(".x-ir").forEach(el=>{const r=v.rows[+el.dataset.r];el.className="x-ir "+(r._f||"");const rn=el.querySelector(".rn");
-    rn.innerHTML=r._m&&r._m.s==="near"?'اقتراح: <button type="button" data-fix="'+el.dataset.r+'">'+esc(r._m.sug)+"</button>":r._m&&r._m.s==="ok"?'<span style="color:var(--ok);display:inline-flex;gap:4px;align-items:center">'+ic("check")+'صنف مسجّل</span>':""});
+    rn.innerHTML=r._m&&r._m.s==="near"?'أقرب صنف: '+(r._m.alts||[r._m.sug]).map((a,k)=>'<button type="button" data-fix="'+el.dataset.r+'" data-alt="'+k+'">'+esc(a)+"</button>").join(""):r._m&&r._m.s==="ok"?'<span style="color:var(--ok);display:inline-flex;gap:4px;align-items:center">'+ic("check")+'صنف مسجّل</span>':""});
   d.querySelector(".x-chk").innerHTML=E.map(x=>'<div class="e">'+ic("x")+esc(x)+"</div>").join("")+W.map(x=>'<div class="w">'+ic("alert")+esc(x)+"</div>").join("")+(!E.length&&!W.length?'<div class="o">'+ic("check")+"لا توجد ملاحظات على البيانات</div>":"");
   const nb=v.rows.filter(r=>r._f==="bad").length,nw=v.rows.filter(r=>r._f==="warn").length,sm=d.querySelector(".x-sum");
   if(sm)sm.innerHTML='<span class="ok">'+(v.rows.length-nb-nw)+' صف صحيح</span><span class="w">'+W.length+' تحذير</span><span class="e">'+E.length+' خطأ</span>'+(v._dupInfo?'<small>'+esc(v._dupInfo)+'</small>':"");
@@ -981,10 +992,11 @@ function impClick(e){
   const w=e.target.closest(".x-m"),m=msgOf(w);if(!m||!m.imp)return;const v=m.imp;
   const rm=e.target.closest("[data-rm]"),fx=e.target.closest("[data-fix]"),ia=e.target.closest("[data-ia]");
   if(rm){v.rows.splice(+rm.dataset.rm,1);save();impDraw(w,m)}
-  else if(fx){v.rows[+fx.dataset.fix].item=v.rows[+fx.dataset.fix]._m.sug;delete v.rows[+fx.dataset.fix]._dup;save();impDraw(w,m)}
+  else if(fx){const _r=v.rows[+fx.dataset.fix];_r.item=(_r._m.alts||[_r._m.sug])[+fx.dataset.alt||0];delete v.rows[+fx.dataset.fix]._dup;save();impDraw(w,m)}
   else if(ia){const a=ia.dataset.ia;
     if(a==="add"){v.rows.push({item:null,qty:null,scrap:null,worker:null,shift:null,note:null});save();impDraw(w,m)}
     else if(a==="copy"){const tx=(SECN[v.section]||"")+" — "+v.date+"\n"+v.rows.map(r=>[r.item,r.qty!=null?"العدد "+r.qty:"",r.scrap!=null?"هالك "+r.scrap:"",r.worker].filter(Boolean).join(" | ")).join("\n");navigator.clipboard.writeText(tx).then(()=>toast("تم النسخ","ok"),()=>toast("تعذّر النسخ","bad"))}
+    else if(a==="fixall"){let c=0;v.rows.forEach(r=>{const x=match(r.item);if(x.s==="near"&&x.sc>=0.75){r.item=x.sug;delete r._dup;c++}});save();impDraw(w,m);toast(c?"تم تصحيح "+c+" صنف لأقرب اسم مسجّل — راجعهم":"لا توجد أسماء قريبة بدرجة كافية للتصحيح التلقائي",c?"ok":"bad")}
     else if(a==="cancel"){MAC.cancel(w,m)}
     else if(a==="save"&&w.dataset.rv){writeSave(w,m)}
     else if(a==="go"){MAC.go(w,m,ia)}}
