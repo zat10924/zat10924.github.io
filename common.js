@@ -748,6 +748,27 @@ async function showWhatsNew(force){
   try{if(!force&&localStorage.getItem(seenK)===key)return;if(!force)localStorage.setItem(seenK,key)}catch(e){if(!force)return}
   openModal(title,`<ul style="margin:0;padding:0 18px 0 0;line-height:1.9">${items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`,closeModal,"تمام");
 }
+/* ===== تنبيه الكمية غير المعتادة في التسجيل اليدوي (للصب والبرشر والتصليح): بيقارن بآخر تسجيلات نفس الصنف ===== */
+const _QH={casting:["casting_log"],brush:["brush_log"],repair:["repair_log"]},_QHC={};
+function masQtyHint(d){
+  const pg=(location.pathname.split("/").pop()||"").replace(".html",""),tb=(_QH[pg]||[])[0];if(!tb)return;
+  const it=d.querySelector("#m-item"),q=d.querySelector("#m-q");if(!it||!q||q.dataset.qh)return;q.dataset.qh="1";
+  const box=document.createElement("div");box.className="hint";box.style.cssText="display:none;margin:4px 0;color:var(--warn,#b36b00)";q.insertAdjacentElement("afterend",box);
+  let tk=0;
+  const run=async()=>{
+    const my=++tk,item=it.value.trim(),n=parseInt(q.value);box.style.display="none";
+    if(!item||!(n>0))return;
+    let h=_QHC[tb+"|"+norm(item)];
+    if(!h){try{const r=await db.from(tb).select("qty").eq("item",item).gt("qty",0).order("id",{ascending:false}).limit(200);h=(!r.error&&r.data||[]).map(x=>+x.qty).filter(x=>x>0);_QHC[tb+"|"+norm(item)]=h}catch(e){return}}
+    if(my!==tk||!h||h.length<5)return;
+    const a=h.slice().sort((x,y)=>x-y),m=a.length>>1,md=a.length%2?a[m]:(a[m-1]+a[m])/2,mx=a[a.length-1];
+    let msg="";
+    if(n>Math.max(md*4,mx*1.5)){const t=Math.round(n/10);msg="الكمية "+nf(n)+" أكبر بكتير من المعتاد لـ«"+item+"» (المتوسط حوالي "+nf(Math.round(md))+")"+(n>=20&&Math.abs(t-md)<=md*0.4?" — تقصد "+nf(t)+"؟":"")}
+    else if(a.length>=8&&md>=20&&n<md/10)msg="الكمية "+nf(n)+" أقل بكتير من المعتاد لـ«"+item+"» (المتوسط حوالي "+nf(Math.round(md))+")";
+    if(msg){box.textContent="تنبيه: "+msg+". راجعها قبل الحفظ.";box.style.display="block"}
+  };
+  q.addEventListener("input",()=>{clearTimeout(q._qt);q._qt=setTimeout(run,400)});it.addEventListener("change",run);
+}
 function openModal(title,body,onSave,saveText="حفظ"){
   closeModal();Snd.play("open");
   const d=document.createElement("div");d.className="ov";d.id="ov";
@@ -757,7 +778,7 @@ function openModal(title,body,onSave,saveText="حفظ"){
   d.addEventListener("mousedown",e=>{if(e.target===d)closeModal()});
   d.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();else if(e.key==="Enter"&&e.target.tagName==="INPUT"&&e.target.type!=="search"){e.preventDefault();_mNext(d,e.target)}});
   d.querySelector("input:not([type=date]):not([type=hidden]),select")?.focus({preventScroll:true});
-  enhanceAll(d);if(d.querySelector(NAME_SEL))catReady();
+  enhanceAll(d);if(d.querySelector(NAME_SEL))catReady();try{masQtyHint(d)}catch(e){}
   d.addEventListener("focusin",e=>{if(e.target.matches&&e.target.matches(NAME_SEL)){if(e.target.value)try{e.target.select()}catch(x){}}});
   const b=d.querySelector("#mSave"),b2=d.querySelector("#mSaveMore");
   const run=async(again)=>{const btn=again?b2:b;b.disabled=true;if(b2)b2.disabled=true;btn.classList.add("loading");try{if((await checkNames(d))&&await onSave()!==false){saveHist(d);if(again){const snap=_mSnap(d);closeModal();openModal(title,body,onSave,saveText);_mRestore(snap)}else closeModal()}}catch(e){toast("حصل خطأ: "+e.message)}finally{b.disabled=false;if(b2)b2.disabled=false;btn.classList.remove("loading")}};
@@ -1045,14 +1066,14 @@ async function masReviewNames(rows,opt){
     document.body.appendChild(d);
     d.querySelector("#mrNo").onclick=()=>{d.remove();res(null)};
     d.querySelector("#mrOk").onclick=async()=>{
-      const out=rows.map(r=>({...r})),drop=new Set(),add=[];
+      const out=rows.map(r=>({...r})),drop=new Set(),add=[];let fixed=0;
       list.forEach((u,i)=>{const v=d.querySelector(`select[data-u="${i}"]`).value;
         if(v==="skip")u.rows.forEach(k=>drop.add(k));
         else if(v==="add"){add.push(u.name)}
-        else{const to=u.sug[+v.slice(1)].c;u.rows.forEach(k=>{out[k][key]=to})}});
+        else{const to=u.sug[+v.slice(1)].c;u.rows.forEach(k=>{out[k][key]=to;fixed++})}});
       d.querySelector("#mrOk").disabled=true;
       for(const nm of add){if(!await addCat(kind,nm)){d.querySelector("#mrOk").disabled=false;return}}
-      d.remove();res(out.filter((_,k)=>!drop.has(k)));
+      d.remove();const fin=out.filter((_,k)=>!drop.has(k));fin._st={fixed,added:add.length,skipped:drop.size};res(fin);
     };
   });
 }

@@ -186,15 +186,22 @@ function stImport(){if(roBlock())return;
       out.push({item:p[0],color:p.length>2?p[1]:"",qty:num});
     });
     if(!out.length){toast("مفيش سطور صالحة"+(badL.length?" (راجع السطر "+badL[0]+")":""));return false}
-    {const fixed=await masReviewNames(out,{kind:"item",field:"item",extraKnown:stItems()});if(!fixed)return false;out.length=0;out.push(...fixed);
-      if(out.some(r=>r.color)){const fc=await masReviewNames(out,{kind:"color",field:"color",extraKnown:stock.map(r=>r.color).filter(Boolean)});if(!fc)return false;out.length=0;out.push(...fc)}
+    const ST={fixed:0,added:0,skipped:0},addSt=a=>{if(a&&a._st){ST.fixed+=a._st.fixed;ST.added+=a._st.added;ST.skipped+=a._st.skipped}};
+    {const fixed=await masReviewNames(out,{kind:"item",field:"item",extraKnown:stItems()});if(!fixed)return false;addSt(fixed);out.length=0;out.push(...fixed);
+      if(out.some(r=>r.color)){const fc=await masReviewNames(out,{kind:"color",field:"color",extraKnown:stock.map(r=>r.color).filter(Boolean)});if(!fc)return false;addSt(fc);out.length=0;out.push(...fc)}
       if(!out.length){toast("كل السطور اتخطّت — مفيش حاجة تتحفظ");return false}}
     if(badL.length&&!await ask("فيه "+badL.length+" سطر مش مفهوم (أولهم السطر "+badL[0]+") وهيتخطّوا. تكمّل؟","نعم، كمّل"))return false;
     const d=document.getElementById("i-d").value||today();
     if(!await reviewSave({title:"راجع الاستيراد قبل الحفظ",meta:[["التاريخ",fmtD(d)],["عدد الأصناف",nf(out.length)]],items:out.slice(0,30).map(r=>({title:r.item,rows:[...(r.color?[["اللون",r.color]]:[]),["الكمية",nf(r.qty)]]})),total:out.reduce((a,r)=>a+r.qty,0)}))return false;
-    const{error}=await db.from("repair_stock").insert(out.map(r=>({stock_date:d,item:r.item,color:r.color||null,qty:r.qty,kind:"in",client_id:crypto.randomUUID?crypto.randomUUID():null})));
+    const{data:ins,error}=await db.from("repair_stock").insert(out.map(r=>({stock_date:d,item:r.item,color:r.color||null,qty:r.qty,kind:"in",client_id:crypto.randomUUID?crypto.randomUUID():null}))).select("id");
     if(error){toast(/color/.test(error.message||"")?"شغّل ملف setup_repair_color.sql في Supabase الأول":"خطأ: "+error.message);return false}
-    await loadStock();toast("تم استيراد "+out.length+" صنف");
+    await loadStock();
+    const ids=(ins||[]).map(x=>x.id).filter(Boolean),tot=out.reduce((a,r)=>a+r.qty,0);
+    const sm="تم استيراد "+nf(out.length)+" سطر (إجمالي "+nf(tot)+" قطعة)"+(ST.fixed?" · اتصحّح "+nf(ST.fixed)+" اسم":"")+(ST.added?" · اتضاف "+nf(ST.added)+" للكتالوج":"")+(ST.skipped?" · اتخطّى "+nf(ST.skipped)+" سطر":"")+(badL.length?" · "+nf(badL.length)+" سطر مش مفهوم":"");
+    if(ids.length&&await pick(sm,["تمام","تراجع عن الاستيراد دلوقتي (حذف "+nf(ids.length)+" سطر)"])===1){
+      const{error:de}=await db.from("repair_stock").delete().in("id",ids);
+      if(de){toast("تعذّر التراجع: "+de.message)}else{await loadStock();toast("اتلغى الاستيراد")}
+    }
   },"استيراد");
   const f=document.getElementById("i-file");
   if(f)f.onchange=async()=>{const t=f.files[0];if(!t)return;const tx=document.getElementById("i-txt");

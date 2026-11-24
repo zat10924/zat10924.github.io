@@ -705,6 +705,14 @@
     const cp = (t, ok) => navigator.clipboard.writeText(t).then(() => toast(ok, "ok"), () => toast("تعذّر النسخ", "bad"));
     $("xc_cp_tpl").onclick = () => cp($("xc_tpl").textContent, "تم نسخ القالب");
     $("xc_cp_prompt").onclick = () => cp(MasAiImport.promptFor(TSEC), "تم نسخ التعليمات — الصقها في ChatGPT مع الصورة");
+    $("xc_dl_xls").onclick = () => {
+      const L = { item: "الصنف", color: "اللون", code: "كود الرسمة", qty: "العدد", scrap: "الهالك", worker: "العامل", shift: "الوردية", note: "ملاحظات" };
+      const E = { item: "بهار كبير", color: "أبيض", code: "D-102", qty: "120", scrap: "3", worker: "أحمد", shift: "صباحي", note: "" };
+      const f = MasAiImport.SEC_FIELDS[TSEC] || ["item", "color", "qty", "scrap", "worker", "shift", "note"];
+      const csv = "\uFEFF" + [f.map(k => L[k]).join(","), f.map(k => E[k]).join(",")].join("\r\n");
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = "قالب-استيراد" + (TSEC ? "-" + TSEC : "") + ".csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      toast("اتنزّل القالب — افتحه في Excel، امسح السطر المثال، واكتب بياناتك", "ok");
+    };
     $("xc_dl_tpl").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([$("xc_tpl").textContent], { type: "application/json" })); a.download = "mas-import-template" + (TSEC ? "-" + TSEC : "") + ".json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
     if (navigator.clipboard && navigator.clipboard.readText) {
       $("xc_paste").hidden = false;
