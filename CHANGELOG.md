@@ -5,7 +5,10 @@
 - تبويب الذكاء: الشات بيملا المساحة فوق الكيبورد بدل ما يسيب فراغ.
 - اللون (اختياري) في تسجيل التصليح والجرد ويتحسب الرصيد بالصنف + اللون. شغّل setup_repair_color.sql.
 - تعبئة الاستيراد من الذكاء: بقت تملا كل الأصناف دفعة واحدة في نافذة «أكتر من صنف»، والنافذة بتتسكرول تحت الشريط.
-- الملفات: repair.html, production.html, ai.html, ai-import-tray.js, reports.js, setup_repair_color.sql, style.css, mas-ux.css, common.js, activity.html, setup_repair_stock.sql, setup_backup.sql, sw.js, config.js.
+- الجرد: تنبيه لما المتبقي يوصل لحد تحدده (لون برتقالي وعداد «قربت تخلص»)، واستيراد من Excel/CSV بالنسخ واللصق، وتصدير وطباعة.
+- الذكاء: بيستخرج «اللون» من الصورة أو النص ويعبّيه في التسجيل (محتاج إعادة نشر دالة mas-ai-hub).
+- الصفحة الرئيسية على جزئين: تبويب «الأقسام» وتبويب «لوحة الإنتاج» (الأرقام والتنبيهات والرسم)، والبرنامج يفتكر آخر تبويب.
+- الملفات: index.html, ai-center.js, index.ts (mas-ai-hub), repair.html, production.html, ai.html, ai-import-tray.js, reports.js, setup_repair_color.sql, style.css, mas-ux.css, common.js, activity.html, setup_repair_stock.sql, setup_backup.sql, sw.js, config.js.
 
 ## 4.13.0 — تواريخ وقوائم موحّدة، تصليح متعدد الأصناف، وصوت احترافي
 - التاريخ: مكوّن جديد واضح في كل البرنامج (اليوم والتاريخ بالعربي، سهم السابق/التالي، اختصارات اليوم وأمس وقبل يومين) بدل الحقل الخام الذي كان يظهر معكوسًا مثل 232026/11/.

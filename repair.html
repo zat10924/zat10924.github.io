@@ -42,6 +42,8 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
   <div id="stockView" style="display:none">
     <div class="kpis mini three" id="stStats"></div>
     <div class="row noprint" style="margin-bottom:12px"><button class="btn" id="st-add" style="flex:1">+ إضافة للتصليح</button><button class="btn ghost" id="st-adj" style="flex:1">تسوية جرد</button></div>
+    <div class="row noprint" style="margin-bottom:10px"><button class="btn ghost" id="st-imp" style="flex:1">استيراد من Excel</button><button class="btn ghost" id="st-csv" style="flex:1">تصدير</button><button class="btn ghost" id="st-prt" style="flex:1">طباعة</button></div>
+    <div class="noprint" style="margin:0 0 10px"><label>نبّهني لما المتبقي يوصل لـ (قطعة أو أقل)</label><input type="number" id="st-low" min="0" inputmode="numeric" style="max-width:160px"></div>
     <div class="nums" id="stNote" style="margin:0 2px 10px"></div>
     <div class="scroll" id="stTbl"><table><thead><tr><th>الصنف</th><th>دخل التصليح</th><th>اتصلّح</th><th>المتبقي</th></tr></thead><tbody id="stBody"></tbody></table></div>
     <h3 style="margin:18px 2px 8px">حركات الجرد</h3>
@@ -91,12 +93,43 @@ function drawStock(){
   if(!stockOk){body.innerHTML='<tr><td colspan="4" class="empty">شغّل ملف setup_repair_stock.sql في Supabase الأول</td></tr>';document.getElementById("mvBody").innerHTML="";document.getElementById("stStats").innerHTML="";return}
   const{list,extra}=balances();
   const tot=list.reduce((a,o)=>a+Math.max(o.left,0),0),done=list.reduce((a,o)=>a+o.rep,0);
-  kpis("stStats",[["المتبقي للتصليح",tot,"var(--pri)"],["اتصلّح من الجرد",done,"var(--ok)"],["أصناف في الجرد",list.length]]);
+  const lowV=LOW(),nlow=lowV>0?list.filter(o=>o.left>0&&o.left<=lowV).length:0,nout=list.filter(o=>o.left<=0).length;
+  kpis("stStats",[["المتبقي للتصليح",tot,"var(--pri)"],["اتصلّح من الجرد",done,"var(--ok)"],["قربت تخلص / خلصت",nlow+nout,nlow+nout?"var(--warn)":undefined]]);
   const neg=list.filter(o=>o.left<0).length;
   document.getElementById("stNote").textContent=neg?"تنبيه: "+neg+" صنف تصليحه أكبر مما دخل الجرد — راجع الكميات أو اعمل تسوية.":"";
-  const row=o=>`<tr><td>${esc(o.name)}${o.color?' <span class="nums">· '+esc(o.color)+'</span>':""}</td><td>${o.counted?nf(o.inn):"—"}</td><td>${nf(o.rep)}</td><td><b style="color:${!o.counted?"var(--mute)":o.left<0?"var(--bad)":o.left===0?"var(--mute)":"var(--ok)"}">${o.counted?nf(o.left):"غير مجرود"}</b></td></tr>`;
+  const row=o=>`<tr><td>${esc(o.name)}${o.color?' <span class="nums">· '+esc(o.color)+'</span>':""}</td><td>${o.counted?nf(o.inn):"—"}</td><td>${nf(o.rep)}</td><td><b style="color:${!o.counted?"var(--mute)":o.left<0?"var(--bad)":o.left===0?"var(--mute)":(LOW()>0&&o.left<=LOW())?"var(--warn)":"var(--ok)"}">${o.counted?nf(o.left):"غير مجرود"}</b></td></tr>`;
   body.innerHTML=list.length||extra.length?list.map(row).join("")+extra.map(row).join(""):'<tr><td colspan="4" class="empty">لسه مفيش جرد — اضغط «إضافة للتصليح»</td></tr>';
   document.getElementById("mvBody").innerHTML=stock.length?stock.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${esc(r.item)}${r.color?' <span class="nums">· '+esc(r.color)+'</span>':""}${r.note?'<div class="nums">'+esc(r.note)+'</div>':""}</td><td><b>${r.qty>0?"+":""}${nf(r.qty)}</b></td><td>${r.kind==="adjust"?"تسوية":"دخل التصليح"}</td><td class="noprint" style="white-space:nowrap"><button class="btn ghost sm" onclick="stForm(${r.id})">تعديل</button> <button class="btn ghost sm" onclick="stDel(${r.id})">حذف</button></td></tr>`).join(""):'<tr><td colspan="5" class="empty">مفيش حركات</td></tr>';
+}
+const LOW=()=>{try{return parseInt(localStorage.getItem("repair_low"))||0}catch(e){return 0}};
+function stCsv(){
+  const q=s=>'"'+String(s??"").replace(/"/g,'""')+'"',{list,extra}=balances();
+  const csv="\uFEFF"+["الصنف,اللون,دخل التصليح,اتصلّح,المتبقي",...list.map(o=>[o.name,o.color,o.inn,o.rep,o.left].map(q).join(",")),...extra.map(o=>[o.name,o.color,"غير مجرود",o.rep,""].map(q).join(","))].join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="جرد-التصليح.csv";a.click();
+}
+/* استيراد: الصق من Excel أو اختر ملف CSV — كل سطر: الصنف ثم اللون (اختياري) ثم الكمية */
+function stImport(){if(roBlock())return;
+  openModal("استيراد جرد التصليح",`<div class="hint" style="margin:0 0 8px">الصق من Excel: كل سطر «الصنف ، اللون (اختياري) ، الكمية». أو اختر ملف CSV.</div>
+    <input type="file" id="i-file" accept=".csv,.txt,text/csv,text/plain" style="margin-bottom:8px">
+    <textarea id="i-txt" rows="8" style="width:100%"></textarea>
+    <label>التاريخ</label><input type="date" id="i-d" value="${today()}">`,async()=>{
+    const lines=document.getElementById("i-txt").value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean),out=[],badL=[];
+    lines.forEach((l,n)=>{
+      const p=l.split(/\t|,|،|;/).map(x=>x.trim().replace(/^"|"$/g,""));
+      const last=String(p[p.length-1]).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)),num=parseInt(last);
+      if(p.length<2||!(num>0)||!p[0]){if(n===0&&p.length>=2&&isNaN(num))return;badL.push(n+1);return}
+      out.push({item:p[0],color:p.length>2?p[1]:"",qty:num});
+    });
+    if(!out.length){toast("مفيش سطور صالحة"+(badL.length?" (راجع السطر "+badL[0]+")":""));return false}
+    if(badL.length&&!await ask("فيه "+badL.length+" سطر مش مفهوم (أولهم السطر "+badL[0]+") وهيتخطّوا. تكمّل؟","نعم، كمّل"))return false;
+    const d=document.getElementById("i-d").value||today();
+    if(!await reviewSave({title:"راجع الاستيراد قبل الحفظ",meta:[["التاريخ",fmtD(d)],["عدد الأصناف",nf(out.length)]],items:out.slice(0,30).map(r=>({title:r.item,rows:[...(r.color?[["اللون",r.color]]:[]),["الكمية",nf(r.qty)]]})),total:out.reduce((a,r)=>a+r.qty,0)}))return false;
+    const{error}=await db.from("repair_stock").insert(out.map(r=>({stock_date:d,item:r.item,color:r.color||null,qty:r.qty,kind:"in",client_id:crypto.randomUUID?crypto.randomUUID():null})));
+    if(error){toast(/color/.test(error.message||"")?"شغّل ملف setup_repair_color.sql في Supabase الأول":"خطأ: "+error.message);return false}
+    await loadStock();toast("تم استيراد "+out.length+" صنف");
+  },"استيراد");
+  const f=document.getElementById("i-file");
+  if(f)f.onchange=async()=>{const t=f.files[0];if(t)document.getElementById("i-txt").value=await t.text()};
 }
 function stItems(){return[...new Set([...stock.map(r=>r.item),...rows.map(r=>r.item)].filter(Boolean))]}
 function stForm(id,adjust){if(roBlock())return;
@@ -200,6 +233,10 @@ document.getElementById("t-stock").onclick=()=>{tab="stock";setTab()};
 document.getElementById("t-prod").onclick=()=>{tab="prod";setTab()};
 document.getElementById("st-add").onclick=()=>stForm(0,false);
 document.getElementById("st-adj").onclick=()=>stForm(0,true);
+document.getElementById("st-imp").onclick=stImport;
+document.getElementById("st-csv").onclick=stCsv;
+document.getElementById("st-prt").onclick=()=>window.print();
+{const lw=document.getElementById("st-low");lw.value=LOW()||"";lw.onchange=()=>{try{localStorage.setItem("repair_low",String(parseInt(lw.value)||0))}catch(e){}drawStock()}}
 (async()=>{if(await requireAuth("repair.html")){renderNav("repair.html");searchBox("tbl",q=>{Q=q;draw()},"بحث بالصنف أو اللون أو العامل…");dateChips("f-from","f-to",draw);skel("body",4);if(tab!=="log")setTab();load().finally(settle)}})();
 </script>
 <script src="install.js" defer></script>

@@ -129,9 +129,10 @@
   function buildRows(rawRows, ctx) {
     const rows = []; let skipped = 0; const unk = {};
     rawRows.forEach(rr => {
-      const o = rr.o, r = { item: null, qty: null, scrap: null, worker: null, shift: null, note: null, _err: [] };
+      const o = rr.o, r = { item: null, color: null, qty: null, scrap: null, worker: null, shift: null, note: null, _err: [] };
       const lab = " (" + rr.label + ")";
       const it = cleanText(o.item, LIMITS.item); r.item = it.v; if (it.err) r._err.push({ k: "item", t: "الصنف: " + it.err + lab }); it.flags.forEach(f => note(ctx, "الصنف — " + f + lab));
+      { const c = cleanText(o.color, 80); r.color = c.v; }
       ["qty", "scrap"].forEach(k => {
         const n = toNum(o[k]); r[k] = n.v;
         if (n.err) r._err.push({ k, t: (k === "qty" ? "العدد: " : "الهالك: ") + n.err + lab });
@@ -260,7 +261,7 @@
 
   const TEMPLATE = {
     schema_version: "1.0", source: "chatgpt_external", report_type: "daily", report_date: "YYYY-MM-DD", section: "glaze",
-    items: [{ item: "اسم الصنف", qty: 0, scrap: 0, worker: "", shift: "", note: "" }], notes: ""
+    items: [{ item: "اسم الصنف", color: "", qty: 0, scrap: 0, worker: "", shift: "", note: "" }], notes: ""
   };
   const CHATGPT_PROMPT = "حوّل بيانات الإنتاج في الصورة المرفقة إلى JSON فقط (بدون أي شرح أو نص قبله أو بعده) بهذا القالب بالضبط.\n" +
     "section واحد من: casting, brush, glaze, deco, spray, repair, finish, fire. التاريخ بصيغة YYYY-MM-DD.\n" +
@@ -441,7 +442,7 @@
       const file = SEC_PAGE[v.section]; if (!canSee(file)) { toast("حسابك لا يملك صلاحية على " + SECN[v.section], "bad"); return; }
       await MAC.dup(v, true); impCheck(w, m);
       const { W } = validate(v), dn = v.rows.filter(r => r._dup).length;
-      const rows = v.rows.filter(r => r.item || r.qty != null || r.scrap != null).map(r => ({ item: r.item, qty: r.qty, scrap: r.scrap, worker: r.worker, shift: r.shift, note: r.note, done: false }));
+      const rows = v.rows.filter(r => r.item || r.qty != null || r.scrap != null).map(r => ({ item: r.item, color: r.color, qty: r.qty, scrap: r.scrap, worker: r.worker, shift: r.shift, note: r.note, done: false }));
       if (!confirm("سيتم تجهيز " + rows.length + " سطر لقسم " + SECN[v.section] + " بتاريخ " + v.date + " ثم فتح صفحة القسم لمراجعتها وحفظها هناك. لن يُحفظ شيء الآن." + (W.length ? "\n\nيوجد " + W.length + " تحذير." : "") + (dn ? "\nتنبيه: " + dn + " سطر يشبه سجلات محفوظة بنفس اليوم." : "") + "\n\nمتابعة؟")) return;
       try { sessionStorage.setItem("masai_import", JSON.stringify({ u: ME.id, sec: v.section, date: v.date, rows })); } catch (x) { toast("تعذّر تجهيز البيانات", "bad"); MAC.touch(v, "فشل", "تعذّر التخزين المؤقت"); return; }
       MAC.touch(v, "تم التجهيز");

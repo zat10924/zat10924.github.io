@@ -59,12 +59,16 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 <div class="wrap">
   <div id="home" style="display:none">
     <div class="hello"><h1 id="hi"><span class="hi-w">مرحبًا</span></h1><i class="hi-line"></i><div class="nums" id="today"></div></div>
-    <div class="kpis three" id="hk" style="display:none;margin-top:14px"></div>
-    <div class="grid" id="tiles"></div>
-    <div id="hc" style="margin-top:14px"></div>
-    <div id="hx" style="margin-top:14px"></div>
+    <div class="tabs hseg noprint" id="hseg" role="tablist"><button type="button" class="btn on" id="h-sec" role="tab" aria-selected="true">الأقسام</button><button type="button" class="btn ghost" id="h-dash" role="tab" aria-selected="false">لوحة الإنتاج</button></div>
+    <div id="p-sec"><div class="grid" id="tiles"></div></div>
+    <div id="p-dash">
+      <div class="kpis three" id="hk" style="display:none;margin-top:14px"></div>
+      <div id="hc" style="margin-top:14px"></div>
+      <div id="hx" style="margin-top:14px"></div>
+    </div>
   </div>
 </div>
+<style>.hseg{display:flex;gap:6px;margin:14px 0 4px}.hseg .btn{flex:1;min-width:0}#p-sec[hidden],#p-dash[hidden]{display:none}</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
@@ -93,7 +97,7 @@ async function lateAlert(){
   R.forEach(({s,rows})=>rows.forEach(o=>{if(lateOrder(o))late.push({s,o,days:o.due_date?daysBetween(o.due_date,today()):ageDays(o.order_date)-LATE_DAYS})}));
   if(!late.length)return;
   late.sort((a,b)=>b.days-a.days);
-  document.getElementById("tiles").insertAdjacentHTML("beforebegin",`<div class="card" id="latecard" style="border-color:var(--warn);margin-top:14px"><div class="top"><b class="ibt">${ui("alert")}طلبيات متأخرة (${late.length})</b></div>${late.slice(0,5).map(x=>`<a class="line" href="${x.s[0]}#open" style="display:flex;justify-content:space-between;gap:8px;text-decoration:none;color:var(--ink)"><span>${esc(x.o.item)} <span class="nums">· ${x.s[1]}</span></span><span class="tag late">متأخرة ${x.days} يوم</span></a>`).join("")}${late.length>5?`<div class="nums" style="margin-top:6px">و ${late.length-5} كمان…</div>`:""}</div>`);
+  document.getElementById("hc").insertAdjacentHTML("beforebegin",`<div class="card" id="latecard" style="border-color:var(--warn);margin-top:14px"><div class="top"><b class="ibt">${ui("alert")}طلبيات متأخرة (${late.length})</b></div>${late.slice(0,5).map(x=>`<a class="line" href="${x.s[0]}#open" style="display:flex;justify-content:space-between;gap:8px;text-decoration:none;color:var(--ink)"><span>${esc(x.o.item)} <span class="nums">· ${x.s[1]}</span></span><span class="tag late">متأخرة ${x.days} يوم</span></a>`).join("")}${late.length>5?`<div class="nums" style="margin-top:6px">و ${late.length-5} كمان…</div>`:""}</div>`);
 }
 // ===== توقّع التأخير: طلبيات لسه مش متأخرة بس بمعدل الإنتاج الحالي مش هتلحق ميعادها =====
 async function riskAlert(){
@@ -127,7 +131,7 @@ async function riskAlert(){
   }));
   if(!risk.length)return;
   risk.sort((a,b)=>b.gap-a.gap);
-  document.getElementById("tiles").insertAdjacentHTML("beforebegin",`<div class="card" id="riskcard" style="border-color:var(--warn);margin-top:14px"><div class="top"><b class="ibt">${ui("hourglass")}معرّضة للتأخير (${risk.length})</b></div>${risk.slice(0,5).map(x=>`<a class="line" href="${x.s[0]}#open" style="display:flex;justify-content:space-between;gap:8px;text-decoration:none;color:var(--ink)"><span>${esc(x.o.item)} <span class="nums">· ${x.s[1]}</span></span><span class="tag late">باقي ${x.left} يوم وتحتاج ~${x.eta}</span></a>`).join("")}<div class="nums" style="margin-top:6px">تقدير مبني على معدل إنتاج آخر 14 يوم</div></div>`);
+  document.getElementById("hc").insertAdjacentHTML("beforebegin",`<div class="card" id="riskcard" style="border-color:var(--warn);margin-top:14px"><div class="top"><b class="ibt">${ui("hourglass")}معرّضة للتأخير (${risk.length})</b></div>${risk.slice(0,5).map(x=>`<a class="line" href="${x.s[0]}#open" style="display:flex;justify-content:space-between;gap:8px;text-decoration:none;color:var(--ink)"><span>${esc(x.o.item)} <span class="nums">· ${x.s[1]}</span></span><span class="tag late">باقي ${x.left} يوم وتحتاج ~${x.eta}</span></a>`).join("")}<div class="nums" style="margin-top:6px">تقدير مبني على معدل إنتاج آخر 14 يوم</div></div>`);
 }
 // ===== لوحة الإنتاج: آخر 7 أيام مقارنةً بالأسبوع اللي قبله =====
 const DSRC={"glaze.html":["glaze_production","prod_date"],"decoration.html":["deco_production","prod_date"],"spray.html":["spray_production","prod_date"],"repair.html":["repair_log","repair_date"],"casting.html":["casting_log","casting_date"],"brush.html":["brush_log","brush_date"],"finish.html":["finish_log","finish_date"]};
@@ -212,6 +216,16 @@ async function fillSums(){
   }));
   const rs=document.getElementById("rsum");if(rs)rs.innerHTML=n?`إنتاج النهارده في كل الأقسام: <b style="color:var(--ok)">${nf(tot)}</b>`:"ملخص الإنتاج والطلبيات المتأخرة";
 }
+/* الصفحة الرئيسية على جزئين: «الأقسام» و«لوحة الإنتاج» */
+function setHome(t){
+  const d=t==="dash";
+  document.getElementById("p-sec").hidden=d;document.getElementById("p-dash").hidden=!d;
+  [["h-sec",!d],["h-dash",d]].forEach(([id,on])=>{const b=document.getElementById(id);b.className="btn "+(on?"on":"ghost");b.setAttribute("aria-selected",String(on))});
+  try{localStorage.setItem("home_tab",d?"dash":"sec")}catch(e){}
+}
+document.getElementById("h-sec").onclick=()=>setHome("sec");
+document.getElementById("h-dash").onclick=()=>setHome("dash");
+try{setHome(localStorage.getItem("home_tab")==="dash"?"dash":"sec")}catch(e){setHome("sec")}
 let homeReady=false;
 function refreshHome(){
   if(!homeReady)return;
