@@ -201,11 +201,39 @@
     return { sec, dt, rows, meta: { fileType: "json", report_type: top.report_type || "daily", schema_version: top.schema_version || "" } };
   }
 
+  /* عنوان عمود مكتوب بشكل مختلف («كمية الانتاج»، «اسم المنتج»…): نطابقه بالكلمة المفتاحية */
+  function fuzzyHead(h) {
+    const t = norm(h); if (!t) return null;
+    const R = [["note", /ملاحظ|note|remark/], ["scrap", /هالك|تالف|scrap|waste|defect/], ["qty", /كمي|عدد|qty|quantity|count|انتاج/], ["color", /لون|colou?r/], ["code", /كود|رسم|code/], ["worker", /عامل|موظف|worker|operator|employee/], ["shift", /ورد|shift/], ["date", /تاريخ|date|يوم/], ["section", /قسم|section/], ["item", /صنف|منتج|اسم|بند|موديل|item|product|name/]];
+    for (const [k, re] of R) if (re.test(t)) return k; return null;
+  }
+  /* تخمين أدوار الأعمدة لملف بلا عناوين: أول عمود نصي = الصنف، ثاني نصي قصير = اللون، أول رقمي = العدد، تاني رقمي = الهالك */
+  function guessColumns(rows) {
+    const sample = rows.slice(0, 30), nc = Math.max.apply(null, sample.map(r => r.cells.length)); if (!nc || nc > 12) return null;
+    const isNum = c => /^\s*[\d٠-٩][\d٠-٩,٬.٫\s]*$/.test(String(c || ""));
+    const info = []; for (let i = 0; i < nc; i++) { const v = sample.map(r => String(r.cells[i] == null ? "" : r.cells[i]).trim()).filter(Boolean); info.push({ n: v.length, num: v.length ? v.filter(isNum).length / v.length : 0 }); }
+    const map = new Array(nc).fill(null); let text = 0, nums = 0; const nm = [];
+    for (let i = 0; i < nc; i++) {
+      if (!info[i].n) continue;
+      if (info[i].num >= 0.8) { map[i] = nums === 0 ? "qty" : nums === 1 ? "scrap" : null; nums++; nm.push(i); }
+      else { map[i] = text === 0 ? "item" : text === 1 ? "color" : text === 2 ? "worker" : "note"; text++; }
+    }
+    if (map.indexOf("item") < 0) return null;
+    const L = { item: "الصنف", color: "اللون", qty: "العدد", scrap: "الهالك", worker: "العامل", note: "ملاحظة" };
+    return { map, desc: map.map((k, i) => k ? "العمود " + (i + 1) + " = " + L[k] : null).filter(Boolean).join("، ") };
+  }
+
   function fromCSV(text, ctx, opts) {
     const p = parseCSV(text);
     if (p.error) { bad(ctx, p.error); return null; }
     if (!p.rows.length) { bad(ctx, "الملف فارغ."); return null; }
-    const head = p.rows[0].cells.map(c => c.trim()), map = head.map(h => HEAD[hk(h)] || null);
+    let head = p.rows[0].cells.map(c => c.trim()), map = head.map(h => HEAD[hk(h)] || fuzzyHead(h));
+    let dataRows = p.rows.slice(1);
+    if (map.indexOf("item") < 0) {
+      /* مفيش عناوين معروفة: نخمّن الأعمدة من المحتوى بدل ما نرفض الملف */
+      const g = guessColumns(p.rows);
+      if (g) { map = g.map; head = g.map.map((k, i) => "عمود " + (i + 1)); dataRows = p.rows; note(ctx, "الملف بدون عناوين واضحة، فتم تخمين الأعمدة: " + g.desc + ". راجع كل سطر قبل الحفظ."); }
+    }
     if (map.indexOf("item") < 0) {
       bad(ctx, "العمود المطلوب «item» أو «الصنف» غير موجود في السطر الأول. الأعمدة الموجودة: " + head.slice(0, 10).map(h => "«" + h.slice(0, 30) + "»").join("، ") + ".");
       return null;
@@ -215,7 +243,7 @@
     const unkCols = head.filter((h, i) => !map[i] && h);
     if (unkCols.length) note(ctx, "أعمدة غير معروفة لم تُستورد: " + unkCols.slice(0, 8).map(h => "«" + h.slice(0, 30) + "»").join("، "));
     if (!(map.indexOf("qty") >= 0)) note(ctx, "عمود العدد (qty / العدد) غير موجود؛ ستظهر الأعداد فارغة للمراجعة.");
-    const data = p.rows.slice(1);
+    const data = dataRows;
     if (!data.length) { bad(ctx, "الملف يحتوي على سطر العناوين فقط بلا بيانات."); return null; }
     if (data.length > LIMITS.rows) { bad(ctx, "عدد الصفوف " + data.length + " أكبر من الحد المسموح " + LIMITS.rows + ". قسّم الملف."); return null; }
     let secV = "", dateV = "";

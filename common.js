@@ -1066,7 +1066,8 @@ async function checkNames(root){
     try{cache=JSON.parse(localStorage.getItem(ITEM_CACHE)||"null")}catch(e){}
     if(!Array.isArray(cache))return true;
   }
-  const similar=(list,nv)=>list.map(n=>[n,lev(norm(n),nv),Math.min(norm(n).length,nv.length)]).filter(x=>x[1]<=Math.max(1,Math.floor(x[2]/4))).sort((x,y)=>x[1]-y[1])[0];
+  // أقرب اسم: بيفهم اختلاف ترتيب الكلمات والهمزات والإملاء البسيط (بهار كبير مضلع = بهار مضلع كبير)، وبيرجع [الاسم,..]
+  const similar=(list,nv)=>{const a=list.map(n=>[n,_mscore(nv,n)]).filter(x=>x[1]>=0.6).sort((x,y)=>y[1]-x[1])[0];if(a)return a;const b=list.map(n=>[n,lev(norm(n),nv),Math.min(norm(n).length,nv.length)]).filter(x=>x[1]<=Math.max(1,Math.floor(x[2]/4))).sort((x,y)=>x[1]-y[1])[0];return b};
   for(const el of els){
     const kind=kindOf(el),v=el.value.trim();if(!v)continue;
     const locked=lock&&kind==="item"&&!el.readOnly; // الصنف المقفول من الطلبية (readOnly) مش بيتراجع

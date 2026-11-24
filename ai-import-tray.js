@@ -55,6 +55,7 @@
     if (ov.querySelector("#mrows")) return fillMulti(ov, x);
     let n = 0;
     [["m-d", x.date], ["m-item", row.item], ["m-q", row.qty], ["m-scrap", row.scrap], ["m-n", row.note]].forEach(([id, v]) => { if (setV(ov, id, v)) n++; });
+    { const ce = ov.querySelector("#m-color"); if (ce && ce.tagName === "INPUT" && ce.offsetParent !== null && row.color && setV(ov, "m-color", row.color)) n++; }
     pickOpt(ov.querySelector("#m-sh"), row.shift); pickOpt(ov.querySelector("#m-w"), row.worker);
     const w = ov.querySelector("#m-w"); if (w && w.tagName === "INPUT") setV(ov, "m-w", row.worker);
     if (n) { fctx = { i, clicked: false }; ov.addEventListener("click", e => { if (fctx && e.target.closest && e.target.closest("#mSave,#mSaveMore")) fctx.clicked = true; }, true); }
