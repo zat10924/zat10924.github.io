@@ -8,7 +8,7 @@
   const SECN_DEFAULT = { casting: "الصب", brush: "البرشر", glaze: "الجليز", deco: "الزخرفة", spray: "الرش", repair: "التصليح", finish: "التشطيب", fire: "الحريق" };
   const SEC_ALIAS = { decoration: "deco", decor: "deco", glazing: "glaze", spraying: "spray", repairs: "repair", finishing: "finish" };
   const KNOWN_TOP = ["schema_version", "source", "report_type", "report_date", "date", "section", "items", "rows", "notes"];
-  const KNOWN_ROW = ["item", "qty", "scrap", "worker", "shift", "note"];
+  const KNOWN_ROW = ["item", "color", "code", "qty", "scrap", "worker", "shift", "note"];
   const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
 
   const norm = s => String(s == null ? "" : s).toLowerCase()
@@ -20,6 +20,8 @@
   /* أسماء الأعمدة المقبولة (عربي/إنجليزي) → الحقل الداخلي */
   const HEAD = {};
   [["item", ["item", "name", "product", "الصنف", "اسم الصنف", "صنف", "الاسم", "البند"]],
+   ["color", ["color", "colour", "اللون", "لون"]],
+   ["code", ["code", "كود", "الكود", "كود الرسمة", "الرسمة", "رسمة", "sub"]],
    ["qty", ["qty", "quantity", "count", "العدد", "الكمية", "كمية", "عدد"]],
    ["scrap", ["scrap", "waste", "defect", "الهالك", "هالك", "التالف"]],
    ["worker", ["worker", "employee", "operator", "العامل", "عامل", "الموظف"]],
@@ -129,10 +131,11 @@
   function buildRows(rawRows, ctx) {
     const rows = []; let skipped = 0; const unk = {};
     rawRows.forEach(rr => {
-      const o = rr.o, r = { item: null, color: null, qty: null, scrap: null, worker: null, shift: null, note: null, _err: [] };
+      const o = rr.o, r = { item: null, color: null, code: null, qty: null, scrap: null, worker: null, shift: null, note: null, _err: [] };
       const lab = " (" + rr.label + ")";
       const it = cleanText(o.item, LIMITS.item); r.item = it.v; if (it.err) r._err.push({ k: "item", t: "الصنف: " + it.err + lab }); it.flags.forEach(f => note(ctx, "الصنف — " + f + lab));
       { const c = cleanText(o.color, 80); r.color = c.v; }
+      { const c = cleanText(o.code, 40); r.code = c.v; }
       ["qty", "scrap"].forEach(k => {
         const n = toNum(o[k]); r[k] = n.v;
         if (n.err) r._err.push({ k, t: (k === "qty" ? "العدد: " : "الهالك: ") + n.err + lab });
@@ -140,7 +143,7 @@
       [["worker", LIMITS.worker, "العامل"], ["shift", LIMITS.shift, "الوردية"], ["note", LIMITS.note, "الملاحظة"]].forEach(([k, mx, nm]) => {
         const t = cleanText(o[k], mx); r[k] = t.v; if (t.err) r._err.push({ k, t: nm + ": " + t.err + lab }); t.flags.forEach(f => note(ctx, nm + " — " + f + lab));
       });
-      const hasAny = r.item || r.qty != null || r.scrap != null || r.worker || r.shift || r.note || r._err.length;
+      const hasAny = r.item || r.code || r.qty != null || r.scrap != null || r.worker || r.shift || r.note || r._err.length;
       if (!hasAny) { skipped++; return; }
       (rr.extra || []).forEach(k => { unk[k] = (unk[k] || 0) + 1; });
       rows.push(r);
@@ -259,16 +262,47 @@
     return finish(ctx, r.sec, r.dt, r.rows, r.meta);
   }
 
-  const TEMPLATE = {
-    schema_version: "1.0", source: "chatgpt_external", report_type: "daily", report_date: "YYYY-MM-DD", section: "glaze",
-    items: [{ item: "اسم الصنف", color: "", qty: 0, scrap: 0, worker: "", shift: "", note: "" }], notes: ""
+  /* حقول كل قسم في القالب (تعديل هذا الجدول فقط يغيّر القالب والتعليمات) */
+  const SEC_FIELDS = {
+    casting: ["item", "qty", "worker", "note"],
+    brush:   ["item", "qty", "scrap", "shift", "worker", "note"],
+    glaze:   ["item", "color", "qty", "note"],
+    deco:    ["item", "code", "qty", "worker", "note"],
+    spray:   ["item", "color", "qty", "note"],
+    repair:  ["item", "color", "qty", "worker"],
+    finish:  ["item", "qty", "scrap", "shift", "worker", "note"],
+    fire:    ["item", "color", "qty", "worker", "note"]
   };
-  const CHATGPT_PROMPT = "حوّل بيانات الإنتاج في الصورة المرفقة إلى JSON فقط (بدون أي شرح أو نص قبله أو بعده) بهذا القالب بالضبط.\n" +
-    "section واحد من: casting, brush, glaze, deco, spray, repair, finish, fire. التاريخ بصيغة YYYY-MM-DD.\n" +
-    "qty و scrap أرقام صحيحة غير سالبة. اترك الحقل فارغًا إذا لم يظهر في الصورة، ولا تخمّن أي رقم.\n" +
-    "إن لم يكن الخط واضحًا اكتب ذلك في الحقل note للسطر نفسه.\n\n" + JSON.stringify(TEMPLATE, null, 2);
+  const SEC_HINT = {
+    brush: "shift واحدة من: صباحي, مسائي, ليلي.",
+    finish: "item يجب أن يكون واحدًا فقط من: مشرط, مياه, صنفرة (نوع النشاط). shift واحدة من: صباحي, مسائي, ليلي.",
+    casting: "qty أكبر من صفر.",
+    repair: "qty أكبر من صفر.",
+    deco: "code هو كود الرسمة (مثل ما هو مكتوب في السجل) واكتبه في حقل code وليس داخل اسم الصنف."
+  };
+  const FIELD_DEF = { item: "اسم الصنف", color: "", code: "", qty: 0, scrap: 0, worker: "", shift: "", note: "" };
+  function templateFor(sec) {
+    const f = SEC_FIELDS[sec] || ["item", "color", "qty", "scrap", "worker", "shift", "note"];
+    const row = {}; f.forEach(k => { row[k] = FIELD_DEF[k]; });
+    if (sec === "finish") row.item = "مشرط";
+    return { schema_version: "1.0", source: "chatgpt_external", report_type: "daily", report_date: "YYYY-MM-DD", section: SEC_FIELDS[sec] ? sec : "glaze", items: [row], notes: "" };
+  }
+  function promptFor(sec) {
+    const known = !!SEC_FIELDS[sec], name = known ? (SECN_DEFAULT[sec] || sec) : "";
+    const hasScrap = !known || SEC_FIELDS[sec].indexOf("scrap") >= 0;
+    return "حوّل بيانات الإنتاج في الصورة المرفقة إلى JSON فقط (بدون أي شرح أو نص قبله أو بعده) بهذا القالب بالضبط.\n" +
+      (known ? "القسم: " + name + " (section = " + sec + "). لا تغيّر قيمة section ولا تضف حقولًا غير الموجودة في القالب.\n"
+             : "section واحد من: casting, brush, glaze, deco, spray, repair, finish, fire.\n") +
+      "التاريخ بصيغة YYYY-MM-DD.\n" +
+      "qty" + (hasScrap ? " و scrap" : "") + " أرقام صحيحة غير سالبة. اترك الحقل فارغًا إذا لم يظهر في الصورة، ولا تخمّن أي رقم.\n" +
+      (SEC_HINT[sec] ? SEC_HINT[sec] + "\n" : "") +
+      "إن لم يكن الخط واضحًا اكتب ذلك في الحقل note للسطر نفسه" + (known && SEC_FIELDS[sec].indexOf("note") < 0 ? " (أو في notes أعلى الملف)" : "") + ".\n\n" +
+      JSON.stringify(templateFor(sec), null, 2);
+  }
+  const TEMPLATE = templateFor("glaze");
+  const CHATGPT_PROMPT = promptFor("");
 
-  const API = { LIMITS, TEMPLATE, CHATGPT_PROMPT, normalizeExternalImport, parseCSV, toNum, normDate, resolveSection, cleanText };
+  const API = { LIMITS, TEMPLATE, CHATGPT_PROMPT, templateFor, promptFor, SEC_FIELDS, normalizeExternalImport, parseCSV, toNum, normDate, resolveSection, cleanText };
   root.MasAiImport = API;
   root.normalizeExternalImport = normalizeExternalImport;
   if (typeof module !== "undefined" && module.exports) module.exports = API;
@@ -442,7 +476,7 @@
       const file = SEC_PAGE[v.section]; if (!canSee(file)) { toast("حسابك لا يملك صلاحية على " + SECN[v.section], "bad"); return; }
       await MAC.dup(v, true); impCheck(w, m);
       const { W } = validate(v), dn = v.rows.filter(r => r._dup).length;
-      const rows = v.rows.filter(r => r.item || r.qty != null || r.scrap != null).map(r => ({ item: r.item, color: r.color, qty: r.qty, scrap: r.scrap, worker: r.worker, shift: r.shift, note: r.note, done: false }));
+      const rows = v.rows.filter(r => r.item || r.code || r.qty != null || r.scrap != null).map(r => ({ item: r.item, color: r.color, sub: r.code, qty: r.qty, scrap: r.scrap, worker: r.worker, shift: r.shift, note: r.note, done: false }));
       if (!confirm("سيتم تجهيز " + rows.length + " سطر لقسم " + SECN[v.section] + " بتاريخ " + v.date + " ثم فتح صفحة القسم لمراجعتها وحفظها هناك. لن يُحفظ شيء الآن." + (W.length ? "\n\nيوجد " + W.length + " تحذير." : "") + (dn ? "\nتنبيه: " + dn + " سطر يشبه سجلات محفوظة بنفس اليوم." : "") + "\n\nمتابعة؟")) return;
       try { sessionStorage.setItem("masai_import", JSON.stringify({ u: ME.id, sec: v.section, date: v.date, rows })); } catch (x) { toast("تعذّر تجهيز البيانات", "bad"); MAC.touch(v, "فشل", "تعذّر التخزين المؤقت"); return; }
       MAC.touch(v, "تم التجهيز");
@@ -624,12 +658,16 @@
     new MutationObserver(syncConn).observe($("x_st"), { attributes: true, subtree: true, childList: true, characterData: true });
     new MutationObserver(syncEng).observe($("x_eng"), { attributes: true, childList: true, characterData: true });
     // الاستيراد الخارجي
-    $("xc_tpl").textContent = JSON.stringify(MasAiImport.TEMPLATE, null, 2);
+    let TSEC = "";
+    const drawTpl = () => { $("xc_tpl").textContent = JSON.stringify(MasAiImport.templateFor(TSEC), null, 2); };
+    $("xc_tsec").innerHTML = '<option value="">— عام (كل الحقول) —</option>' + Object.keys(SECN).map(k => '<option value="' + k + '">' + esc(SECN[k]) + '</option>').join("");
+    $("xc_tsec").onchange = () => { TSEC = $("xc_tsec").value; drawTpl(); };
+    drawTpl();
     $("xc_sec").innerHTML = '<option value="">— من الملف —</option>' + Object.keys(SECN).map(k => '<option value="' + k + '">' + esc(SECN[k]) + '</option>').join("");
     const cp = (t, ok) => navigator.clipboard.writeText(t).then(() => toast(ok, "ok"), () => toast("تعذّر النسخ", "bad"));
     $("xc_cp_tpl").onclick = () => cp($("xc_tpl").textContent, "تم نسخ القالب");
-    $("xc_cp_prompt").onclick = () => cp(MasAiImport.CHATGPT_PROMPT, "تم نسخ التعليمات — الصقها في ChatGPT مع الصورة");
-    $("xc_dl_tpl").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([$("xc_tpl").textContent], { type: "application/json" })); a.download = "mas-import-template.json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
+    $("xc_cp_prompt").onclick = () => cp(MasAiImport.promptFor(TSEC), "تم نسخ التعليمات — الصقها في ChatGPT مع الصورة");
+    $("xc_dl_tpl").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([$("xc_tpl").textContent], { type: "application/json" })); a.download = "mas-import-template" + (TSEC ? "-" + TSEC : "") + ".json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
     if (navigator.clipboard && navigator.clipboard.readText) {
       $("xc_paste").hidden = false;
       $("xc_paste").onclick = async () => { try { const t = await navigator.clipboard.readText(); if (!t.trim()) { toast("الحافظة فارغة", "bad"); return; } $("xc_txt").value = t; FT = "text"; $("xc_fn").textContent = ""; showMsg("xc_msg", "ok", ["تم اللصق من الحافظة. اضغط «تحليل وتجهيز المراجعة»."]); } catch (e) { toast("تعذّرت القراءة من الحافظة. الصق يدويًا في المربع", "bad"); } };
