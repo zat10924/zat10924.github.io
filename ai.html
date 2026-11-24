@@ -1252,9 +1252,20 @@ function ctxDraw(){
   if(fillMode)c.push('<button type="button" class="x-cx" data-cx="fill" title="إلغاء الوضع">'+(CANWRITE?"وضع الأوامر":"وضع تعبئة البيانات")+X+'</button>');
   box.innerHTML=c.join("");box.hidden=!c.length;
 }
+let baseH=0;
 function fitChat(){
   const sh=$("x_shell");if(!sh||$("tp_chat").hidden)return;
-  const vv=window.visualViewport,vh=vv?vv.height:innerHeight,top=sh.getBoundingClientRect().top+scrollY;
+  const vv=window.visualViewport,vh=vv?vv.height:innerHeight;
+  baseH=Math.max(baseH,innerHeight);
+  const kb=vv&&baseH-vv.height>140; // الكيبورد مفتوح
+  if(kb){
+    // الكيبورد مفتوح: الشات ياخد ارتفاع المساحة المرئية كلها فوق الكيبورد وتتثبّت أول الشاشة
+    sh.style.height=Math.max(240,Math.floor(vh-8))+"px";
+    const r=sh.getBoundingClientRect(),dy=r.top-(vv.offsetTop||0)-4;
+    if(Math.abs(dy)>3)window.scrollBy(0,dy);
+    return;
+  }
+  const top=sh.getBoundingClientRect().top+scrollY;
   sh.style.height=Math.max(380,Math.floor(vh-top-12))+"px";
 }
 function wireUi(){
@@ -1277,7 +1288,9 @@ function wireUi(){
   wireMic();
   ctxDraw();
   const fit=()=>requestAnimationFrame(fitChat);
-  addEventListener("resize",fit);addEventListener("orientationchange",fit);if(window.visualViewport)visualViewport.addEventListener("resize",fit);
+  const fitLate=()=>{fit();setTimeout(fit,150);setTimeout(fit,450)};
+  addEventListener("resize",fitLate);addEventListener("orientationchange",fitLate);document.addEventListener("focusin",fitLate);document.addEventListener("focusout",fitLate);
+  if(window.visualViewport){visualViewport.addEventListener("resize",fitLate);visualViewport.addEventListener("scroll",fit)}
   new MutationObserver(fit).observe($("tp_chat"),{attributes:true,attributeFilter:["hidden"]});
   new MutationObserver(fit).observe($("x_app"),{childList:true,subtree:false});
   fit();setTimeout(fit,400);

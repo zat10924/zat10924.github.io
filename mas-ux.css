@@ -75,3 +75,8 @@ input[type=date]{cursor:pointer;min-height:42px}
 /* زر «إضافة صنف آخر» بعرض كامل تحت الصفوف، والتاريخ بعده في سطر مستقل */
 #madd,#m-xadd{display:flex!important;width:100%;justify-content:center;align-items:center;min-height:46px;margin:8px 0 12px!important}
 .modal label{display:block}
+
+/* ===== حماية من الاتساع الأفقي (كان بيزحزح الصفحة والقائمة الجانبية) ===== */
+html,body{max-width:100%;overflow-x:clip}
+.xd{min-width:0;max-width:100%;flex:1 1 100%}
+*:has(>.xd),*:has(>.xd-q),*:has(>.xd-r){flex-wrap:wrap}

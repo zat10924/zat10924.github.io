@@ -91,8 +91,8 @@ const SRC={
     }},
   repair:{name:"تصليح",page:"repair.html",icon:"repair",color:"#5D6B7A",noun:"التصليح",sub:"",
     async fetch(){
-      const r=await all("repair_log","id,repair_date,item,qty,worker");
-      return{prod:r.map(x=>({d:D(x.repair_date),item:x.item||"بدون صنف",sub:"",qty:+x.qty||0,w:x.worker||"",id:x.id,tb:"repair_log",raw:x})),ord:null};
+      const r=await all("repair_log","*");
+      return{prod:r.map(x=>({d:D(x.repair_date),item:x.item||"بدون صنف",sub:x.color||"",qty:+x.qty||0,w:x.worker||"",id:x.id,tb:"repair_log",raw:x})),ord:null};
     }}
 };
 const isCast=k=>k==="casting"||k==="brush";

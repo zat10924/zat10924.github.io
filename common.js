@@ -160,7 +160,7 @@ const seesAll=()=>!!ME&&(ME.role==="admin"||ME.role==="owner");
 const isOwner=()=>!!ME&&ME.role==="owner";
 // مسؤول القسم اللي معاه «يشوف باقي الأقسام»: بيشوف كل الأقسام والتقارير، ويسجّل ويدير أقسامه بس
 const viewsAll=()=>seesAll()||(!!ME&&ME.role==="manager"&&!!ME.view_all);
-const SEC_OF_TBL=t=>/^glaze_/.test(t)?"glaze":/^deco_/.test(t)?"deco":/^spray_/.test(t)?"spray":t==="repair_log"?"repair":/^casting_/.test(t)?"casting":/^brush_/.test(t)?"brush":/^finish_/.test(t)?"finish":/^firing_/.test(t)?"fire":"";
+const SEC_OF_TBL=t=>/^glaze_/.test(t)?"glaze":/^deco_/.test(t)?"deco":/^spray_/.test(t)?"spray":(t==="repair_log"||t==="repair_stock")?"repair":/^casting_/.test(t)?"casting":/^brush_/.test(t)?"brush":/^finish_/.test(t)?"finish":/^firing_/.test(t)?"fire":"";
 const roTbl=t=>{const k=SEC_OF_TBL(t);return !!k&&!!ME&&ME.role==="manager"&&!!ME.view_all&&!secList(ME).includes(k)};
 // صفحة قسم مش من أقسام المستخدم (وهو بيشوفها بصلاحية «يشوف باقي الأقسام») = عرض فقط
 const roPage=()=>{const k=KEY[location.pathname.split("/").pop()];return !!k&&!!ME&&ME.role==="manager"&&!!ME.view_all&&!secList(ME).includes(k)};
@@ -291,7 +291,7 @@ const SUBS={
  "glaze.html":[["الطلبيات المفتوحة","open"],["الطلبيات المكتملة","done"],["الهالك","rep"],["تقارير القسم","prod"]],
  "decoration.html":[["الطلبيات المفتوحة","open"],["الطلبيات المكتملة","done"],["إنتاج العمال","wk"],["تقارير القسم","prod"]],
  "spray.html":[["الطلبيات المفتوحة","open"],["الطلبيات المكتملة","done"],["تقارير القسم","prod"]],
- "repair.html":[["سجل التصليح","log"],["تقارير القسم","prod"]],
+ "repair.html":[["سجل التصليح","log"],["الجرد","stock"],["تقارير القسم","prod"]],
  "casting.html":[["سجل الصب","log"],["تقارير القسم","prod"]],
  "brush.html":[["سجل البرشر","log"],["تقارير القسم","prod"]],
  "finish.html":[["سجل الفنش","log"],["تقارير القسم","prod"]],
@@ -1703,7 +1703,7 @@ function freeProduction(sec,done){
   const deco=sec==="deco",spr=sec==="spray",rep=sec==="repair",lab=deco?"كود الرسمة":"اللون",kind=deco?"code":"color";
   const rowHtml=()=>`<div class="itemblk mrow"><div class="ih"><b class="mn"></b><button type="button" class="rmi" aria-label="حذف الصنف">${ib("trash","حذف")}</button></div>
     <label>الصنف</label><input class="it" placeholder="اسم الصنف" autocomplete="off">
-    <div class="two"${rep?' style="grid-template-columns:1fr"':""}><div${rep?" hidden":""}><label>${lab}${spr?" (لون الصنف — اختياري)":" (اختياري)"}</label><input class="sb" data-kind="${kind}" placeholder="${lab}" autocomplete="off"></div>
+    <div class="two"><div><label>${lab}${spr?" (لون الصنف — اختياري)":" (اختياري)"}</label><input class="sb" data-kind="${kind}" placeholder="${lab}" autocomplete="off"></div>
     <div><label>الكمية</label><input type="number" class="mq2" min="1" inputmode="numeric"></div></div>${spr?'<label>لون الرش</label><input class="msc" data-kind="color" placeholder="لون الرش" autocomplete="off" maxlength="60">':""}</div>`;
   openModal(rep?"تسجيل تصليح":"إنتاج بدون طلبية · "+SEC_AR[sec],
     `${XT(deco||rep)}<div class="hint" style="margin:0 0 6px">${rep?"سجّل أكتر من صنف لنفس العامل مرة واحدة.":"سجّل أكتر من صنف مرة واحدة. بيتسجّل في إنتاج القسم وتقاريره من غير ما يتربط بطلبية."}</div>
@@ -1733,8 +1733,8 @@ function freeProduction(sec,done){
     for(const t of todo){
       const id=uuid();
       if(rep){ // التصليح: جدول repair_log (تاريخ/صنف/كمية/عامل)
-        let rs;try{rs=await db.from("repair_log").insert({repair_date:d,item:t.item,qty:t.q,worker:xf.worker||null})}catch(e){rs={error:{message:String(e)}}}
-        if(rs.error){bad.push(/worker/.test(rs.error.message||"")?"شغّل ملف setup_repair_worker.sql في Supabase الأول":t.item+": "+rs.error.message);continue}
+        let rs;try{rs=await db.from("repair_log").insert({repair_date:d,item:t.item,qty:t.q,worker:xf.worker||null,...(t.sub?{color:t.sub}:{})})}catch(e){rs={error:{message:String(e)}}}
+        if(rs.error){bad.push(/color/.test(rs.error.message||"")?"شغّل ملف setup_repair_color.sql في Supabase الأول":/worker/.test(rs.error.message||"")?"شغّل ملف setup_repair_worker.sql في Supabase الأول":t.item+": "+rs.error.message);continue}
         ok++;t.el.remove();continue;
       }
       if(t.link){ // مربوط تلقائيًا بطلبية زخرفة

@@ -26,7 +26,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 <script>try{var n=performance.getEntriesByType("navigation")[0];if(sessionStorage.getItem("sp")&&!(n&&n.type==="reload"))document.getElementById("splash").remove()}catch(e){}</script>
 <div class="wrap">
   <h1>تصليح</h1>
-  <div class="tabs noprint"><button class="btn on" id="t-log">السجل</button><button class="btn ghost" id="t-prod">تقارير</button></div>
+  <div class="tabs noprint"><button class="btn on" id="t-log">السجل</button><button class="btn ghost" id="t-stock">الجرد</button><button class="btn ghost" id="t-prod">تقارير</button></div>
   <div id="logView">
   <div class="kpis mini three" id="stats"></div>
   <button class="btn noprint" id="add" style="width:100%;margin-bottom:12px">+ تسجيل تصليح</button>
@@ -37,7 +37,15 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
   </div>
   <div class="total" id="total"></div>
   <div class="nums" id="brk" style="margin-bottom:10px"></div>
-  <div class="scroll" id="tbl"><table><thead><tr><th>التاريخ</th><th>الصنف</th><th>العامل</th><th>الكمية</th><th class="noprint"></th></tr></thead><tbody id="body"></tbody></table></div>
+  <div class="scroll" id="tbl"><table><thead><tr><th>التاريخ</th><th>الصنف</th><th>اللون</th><th>العامل</th><th>الكمية</th><th class="noprint"></th></tr></thead><tbody id="body"></tbody></table></div>
+  </div>
+  <div id="stockView" style="display:none">
+    <div class="kpis mini three" id="stStats"></div>
+    <div class="row noprint" style="margin-bottom:12px"><button class="btn" id="st-add" style="flex:1">+ إضافة للتصليح</button><button class="btn ghost" id="st-adj" style="flex:1">تسوية جرد</button></div>
+    <div class="nums" id="stNote" style="margin:0 2px 10px"></div>
+    <div class="scroll" id="stTbl"><table><thead><tr><th>الصنف</th><th>دخل التصليح</th><th>اتصلّح</th><th>المتبقي</th></tr></thead><tbody id="stBody"></tbody></table></div>
+    <h3 style="margin:18px 2px 8px">حركات الجرد</h3>
+    <div class="scroll"><table><thead><tr><th>التاريخ</th><th>الصنف</th><th>الكمية</th><th>النوع</th><th class="noprint"></th></tr></thead><tbody id="mvBody"></tbody></table></div>
   </div>
   <div id="prodRep" style="display:none"></div>
 </div>
@@ -46,16 +54,84 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 <script src="common.js"></script>
 <script src="reports.js"></script>
 <script>
-let rows=[],Q="",repCtl=null,tab=location.hash==="#reports"?"prod":"log";
+let rows=[],stock=[],Q="",repCtl=null,tab=location.hash==="#reports"?"prod":location.hash==="#stock"?"stock":"log",stockOk=true;
 const NONE="بدون صنف";
 
 async function load(){
   const{data,error}=await db.from("repair_log").select("*").order("repair_date",{ascending:false}).order("id",{ascending:false});
   if(error){fail("body",load);return}
-  rows=data.map(r=>({id:r.id,d:r.repair_date,item:r.item||"",qty:r.qty,w:r.worker||""}));
+  rows=data.map(r=>({id:r.id,d:r.repair_date,item:r.item||"",color:r.color||"",qty:r.qty,w:r.worker||""}));
   const s=document.getElementById("f-item"),cur=s.value;
   s.innerHTML='<option value="">الكل</option><option value="__none">'+NONE+'</option>'+[...new Set(rows.map(r=>r.item).filter(Boolean))].map(v=>`<option>${esc(v)}</option>`).join("");
   s.value=cur;draw();drawStats();
+  await loadStock();
+}
+/* ===== جرد التصليح: المتبقي = (اللي دخل التصليح) − (اللي اتسجّل تصليح لنفس الصنف من أول تاريخ جرد له) ===== */
+async function loadStock(){
+  const{data,error}=await db.from("repair_stock").select("*").order("stock_date",{ascending:false}).order("id",{ascending:false});
+  if(error){stockOk=false;stock=[];drawStock();return}
+  stockOk=true;
+  stock=data.map(r=>({id:r.id,d:r.stock_date,item:r.item,color:r.color||"",qty:r.qty,kind:r.kind,note:r.note||""}));
+  drawStock();
+}
+const bk=(i,c)=>norm(i)+"|"+norm(c);
+function balances(){
+  const m=new Map();
+  stock.forEach(r=>{const k=bk(r.item,r.color);let o=m.get(k);if(!o){o={name:r.item,color:r.color,first:r.d,inn:0,rep:0,counted:true};m.set(k,o)}o.inn+=r.qty;if(r.d<o.first)o.first=r.d});
+  const extra=new Map();
+  rows.forEach(r=>{if(!r.item)return;const k=bk(r.item,r.color),o=m.get(k);
+    if(o){if(r.d>=o.first)o.rep+=r.qty}
+    else{let e=extra.get(k);if(!e){e={name:r.item,color:r.color,first:"",inn:0,rep:0,counted:false};extra.set(k,e)}e.rep+=r.qty}});
+  const list=[...m.values()].map(o=>({...o,left:o.inn-o.rep})).sort((a,b)=>a.left-b.left||a.name.localeCompare(b.name,"ar"));
+  return{list,extra:[...extra.values()]};
+}
+function leftOf(item,color){if(!item)return null;const k=bk(item,color),o=balances().list.find(x=>bk(x.name,x.color)===k);return o?o.left:null}
+function drawStock(){
+  const body=document.getElementById("stBody");if(!body)return;
+  if(!stockOk){body.innerHTML='<tr><td colspan="4" class="empty">شغّل ملف setup_repair_stock.sql في Supabase الأول</td></tr>';document.getElementById("mvBody").innerHTML="";document.getElementById("stStats").innerHTML="";return}
+  const{list,extra}=balances();
+  const tot=list.reduce((a,o)=>a+Math.max(o.left,0),0),done=list.reduce((a,o)=>a+o.rep,0);
+  kpis("stStats",[["المتبقي للتصليح",tot,"var(--pri)"],["اتصلّح من الجرد",done,"var(--ok)"],["أصناف في الجرد",list.length]]);
+  const neg=list.filter(o=>o.left<0).length;
+  document.getElementById("stNote").textContent=neg?"تنبيه: "+neg+" صنف تصليحه أكبر مما دخل الجرد — راجع الكميات أو اعمل تسوية.":"";
+  const row=o=>`<tr><td>${esc(o.name)}${o.color?' <span class="nums">· '+esc(o.color)+'</span>':""}</td><td>${o.counted?nf(o.inn):"—"}</td><td>${nf(o.rep)}</td><td><b style="color:${!o.counted?"var(--mute)":o.left<0?"var(--bad)":o.left===0?"var(--mute)":"var(--ok)"}">${o.counted?nf(o.left):"غير مجرود"}</b></td></tr>`;
+  body.innerHTML=list.length||extra.length?list.map(row).join("")+extra.map(row).join(""):'<tr><td colspan="4" class="empty">لسه مفيش جرد — اضغط «إضافة للتصليح»</td></tr>';
+  document.getElementById("mvBody").innerHTML=stock.length?stock.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${esc(r.item)}${r.color?' <span class="nums">· '+esc(r.color)+'</span>':""}${r.note?'<div class="nums">'+esc(r.note)+'</div>':""}</td><td><b>${r.qty>0?"+":""}${nf(r.qty)}</b></td><td>${r.kind==="adjust"?"تسوية":"دخل التصليح"}</td><td class="noprint" style="white-space:nowrap"><button class="btn ghost sm" onclick="stForm(${r.id})">تعديل</button> <button class="btn ghost sm" onclick="stDel(${r.id})">حذف</button></td></tr>`).join(""):'<tr><td colspan="5" class="empty">مفيش حركات</td></tr>';
+}
+function stItems(){return[...new Set([...stock.map(r=>r.item),...rows.map(r=>r.item)].filter(Boolean))]}
+function stForm(id,adjust){if(roBlock())return;
+  const rec=id?stock.find(r=>r.id===id):null,adj=rec?rec.kind==="adjust":!!adjust;
+  const items=stItems();
+  openModal(rec?"تعديل حركة جرد":adj?"تسوية جرد":"إضافة للتصليح",`<label>التاريخ</label><input type="date" id="s-d" value="${rec?rec.d:today()}">
+    <label>الصنف</label><input id="s-item" list="s-items" value="${rec?esc(rec.item):""}"><datalist id="s-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
+    <label>اللون (اختياري)</label><input id="s-color" maxlength="80" value="${rec?esc(rec.color):""}">
+    <label>${adj?"الكمية الفعلية الموجودة الآن":"الكمية"}${rec&&adj?" (الفرق، موجب أو سالب)":""}</label><input type="number" id="s-q" inputmode="numeric" ${rec?"":'min="1"'} value="${rec?rec.qty:""}">
+    <label>ملاحظة (اختياري)</label><input id="s-n" maxlength="300" value="${rec?esc(rec.note):""}">`,async()=>{
+    const item=document.getElementById("s-item").value.trim();
+    let q=parseInt(document.getElementById("s-q").value);
+    if(!item){toast("اكتب اسم الصنف");return false}
+    if(!q&&q!==0||isNaN(q)){toast("اكتب كمية صحيحة");return false}
+    let kind=adj?"adjust":"in";
+    if(adj&&!rec){ // التسوية: المستخدم يكتب الموجود فعلًا، والفرق عن المتبقي الحالي هو اللي يتسجّل
+      const cur=leftOf(item,document.getElementById("s-color").value.trim())||0;q=q-cur;
+      if(q===0){toast("الجرد مطابق، مفيش فرق");return false}
+    }
+    if(!adj&&q<1){toast("اكتب كمية صحيحة");return false}
+    if(q===0){toast("الكمية لازم تختلف عن صفر");return false}
+    const row={stock_date:document.getElementById("s-d").value||today(),item,color:document.getElementById("s-color").value.trim()||null,qty:q,kind,note:document.getElementById("s-n").value.trim()||null};
+    if(!await reviewSave({title:"راجع الجرد قبل الحفظ",meta:[["التاريخ",fmtD(row.stock_date)],["النوع",adj?"تسوية جرد":"دخل التصليح"]],items:[{title:item,rows:[...(row.color?[["اللون",row.color]]:[]),[adj?"الفرق":"الكمية",(q>0?"+":"")+nf(q)]]}]}))return false;
+    const{error}=rec?await db.from("repair_stock").update(row).eq("id",id):await db.from("repair_stock").insert({...row,client_id:(crypto.randomUUID?crypto.randomUUID():null)});
+    if(error&&/color/.test(error.message||"")){toast("شغّل ملف setup_repair_color.sql في Supabase الأول");return false}
+    if(error&&/repair_stock/.test(error.message||"")){toast("شغّل ملف setup_repair_stock.sql في Supabase الأول");return false}
+    if(error){toast("خطأ: "+error.message);return false}
+    await loadStock();toast(rec?"تم التعديل":"تم الحفظ");
+  });
+}
+async function stDel(id){
+  if(!await ask("حذف حركة الجرد دي؟"))return;
+  const{data:dd,error}=await db.from("repair_stock").delete().eq("id",id).select();
+  if(error||!dd.length){toast(error?"خطأ: "+error.message:"لم يتم الحذف، راجع الصلاحيات");return}
+  await loadStock();toast("تم الحذف");
 }
 function drawStats(){
   const t=today(),m=t.slice(0,8)+"01";
@@ -63,22 +139,24 @@ function drawStats(){
 }
 function setTab(){
   document.getElementById("t-log").className="btn "+(tab==="log"?"on":"ghost");
+  document.getElementById("t-stock").className="btn "+(tab==="stock"?"on":"ghost");
   document.getElementById("t-prod").className="btn "+(tab==="prod"?"on":"ghost");
   document.getElementById("logView").style.display=tab==="log"?"block":"none";
+  document.getElementById("stockView").style.display=tab==="stock"?"block":"none";
   document.getElementById("prodRep").style.display=tab==="prod"?"block":"none";
-  try{history.replaceState(null,"",tab==="prod"?"#reports":location.pathname+location.search)}catch(e){}
+  try{history.replaceState(null,"",tab==="prod"?"#reports":tab==="stock"?"#stock":location.pathname+location.search)}catch(e){}
   if(tab==="prod")repCtl?repCtl.refresh():repCtl=Reports.mount("prodRep","repair");
 }
 function filtered(){
   const f=document.getElementById("f-from").value,t=document.getElementById("f-to").value,i=document.getElementById("f-item").value;
-  return rows.filter(r=>(!f||r.d>=f)&&(!t||r.d<=t)&&(!i||(i==="__none"?!r.item:r.item===i))&&hit(Q,r.item,r.w));
+  return rows.filter(r=>(!f||r.d>=f)&&(!t||r.d<=t)&&(!i||(i==="__none"?!r.item:r.item===i))&&hit(Q,r.item,r.color,r.w));
 }
 function draw(){
   const rs=filtered(),sum=rs.reduce((a,r)=>a+r.qty,0);
   document.getElementById("total").textContent="إجمالي التصليح: "+sum;
   const by={};rs.forEach(r=>{const k=r.item||NONE;by[k]=(by[k]||0)+r.qty});
   document.getElementById("brk").textContent=Object.keys(by).length>1?Object.entries(by).map(([k,v])=>k+": "+v).join(" · "):"";
-  document.getElementById("body").innerHTML=rs.length?rs.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${r.item?esc(r.item):'<span class="nums">'+NONE+'</span>'}</td><td>${r.w?esc(r.w):'<span class="nums">—</span>'}</td><td><b>${r.qty}</b></td><td class="noprint" style="white-space:nowrap"><button class="btn ghost sm" onclick="repForm(${r.id})">تعديل</button> <button class="btn ghost sm" onclick="del(${r.id})">حذف</button></td></tr>`).join(""):'<tr><td colspan="5" class="empty">مفيش تصليح مسجل</td></tr>';
+  document.getElementById("body").innerHTML=rs.length?rs.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${r.item?esc(r.item):'<span class="nums">'+NONE+'</span>'}</td><td>${r.color?esc(r.color):'<span class="nums">—</span>'}</td><td>${r.w?esc(r.w):'<span class="nums">—</span>'}</td><td><b>${r.qty}</b></td><td class="noprint" style="white-space:nowrap"><button class="btn ghost sm" onclick="repForm(${r.id})">تعديل</button> <button class="btn ghost sm" onclick="del(${r.id})">حذف</button></td></tr>`).join(""):'<tr><td colspan="6" class="empty">مفيش تصليح مسجل</td></tr>';
 }
 function repForm(id){if(roBlock())return;
   if(!id){freeProduction("repair",load);return} // تسجيل جديد: أكتر من صنف لنفس العامل
@@ -87,13 +165,17 @@ function repForm(id){if(roBlock())return;
   wkLoad();
   openModal(rec?"تعديل تصليح":"تسجيل تصليح",`<label>التاريخ</label><input type="date" id="m-d" value="${rec?rec.d:today()}">
     <label>الصنف (اختياري)</label><input id="m-item" list="m-items" value="${rec?esc(rec.item):""}"><datalist id="m-items">${items.map(i=>`<option value="${esc(i)}">`).join("")}</datalist>
+    <label>اللون (اختياري)</label><input id="m-color" maxlength="80" value="${rec?esc(rec.color):""}">
     ${XW(false)}
     <label>الكمية</label><input type="number" id="m-q" min="1" inputmode="numeric" value="${rec?rec.qty:""}">`,async()=>{
     const q=parseInt(document.getElementById("m-q").value);
     if(!q||q<1){toast("اكتب كمية صحيحة");return false}
-    const row={repair_date:document.getElementById("m-d").value||today(),item:document.getElementById("m-item").value.trim()||null,qty:q,worker:xfRead().worker||null};
-    if(!await reviewSave({title:"راجع التصليح قبل الحفظ",meta:[["التاريخ",fmtD(row.repair_date)],...(row.worker?[["العامل",row.worker]]:[])],items:[{title:row.item||"بدون صنف",rows:[["الكمية",nf(q)]]}]}))return false;
+    const row={repair_date:document.getElementById("m-d").value||today(),item:document.getElementById("m-item").value.trim()||null,color:document.getElementById("m-color").value.trim()||null,qty:q,worker:xfRead().worker||null};
+    const lf=leftOf(row.item,row.color);
+    if(lf!==null&&q>lf+(rec&&norm(rec.item)===norm(row.item)&&norm(rec.color)===norm(row.color)?rec.qty:0)&&!await ask("المتبقي في جرد التصليح لصنف «"+row.item+(row.color?" · "+row.color:"")+"» هو "+nf(lf)+" وانت بتسجّل "+nf(q)+". تكمّل؟","نعم، كمّل"))return false;
+    if(!await reviewSave({title:"راجع التصليح قبل الحفظ",meta:[["التاريخ",fmtD(row.repair_date)],...(row.worker?[["العامل",row.worker]]:[])],items:[{title:row.item||"بدون صنف",rows:[...(row.color?[["اللون",row.color]]:[]),["الكمية",nf(q)]]}]}))return false;
     let{error}=rec?await db.from("repair_log").update(row).eq("id",id):await db.from("repair_log").insert(row);
+    if(error&&/color/.test(error.message||"")){toast("شغّل ملف setup_repair_color.sql في Supabase الأول");return false}
     if(error&&/worker/.test(error.message||"")){toast("شغّل ملف setup_repair_worker.sql في Supabase الأول");return false}
     if(error){toast("خطأ: "+error.message);return false}
     await load();toast(rec?"تم التعديل":"تم التسجيل");
@@ -107,15 +189,18 @@ async function del(id){
 }
 function exportCsv(){
   const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
-  const csv="\uFEFF"+["التاريخ,الصنف,العامل,الكمية",...filtered().map(r=>[r.d,r.item||NONE,r.w,r.qty].map(q).join(","))].join("\n");
+  const csv="\uFEFF"+["التاريخ,الصنف,اللون,العامل,الكمية",...filtered().map(r=>[r.d,r.item||NONE,r.color,r.w,r.qty].map(q).join(","))].join("\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="تصليح.csv";a.click();
 }
 document.getElementById("add").onclick=()=>repForm(0);
 document.getElementById("f-go").onclick=draw;
 document.getElementById("f-csv").onclick=exportCsv;
 document.getElementById("t-log").onclick=()=>{tab="log";setTab()};
+document.getElementById("t-stock").onclick=()=>{tab="stock";setTab()};
 document.getElementById("t-prod").onclick=()=>{tab="prod";setTab()};
-(async()=>{if(await requireAuth("repair.html")){renderNav("repair.html");searchBox("tbl",q=>{Q=q;draw()},"بحث بالصنف أو العامل…");dateChips("f-from","f-to",draw);skel("body",4);if(tab==="prod")setTab();load().finally(settle)}})();
+document.getElementById("st-add").onclick=()=>stForm(0,false);
+document.getElementById("st-adj").onclick=()=>stForm(0,true);
+(async()=>{if(await requireAuth("repair.html")){renderNav("repair.html");searchBox("tbl",q=>{Q=q;draw()},"بحث بالصنف أو اللون أو العامل…");dateChips("f-from","f-to",draw);skel("body",4);if(tab!=="log")setTab();load().finally(settle)}})();
 </script>
 <script src="install.js" defer></script>
 <script src="desktop.js" defer></script>

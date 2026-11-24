@@ -214,9 +214,9 @@ body.noanim .card,body.noanim tbody tr,body.noanim .bar i,body.noanim .kpi,body.
 @media print{.topbar,.tabbar,#splash,#toast,#offline,.noprint,.tabs{display:none!important}body{background:#fff;color:#000;animation:none}.card{box-shadow:none;animation:none}}
 
 /* ===== القائمة الجانبية (كانت ناقصة) ===== */
-.side{position:fixed;top:0;bottom:0;inset-inline-start:0;width:min(290px,82vw);z-index:40;display:flex;flex-direction:column;gap:6px;background:var(--card);border-inline-end:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.18);padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));overflow-y:auto;transform:translateX(105%);visibility:hidden;transition:transform .28s cubic-bezier(.2,.9,.3,1),visibility .28s}
+.side{position:fixed;top:0;bottom:0;height:100vh;height:100dvh;max-height:100dvh;inset-inline-start:0;width:min(290px,82vw);z-index:40;display:flex;flex-direction:column;gap:6px;background:var(--card);border-inline-end:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.18);padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));overflow-y:auto;transform:translateX(105%);visibility:hidden;transition:transform .28s cubic-bezier(.2,.9,.3,1),visibility .28s}
 .sideopen .side{transform:none;visibility:visible}
-.scrim{position:fixed;inset:0;z-index:39;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+.scrim{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100vh;height:100dvh;z-index:39;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
 .sideopen .scrim{opacity:1;visibility:visible}
 body.sideopen{overflow:hidden}
 .side-head{display:flex;align-items:center;gap:10px;padding:6px 6px 12px;border-bottom:1px solid var(--line);margin-bottom:6px}
