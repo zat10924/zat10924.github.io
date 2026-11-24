@@ -746,6 +746,7 @@ button.xc-card{cursor:pointer;transition:transform .18s,border-color .2s}button.
 <script src="ai-print.js"></script>
 <script src="ai-center.js"></script>
 <script src="ai-dates.js"></script>
+<script src="ai-smart.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const P={copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/>',
@@ -928,7 +929,8 @@ function _score(n,c){
   let sc=sum/Math.max(A.length,B.length);
   const x=nz(n),y=nz(c);if(x&&y&&(x.includes(y)||y.includes(x)))sc=Math.max(sc,0.7);
   return sc}
-function match(item){ // يتحقق من اسم الصنف مقابل الأصناف المسجّلة ويقترح أقرب الأصناف
+function match(item,sec){ // يتحقق من اسم الصنف مقابل الأصناف المسجّلة ويقترح أقرب الأصناف
+  if(window.MasSmart&&MasSmart.isReady())return MasSmart.matchItem(item,sec);
   if(!item||!ITEMS||!ITEMS.length)return{s:"unk"};const n=nz(item);
   if(ITEMS.some(c=>nz(c)===n))return{s:"ok"};
   const ranked=ITEMS.map(c=>({c,sc:_score(item,c)})).filter(x=>x.sc>=0.5).sort((a,b)=>b.sc-a.sc).slice(0,3);
@@ -946,7 +948,7 @@ function validate(v){
     if(r.qty==null&&!(r._err||[]).some(x=>x.k==="qty")){W.push("سطر "+n+": العدد غير محدد.");f.push("warn")}
     if(r.qty!=null&&r.scrap!=null&&r.scrap>r.qty){W.push("سطر "+n+": الهالك أكبر من العدد.");f.push("warn")}
     if(r.qty!=null&&r.qty>50000){W.push("سطر "+n+": عدد كبير غير معتاد ("+r.qty+").");f.push("warn")}
-    if(v.section==="finish"&&r.item&&!["مشرط","مياه","صنفرة"].includes(r.item))W.push("سطر "+n+": التشطيب يقبل فقط مشرط أو مياه أو صنفرة.");const m=match(r.item);r._m=m;if(m.s==="no"){W.push("سطر "+n+": الصنف غير موجود في الأصناف المسجّلة.");f.push("warn")}else if(m.s==="near"){W.push("سطر "+n+": الاسم غير مطابق، أقرب صنف «"+m.sug+"»"+(m.alts&&m.alts.length>1?" (أو "+m.alts.slice(1).join("، ")+")":"")+".");f.push("warn")}
+    if(v.section==="finish"&&r.item&&!["مشرط","مياه","صنفرة"].includes(r.item))W.push("سطر "+n+": التشطيب يقبل فقط مشرط أو مياه أو صنفرة.");const m=match(r.item,v.section);r._m=m;if(window.MasSmart&&MasSmart.isReady())MasSmart.check(v,r,n).forEach(x=>{W.push(x);if(!f.includes("warn"))f.push("warn")});if(m.s==="no"){W.push("سطر "+n+": الصنف غير موجود في الأصناف المسجّلة.");f.push("warn")}else if(m.s==="near"){W.push("سطر "+n+": الاسم غير مطابق، أقرب صنف «"+m.sug+"»"+(m.alts&&m.alts.length>1?" (أو "+m.alts.slice(1).join("، ")+")":"")+".");f.push("warn")}
     if(r.shift&&(v.section==="brush"||v.section==="finish")&&!["صباحي","مسائي","ليلي"].includes(r.shift)){W.push("سطر "+n+": الوردية يجب أن تكون صباحي أو مسائي أو ليلي.");f.push("warn")}
     if(r._dup){W.push("سطر "+n+": يوجد "+r._dup+" سجل محفوظ مشابه بنفس اليوم (الصنف والعدد والعامل). تأكد أنه ليس تكرارًا.");f.push("warn")}
     const k=nz(r.item)+"|"+nz(r.color)+"|"+nz(r.worker);if(r.item&&seen[k]){W.push("سطر "+n+": مكرر مع سطر "+seen[k]+".")}else seen[k]=n;
@@ -954,7 +956,8 @@ function validate(v){
   return{E,W};
 }
 function impDraw(d,m){
-  const v=m.imp,host=d.querySelector(".x-imp"),CONF={high:"ثقة عالية",medium:"ثقة متوسطة",low:"ثقة منخفضة — راجع كل رقم"};
+  const v=m.imp;if(window.MasSmart){MasSmart.run(v);if(!MasSmart.isReady()&&!v._smTried){v._smTried=1;MasSmart.ready(v.section).then(()=>{if(d.isConnected)impDraw(d,m)})}else if(MasSmart.isReady()&&v.section&&!v._smH){v._smH=v.section;MasSmart.ready(v.section).then(()=>{if(d.isConnected)impCheck(d,m)})}}
+  const host=d.querySelector(".x-imp"),CONF={high:"ثقة عالية",medium:"ثقة متوسطة",low:"ثقة منخفضة — راجع كل رقم"};
   const opts='<option value="">— اختر القسم —</option>'+Object.keys(SECN).map(k=>'<option value="'+k+'"'+(k===v.section?" selected":"")+">"+SECN[k]+"</option>").join("");
   const SRCB={image:"قراءة صورة داخلية",chatgpt:"ChatGPT خارجي",internal:"مساعد داخلي"};
   host.innerHTML='<div class="x-imp-h"><b>'+ic("clip")+'بيانات مستخرجة — راجعها قبل الحفظ</b>'+(v.source&&SRCB[v.source]?'<span class="bdg src">'+SRCB[v.source]+'</span>':"")+(v.confidence&&CONF[v.confidence]?'<span class="bdg '+v.confidence+'">'+CONF[v.confidence]+'</span>':"")+'</div>'+
@@ -969,10 +972,10 @@ function impDraw(d,m){
 function impCheck(d,m){
   const v=m.imp,{E,W}=validate(v);
   d.querySelectorAll(".x-ir").forEach(el=>{const r=v.rows[+el.dataset.r];el.className="x-ir "+(r._f||"");const rn=el.querySelector(".rn");
-    rn.innerHTML=r._m&&r._m.s==="near"?'أقرب صنف: '+(r._m.alts||[r._m.sug]).map((a,k)=>'<button type="button" data-fix="'+el.dataset.r+'" data-alt="'+k+'">'+esc(a)+"</button>").join(""):r._m&&r._m.s==="ok"?'<span style="color:var(--ok);display:inline-flex;gap:4px;align-items:center">'+ic("check")+'صنف مسجّل</span>':""});
-  d.querySelector(".x-chk").innerHTML=E.map(x=>'<div class="e">'+ic("x")+esc(x)+"</div>").join("")+W.map(x=>'<div class="w">'+ic("alert")+esc(x)+"</div>").join("")+(!E.length&&!W.length?'<div class="o">'+ic("check")+"لا توجد ملاحظات على البيانات</div>":"");
+    rn.innerHTML=window.MasSmart&&MasSmart.isReady()?MasSmart.chipsHtml(v,r,+el.dataset.r,esc):(r._m&&r._m.s==="near"?'أقرب صنف: '+(r._m.alts||[r._m.sug]).map((a,k)=>'<button type="button" data-fix="'+el.dataset.r+'" data-alt="'+k+'">'+esc(a)+"</button>").join(""):r._m&&r._m.s==="ok"?'<span style="color:var(--ok);display:inline-flex;gap:4px;align-items:center">'+ic("check")+'صنف مسجّل</span>':"")});
+  d.querySelector(".x-chk").innerHTML=E.map(x=>'<div class="e">'+ic("x")+esc(x)+"</div>").join("")+W.map(x=>'<div class="w">'+ic("alert")+esc(x)+"</div>").join("")+(window.MasSmart&&MasSmart.isReady()&&MasSmart.dupCount(v)?'<div class="w">'+ic("alert")+MasSmart.dupCount(v)+' سطر مكرر بنفس الصنف واللون والعامل <button type="button" data-ia="merge">دمجهم وجمع الأعداد</button></div>':"")+(!E.length&&!W.length?'<div class="o">'+ic("check")+"لا توجد ملاحظات على البيانات</div>":"");
   const nb=v.rows.filter(r=>r._f==="bad").length,nw=v.rows.filter(r=>r._f==="warn").length,sm=d.querySelector(".x-sum");
-  if(sm)sm.innerHTML='<span class="ok">'+(v.rows.length-nb-nw)+' صف صحيح</span><span class="w">'+W.length+' تحذير</span><span class="e">'+E.length+' خطأ</span>'+(v._dupInfo?'<small>'+esc(v._dupInfo)+'</small>':"");
+  if(sm)sm.innerHTML='<span class="ok">'+(v.rows.length-nb-nw)+' صف صحيح</span><span class="w">'+W.length+' تحذير</span><span class="e">'+E.length+' خطأ</span>'+(window.MasSmart&&MasSmart.isReady()&&MasSmart.stats(v).auto?'<span class="ok">ذكاء: صُحّح '+MasSmart.stats(v).auto+' تلقائيًا (راجعها)</span>':"")+(v._dupInfo?'<small>'+esc(v._dupInfo)+'</small>':"");
   d.querySelector('[data-ia=go]').disabled=E.length>0;const sv=d.querySelector('[data-ia=save]');if(sv)sv.disabled=E.length>0;
 }
 const msgOf=w=>!w?null:w.dataset.rv?(window.MAC?MAC.rvMsg():null):((cur&&cur.m[+w.dataset.i])||null);
@@ -980,8 +983,9 @@ const dupLater=(w,m)=>{clearTimeout(window._dq);window._dq=setTimeout(()=>{if(wi
 function impInput(e){
   const w=e.target.closest(".x-m"),m=msgOf(w);if(!m||!m.imp)return;
   const v=m.imp,el=e.target,f=el.dataset.f,k=el.dataset.k;
-  if(f){v[f]=el.value;v.rows.forEach(r=>{delete r._dup});dupLater(w,m)}
+  if(f){v[f]=el.value;v.rows.forEach(r=>{delete r._dup});if(f==="section"&&window.MasSmart){v._smH=el.value;MasSmart.ready(el.value).then(()=>impCheck(w,m))}dupLater(w,m)}
   else if(k){const r=v.rows[+el.closest(".x-ir").dataset.r];
+    if(window.MasSmart)MasSmart.touched(r,k);
     r[k]=(k==="qty"||k==="scrap")?(el.value===""?null:Math.max(0,parseInt(el.value,10)||0)):(el.value.trim()||null);
     if(r._err)r._err=r._err.filter(x=>x.k!==k);
     if(k==="item"||k==="qty"||k==="worker"){delete r._dup;dupLater(w,m)}}
@@ -990,13 +994,16 @@ function impInput(e){
 $("x_msgs").addEventListener("input",impInput);$("rv_host").addEventListener("input",impInput);
 function impClick(e){
   const w=e.target.closest(".x-m"),m=msgOf(w);if(!m||!m.imp)return;const v=m.imp;
-  const rm=e.target.closest("[data-rm]"),fx=e.target.closest("[data-fix]"),ia=e.target.closest("[data-ia]");
-  if(rm){v.rows.splice(+rm.dataset.rm,1);save();impDraw(w,m)}
+  const rm=e.target.closest("[data-rm]"),fx=e.target.closest("[data-fix]"),ia=e.target.closest("[data-ia]"),un=e.target.closest("[data-undo]"),sf=e.target.closest("[data-sfix]");
+  if(un){const[i,k]=un.dataset.undo.split("|");MasSmart.undo(v.rows[+i],k);save();impDraw(w,m)}
+  else if(sf){const[i,k,j]=sf.dataset.sfix.split("|");MasSmart.pick(v,v.rows[+i],k,+j);save();impDraw(w,m)}
+  else if(rm){v.rows.splice(+rm.dataset.rm,1);save();impDraw(w,m)}
   else if(fx){const _r=v.rows[+fx.dataset.fix];_r.item=(_r._m.alts||[_r._m.sug])[+fx.dataset.alt||0];delete v.rows[+fx.dataset.fix]._dup;save();impDraw(w,m)}
   else if(ia){const a=ia.dataset.ia;
     if(a==="add"){v.rows.push({item:null,qty:null,scrap:null,worker:null,shift:null,note:null});save();impDraw(w,m)}
     else if(a==="copy"){const tx=(SECN[v.section]||"")+" — "+v.date+"\n"+v.rows.map(r=>[r.item,r.qty!=null?"العدد "+r.qty:"",r.scrap!=null?"هالك "+r.scrap:"",r.worker].filter(Boolean).join(" | ")).join("\n");navigator.clipboard.writeText(tx).then(()=>toast("تم النسخ","ok"),()=>toast("تعذّر النسخ","bad"))}
-    else if(a==="fixall"){let c=0;v.rows.forEach(r=>{const x=match(r.item);if(x.s==="near"&&x.sc>=0.75){r.item=x.sug;delete r._dup;c++}});save();impDraw(w,m);toast(c?"تم تصحيح "+c+" صنف لأقرب اسم مسجّل — راجعهم":"لا توجد أسماء قريبة بدرجة كافية للتصحيح التلقائي",c?"ok":"bad")}
+    else if(a==="merge"){const c=MasSmart.merge(v);save();impDraw(w,m);toast("تم دمج "+c+" سطر مكرر","ok")}
+    else if(a==="fixall"){if(window.MasSmart&&MasSmart.isReady()){const c=MasSmart.fixAll(v);save();impDraw(w,m);toast(c?"تم تصحيح "+c+" اسم لأقرب مسجّل — راجعهم":"لا توجد أسماء قريبة بدرجة كافية للتصحيح التلقائي",c?"ok":"bad");return}let c=0;v.rows.forEach(r=>{const x=match(r.item);if(x.s==="near"&&x.sc>=0.75){r.item=x.sug;delete r._dup;c++}});save();impDraw(w,m);toast(c?"تم تصحيح "+c+" صنف لأقرب اسم مسجّل — راجعهم":"لا توجد أسماء قريبة بدرجة كافية للتصحيح التلقائي",c?"ok":"bad")}
     else if(a==="cancel"){MAC.cancel(w,m)}
     else if(a==="save"&&w.dataset.rv){writeSave(w,m)}
     else if(a==="go"){MAC.go(w,m,ia)}}
