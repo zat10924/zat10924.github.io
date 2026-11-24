@@ -186,7 +186,9 @@ function stImport(){if(roBlock())return;
       out.push({item:p[0],color:p.length>2?p[1]:"",qty:num});
     });
     if(!out.length){toast("مفيش سطور صالحة"+(badL.length?" (راجع السطر "+badL[0]+")":""));return false}
-    {const fixed=await masReviewNames(out,{kind:"item",field:"item",extraKnown:stItems()});if(!fixed)return false;out.length=0;out.push(...fixed);if(!out.length){toast("كل السطور اتخطّت — مفيش حاجة تتحفظ");return false}}
+    {const fixed=await masReviewNames(out,{kind:"item",field:"item",extraKnown:stItems()});if(!fixed)return false;out.length=0;out.push(...fixed);
+      if(out.some(r=>r.color)){const fc=await masReviewNames(out,{kind:"color",field:"color",extraKnown:stock.map(r=>r.color).filter(Boolean)});if(!fc)return false;out.length=0;out.push(...fc)}
+      if(!out.length){toast("كل السطور اتخطّت — مفيش حاجة تتحفظ");return false}}
     if(badL.length&&!await ask("فيه "+badL.length+" سطر مش مفهوم (أولهم السطر "+badL[0]+") وهيتخطّوا. تكمّل؟","نعم، كمّل"))return false;
     const d=document.getElementById("i-d").value||today();
     if(!await reviewSave({title:"راجع الاستيراد قبل الحفظ",meta:[["التاريخ",fmtD(d)],["عدد الأصناف",nf(out.length)]],items:out.slice(0,30).map(r=>({title:r.item,rows:[...(r.color?[["اللون",r.color]]:[]),["الكمية",nf(r.qty)]]})),total:out.reduce((a,r)=>a+r.qty,0)}))return false;
