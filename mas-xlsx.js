@@ -74,8 +74,9 @@
     const strings = ss ? (ss.match(/<si\b[\s\S]*?<\/si>|<si\s*\/>/g) || []).map(textOf) : [];
     const isDate = st ? dateStyles(st) : [];
     const rows = [];
-    (sheet.match(/<row\b[\s\S]*?<\/row>|<row\b[^>]*\/>/g) || []).forEach(rx => {
+    (sheet.match(/<row\b[^>]*\/>|<row\b[^>]*[^\/]>[\s\S]*?<\/row>/g) || []).forEach(rx => {
       const rn = attr(rx.match(/^<row\b[^>]*>/)[0], "r"), ri = rn ? +rn - 1 : rows.length;
+      if (/\/>$/.test(rx)) { if (ri < MAX_ROWS) rows[ri] = []; return; }
       if (ri >= MAX_ROWS) return;
       const row = [];
       (rx.match(/<c\b[^>]*\/>|<c\b[^>]*>[\s\S]*?<\/c>/g) || []).forEach((cx, k) => {

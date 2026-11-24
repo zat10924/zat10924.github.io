@@ -54,7 +54,7 @@ async function saveCus(n,p){
   if(!cusOk||!n)return;
   try{const c=CUS.find(x=>norm(x.name)===norm(n));
     if(c){if(p&&p!==c.phone)await db.from("customers").update({phone:p}).eq("id",c.id)}
-    else await db.from("customers").insert({name:n,phone:p||null})}catch(e){}
+    else {const r=await db.from("customers").insert({name:n,phone:p||null});if(r.error&&r.error.code!=="23505")toast("الطلبية اتحفظت، بس العميل «"+n+"» ما اتسجّلش في قائمة العملاء")}}catch(e){}
 }
 async function load(){
   const[g,go,gl,dO,dl,sp,so,cu,dr,co,cl,bo,bl]=await Promise.all([

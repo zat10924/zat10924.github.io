@@ -752,7 +752,7 @@ function openModal(title,body,onSave,saveText="حفظ"){
   closeModal();Snd.play("open");
   const d=document.createElement("div");d.className="ov";d.id="ov";
   const _more=_masWide()&&saveText==="حفظ"&&!/تعديل|حذف|تغيير|كلمة|مرور/.test(String(title))&&/type=["']?number/.test(String(body));
-  d.innerHTML=`<div class="modal"><h3>${title}</h3><div>${body}</div><div class="row"><button class="btn" id="mSave">${saveText}</button>${_more?'<button class="btn ghost" id="mSaveMore" title="يحفظ ويفتح نموذج جديد بنفس الصنف والوردية (Ctrl+Shift+Enter)">حفظ وإضافة آخر</button>':""}<button class="btn ghost" onclick="closeModal()">إلغاء</button></div></div>`;
+  d.innerHTML=`<div class="modal"><h3>${String(title).replace(/</g,"&lt;")}</h3><div>${body}</div><div class="row"><button class="btn" id="mSave">${saveText}</button>${_more?'<button class="btn ghost" id="mSaveMore" title="يحفظ ويفتح نموذج جديد بنفس الصنف والوردية (Ctrl+Shift+Enter)">حفظ وإضافة آخر</button>':""}<button class="btn ghost" onclick="closeModal()">إلغاء</button></div></div>`;
   document.body.appendChild(d);
   d.addEventListener("mousedown",e=>{if(e.target===d)closeModal()});
   d.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();else if(e.key==="Enter"&&e.target.tagName==="INPUT"&&e.target.type!=="search"){e.preventDefault();_mNext(d,e.target)}});
@@ -784,7 +784,7 @@ function fmtD(d){return new Date(d+"T00:00:00").toLocaleDateString("ar-EG")}
 function fmtDW(d){if(!d)return"";const x=new Date(d+"T00:00:00");return isNaN(x)?String(d):x.toLocaleDateString("ar-EG",{weekday:"long"})+" "+fmtD(d)}
 function ask(msg,yes="نعم، احذف"){return new Promise(res=>{
   const d=document.createElement("div");d.className="ov";d.style.zIndex=85;
-  d.innerHTML=`<div class="modal"><h3>${msg}</h3><div class="row"><button class="btn" id="yes">${yes}</button><button class="btn ghost" id="no">إلغاء</button></div></div>`;
+  d.innerHTML=`<div class="modal"><h3>${String(msg).replace(/</g,"&lt;")}</h3><div class="row"><button class="btn" id="yes">${String(yes).replace(/</g,"&lt;")}</button><button class="btn ghost" id="no">إلغاء</button></div></div>`;
   document.body.appendChild(d);
   d.querySelector("#yes").onclick=()=>{d.remove();res(true)};
   d.querySelector("#no").onclick=()=>{d.remove();res(false)};
