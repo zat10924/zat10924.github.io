@@ -47,6 +47,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
     <div class="nums" id="stNote" style="margin:0 2px 10px"></div>
     <div class="scroll" id="stTbl"><table><thead><tr><th>الصنف</th><th>دخل التصليح</th><th>اتصلّح</th><th>المتبقي</th><th>التوقع</th></tr></thead><tbody id="stBody"></tbody></table></div>
     <h3 style="margin:18px 2px 8px">حركات الجرد</h3>
+    <div class="card noprint" style="margin-bottom:8px"><div class="two"><div><label>من تاريخ</label><input type="date" id="sf-from"></div><div><label>إلى تاريخ</label><input type="date" id="sf-to"></div></div><div class="hint">بيفلتر حركات الجرد وطباعتها. لحركات يوم واحد اختار نفس اليوم في الخانتين. الأرصدة (المتبقي) دايمًا تراكمية.</div></div>
     <div class="scroll"><table><thead><tr><th>التاريخ</th><th>الصنف</th><th>الكمية</th><th>النوع</th><th class="noprint"></th></tr></thead><tbody id="mvBody"></tbody></table></div>
   </div>
   <div id="prodRep" style="display:none"></div>
@@ -127,6 +128,11 @@ const thrMap=()=>{try{return JSON.parse(localStorage.getItem(THR_K)||"{}")||{}}c
 const thrOf=o=>{const v=thrMap()[o.key];return v==null?LOW():v};
 const isLow=o=>o.counted&&o.left>0&&((thrOf(o)>0&&o.left<=thrOf(o))||(o.days!=null&&o.days<=3));
 let stView=[];
+function stMv(f,t){
+  const a=document.getElementById("sf-from"),b=document.getElementById("sf-to");
+  f=f!==undefined?f:(a?a.value:"");t=t!==undefined?t:(b?b.value:"");
+  return stock.filter(r=>(!f||r.d>=f)&&(!t||r.d<=t));
+}
 function drawStock(){
   const body=document.getElementById("stBody");if(!body)return;
   if(!stockOk){body.innerHTML='<tr><td colspan="5" class="empty">شغّل ملف setup_repair_stock.sql في Supabase الأول</td></tr>';document.getElementById("mvBody").innerHTML="";document.getElementById("stStats").innerHTML="";return}
@@ -146,7 +152,8 @@ function drawStock(){
   const fcst=o=>{if(!o.counted)return"—";if(o.left<=0)return"خلص";if(o.days==null)return"—";const d=Math.ceil(o.days);return'<span style="color:'+(d<=3?"var(--warn)":"var(--mute)")+'">~'+nf(d)+' يوم</span>'};
   const row=(o,i)=>{const tm=thrMap()[o.key];return`<tr><td>${esc(o.name)}${o.colors&&o.colors.length?'<div class="nums">'+o.colors.map(c=>esc(c.color)+' '+nf(c.left)).join(" · ")+'</div>':""}${o.alts&&o.alts.size?'<div class="nums">يضم: '+[...o.alts].slice(0,3).map(esc).join("، ")+'</div>':""}</td><td>${o.counted?nf(o.inn):"—"}</td><td>${nf(o.rep)}</td><td><b style="color:${!o.counted?"var(--mute)":o.left<0?"var(--bad)":o.left===0?"var(--mute)":isLow(o)?"var(--warn)":"var(--ok)"}">${o.counted?nf(o.left):"غير مجرود"}</b></td><td>${fcst(o)}${o.counted?' <button class="btn ghost sm noprint" onclick="stThr('+i+')" aria-label="حد التنبيه">'+(tm!=null?"حد "+nf(tm):"⚙")+'</button>':""}</td></tr>`};
   body.innerHTML=list.length||extra.length?list.map((o,i)=>row(o,i)).join("")+extra.map(o=>row(o,-1)).join(""):'<tr><td colspan="5" class="empty">لسه مفيش جرد — اضغط «إضافة للتصليح»</td></tr>';
-  document.getElementById("mvBody").innerHTML=stock.length?stock.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${esc(r.item)}${r.color?' <span class="nums">· '+esc(r.color)+'</span>':""}${r.note?'<div class="nums">'+esc(r.note)+'</div>':""}</td><td><b>${r.qty>0?"+":""}${nf(r.qty)}</b></td><td>${r.kind==="adjust"?"تسوية":"دخل التصليح"}</td><td class="noprint" style="white-space:nowrap"><button class="btn ghost sm" onclick="stForm(${r.id})">تعديل</button> <button class="btn ghost sm" onclick="stDel(${r.id})">حذف</button></td></tr>`).join(""):'<tr><td colspan="5" class="empty">مفيش حركات</td></tr>';
+  const mvs=stMv();
+  document.getElementById("mvBody").innerHTML=mvs.length?mvs.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${esc(r.item)}${r.color?' <span class="nums">· '+esc(r.color)+'</span>':""}${r.note?'<div class="nums">'+esc(r.note)+'</div>':""}</td><td><b>${r.qty>0?"+":""}${nf(r.qty)}</b></td><td>${r.kind==="adjust"?"تسوية":"دخل التصليح"}</td><td class="noprint" style="white-space:nowrap"><button class="btn ghost sm" onclick="stForm(${r.id})">تعديل</button> <button class="btn ghost sm" onclick="stDel(${r.id})">حذف</button></td></tr>`).join(""):'<tr><td colspan="5" class="empty">'+(stock.length?"مفيش حركات في التواريخ دي":"مفيش حركات")+'</td></tr>';
 }
 function stThr(i){const o=stView[i];if(!o)return;const cur=thrMap()[o.key];
   openModal("حد التنبيه: "+o.name,`<label>نبّهني لما المتبقي يوصل لـ (قطعة أو أقل)</label><input type="number" id="t-v" min="0" inputmode="numeric" value="${cur==null?"":cur}"><div class="hint">سيبه فاضي علشان يرجع للحد العام (${nf(LOW())}). وبنبّهك كمان لو المتبقي يكفي ٣ أيام أو أقل حسب معدل تصليح آخر ١٤ يوم.</div>`,async()=>{
@@ -333,8 +340,8 @@ function setTab(){
   try{history.replaceState(null,"",tab==="prod"?"#reports":tab==="stock"?"#stock":location.pathname+location.search)}catch(e){}
   if(tab==="prod")repCtl?repCtl.refresh():repCtl=Reports.mount("prodRep","repair");
 }
-function filtered(){
-  const f=document.getElementById("f-from").value,t=document.getElementById("f-to").value,i=document.getElementById("f-item").value;
+function filtered(of,ot){
+  const f=of!==undefined?of:document.getElementById("f-from").value,t=ot!==undefined?ot:document.getElementById("f-to").value,i=document.getElementById("f-item").value;
   return rows.filter(r=>(!f||r.d>=f)&&(!t||r.d<=t)&&(!i||(i==="__none"?!r.item:r.item===i))&&hit(Q,r.item,r.color,r.w));
 }
 function draw(){
@@ -421,7 +428,7 @@ function rpStockHtml(ids,B,mv,t){
   if(has("stale"))out.push(rpSec("stale","أصناف راكدة",stale.length?rpTbl(["الصنف","المتبقي","من تاريخ الجرد"],stale.map(o=>rpTr([rpNm(o),nf(o.left),fmtD(o.first)]))):'<div class="rp-e">مفيش أصناف راكدة</div>'));
   if(has("all"))out.push(rpSec("all","كل الأصناف",list.length?rpTbl(["الصنف","دخل التصليح","اتصلّح","المتبقي","التوقع"],list.map(o=>rpTr([rpNm(o),nf(o.inn),nf(o.rep),'<b class="'+(o.left<0?"rp-bad":isLow(o)?"rp-warn":"")+'">'+nf(o.left)+"</b>",rpDays(o)]))):'<div class="rp-e">مفيش جرد</div>'));
   if(has("unc")&&extra.length)out.push(rpSec("unc","أصناف اتصلّحت وغير مجرودة",rpTbl(["الصنف","اتصلّح"],extra.map(o=>rpTr([esc(o.name),nf(o.rep)])))));
-  if(has("mv")&&mv.length)out.push(rpSec("mv","آخر حركات الجرد",rpTbl(["التاريخ","الصنف","الكمية","النوع"],mv.slice(0,30).map(r=>rpTr([fmtD(r.d),esc(r.item)+(r.color?" · "+esc(r.color):""),(r.qty>0?"+":"")+nf(r.qty),r.kind==="adjust"?"تسوية":"دخل التصليح"])))));
+  if(has("mv")&&mv.length)out.push(rpSec("mv","حركات الجرد",rpTbl(["التاريخ","الصنف","الكمية","النوع"],mv.slice(0,200).map(r=>rpTr([fmtD(r.d),esc(r.item)+(r.color?" · "+esc(r.color):""),(r.qty>0?"+":"")+nf(r.qty),r.kind==="adjust"?"تسوية":"دخل التصليح"])))));
   return out.join("");
 }
 function rpLogHtml(ids,rs,CAP){
@@ -448,7 +455,8 @@ function rPrint(kind){
   let saved=null;try{saved=JSON.parse(localStorage.getItem("rp_"+kind)||"null")}catch(e){}
   const on=id=>saved&&saved.s?saved.s.includes(id):C.def.includes(id);
   const flt=kind==="log"?(()=>{const f=document.getElementById("f-from").value,t=document.getElementById("f-to").value,i=document.getElementById("f-item").value;return[f?"من "+fmtD(f):"",t?"إلى "+fmtD(t):"",i?(i==="__none"?NONE:i):"",Q?"بحث: "+Q:""].filter(Boolean).join(" · ")})():"";
-  openModal("خيارات الطباعة",`<div class="row" style="margin-bottom:6px">${C.pre.map((p,i)=>`<button type="button" class="btn ghost sm" data-pre="${i}">${p[0]}</button>`).join("")}</div>
+  const dRange=kind==="log"||kind==="stock"?`<div class="card" style="margin:0 0 8px"><b>${kind==="stock"?"تاريخ حركات الجرد":"تاريخ التقرير"}</b><div class="row" style="margin:6px 0"><button type="button" class="btn ghost sm" data-dq="today">النهارده</button><button type="button" class="btn ghost sm" data-dq="yest">إمبارح</button><button type="button" class="btn ghost sm" data-dq="all">كل التواريخ</button></div><div class="two"><div><label>من</label><input type="date" id="rp-f" value="${document.getElementById(kind==="stock"?"sf-from":"f-from").value}"></div><div><label>إلى</label><input type="date" id="rp-d2" value="${document.getElementById(kind==="stock"?"sf-to":"f-to").value}"></div></div><div class="hint">لتقرير يوم واحد اختار نفس اليوم في الخانتين.</div></div>`:"";
+  openModal("خيارات الطباعة",dRange+`<div class="row" style="margin-bottom:6px">${C.pre.map((p,i)=>`<button type="button" class="btn ghost sm" data-pre="${i}">${p[0]}</button>`).join("")}</div>
     ${C.secs.map(([id,lb])=>`<label style="display:flex;gap:8px;align-items:center;margin:6px 0;cursor:pointer"><input type="checkbox" class="rpx" data-id="${id}" ${on(id)?"checked":""} style="width:auto"><span>${lb}</span></label>`).join("")}
     <label>اتجاه الصفحة</label><select id="rp-o"><option value="portrait">طولي</option><option value="landscape">عرضي</option></select>
     <label>عنوان التقرير (اختياري)</label><input id="rp-t" maxlength="80" placeholder="${C.title}">
@@ -458,21 +466,28 @@ function rPrint(kind){
     if(!ids.length){toast("اختار قسم واحد على الأقل");return false}
     const ttl=document.getElementById("rp-t").value.trim()||C.title,note=document.getElementById("rp-n").value.trim(),by=document.getElementById("rp-by").value.trim()||(typeof ME!=="undefined"&&ME&&ME.name)||"",land=document.getElementById("rp-o").value==="landscape";
     try{localStorage.setItem("rp_"+kind,JSON.stringify({s:ids,by:document.getElementById("rp-by").value.trim()}))}catch(e){}
-    const t=today(),body=kind==="stock"?rpStockHtml(ids,balances(),stock,t):rpLogHtml(ids,filtered(),400);
+    let flt2=flt,pf,pt;
+    if(kind==="log"||kind==="stock"){pf=document.getElementById("rp-f").value;pt=document.getElementById("rp-d2").value;
+      if(pf&&pt&&pf>pt){toast("تاريخ البداية بعد تاريخ النهاية");return false}
+      const it=kind==="log"?document.getElementById("f-item").value:"";
+      flt2=[pf&&pf===pt?"يوم "+fmtD(pf):(pf?"من "+fmtD(pf):"")+(pf&&pt?" ":"")+(pt?"إلى "+fmtD(pt):""),it?(it==="__none"?NONE:it):"",kind==="log"&&Q?"بحث: "+Q:""].filter(Boolean).join(" · ");if(kind==="stock"&&flt2)flt2="حركات الجرد: "+flt2}
+    const t=today(),body=kind==="stock"?rpStockHtml(ids,balances(),stMv(pf,pt),t):rpLogHtml(ids,filtered(pf,pt),400);
     if(!body){toast("مفيش حاجة للطباعة");return false}
     const css=document.createElement("style");css.id="rp-css";
     css.textContent="#rp-root{display:none}@media print{@page{size:A4 "+(land?"landscape":"portrait")+";margin:12mm}body.rprint>*:not(#rp-root){display:none!important}body.rprint #rp-root{display:block!important;direction:rtl;color:#111;background:#fff;font-size:11pt;line-height:1.6}#rp-root h2{margin:0 0 2px;font-size:17pt;color:#642631}#rp-root h3{margin:14px 0 6px;font-size:12.5pt;color:#642631;border-bottom:1.5px solid #E8DCC0;padding-bottom:3px;break-after:avoid}#rp-root .rp-sub{font-size:9.5pt;color:#6b5a3a;margin-bottom:6px}#rp-root .rp-note{border:1px dashed #cdbf9f;border-radius:6px;padding:5px 10px;margin:6px 0;font-size:10.5pt}#rp-root table{width:100%;border-collapse:collapse;margin:4px 0 8px}#rp-root th{background:#642631!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:5px 8px;text-align:right;font-size:10.5pt}#rp-root td{border-bottom:1px solid #ddd;padding:4px 8px;font-size:10.5pt;vertical-align:top}#rp-root tr{break-inside:avoid}#rp-root tr.rp-d td{background:#F3EAEC!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:700;color:#421B24}#rp-root .rp-s{font-size:8.5pt;color:#6b5a3a}#rp-root .rp-kpis{display:flex;gap:8px;flex-wrap:wrap}#rp-root .rp-k{border:1px solid #cdbf9f;border-radius:8px;padding:5px 12px;min-width:90px}#rp-root .rp-k small{display:block;font-size:8.5pt;color:#6b5a3a}#rp-root .rp-k b{font-size:13pt}#rp-root .rp-n{margin:8px 0 0;padding-inline-start:20px;font-size:10.5pt}#rp-root .rp-bad{color:#b00020;font-weight:700}#rp-root .rp-warn{color:#b26a00;font-weight:700}#rp-root .rp-e{color:#6b5a3a;font-size:10pt;padding:4px 0}#rp-root .rp-f{margin-top:14px;padding-top:6px;border-top:1px dashed #cdbf9f;font-size:8.5pt;color:#6b5a3a}}";
     document.head.appendChild(css);
     const root=document.createElement("div");root.id="rp-root";
-    root.innerHTML='<h2>إدارة الأقسام — '+esc(ttl)+'</h2><div class="rp-sub">'+fmtD(t)+" · "+new Date().toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"})+(by?" · أعدّه: "+esc(by):"")+(flt?" · "+esc(flt):"")+'</div>'+(note?'<div class="rp-note">'+esc(note)+'</div>':"")+body+'<div class="rp-f">'+(kind==="stock"?"التوقع = المتبقي ÷ معدل تصليح الصنف في آخر ١٤ يوم. الصنف بيتحسب بإجمالي كل ألوانه.":"الأرقام حسب الفلاتر المختارة وقت الطباعة.")+'</div>';
+    root.innerHTML='<h2>إدارة الأقسام — '+esc(ttl)+'</h2><div class="rp-sub">'+fmtD(t)+" · "+new Date().toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"})+(by?" · أعدّه: "+esc(by):"")+(flt2?" · "+esc(flt2):"")+'</div>'+(note?'<div class="rp-note">'+esc(note)+'</div>':"")+body+'<div class="rp-f">'+(kind==="stock"?"التوقع = المتبقي ÷ معدل تصليح الصنف في آخر ١٤ يوم. الصنف بيتحسب بإجمالي كل ألوانه.":"الأرقام حسب الفلاتر المختارة وقت الطباعة.")+'</div>';
     document.body.appendChild(root);document.body.classList.add("rprint");
     let fin=false;const clean=()=>{if(fin)return;fin=true;document.body.classList.remove("rprint");root.remove();css.remove()};
     addEventListener("afterprint",clean,{once:true});setTimeout(clean,60000);setTimeout(()=>window.print(),250);
   },"طباعة");
+  document.querySelectorAll("#ov [data-dq]").forEach(b=>b.onclick=()=>{const f=document.getElementById("rp-f"),t=document.getElementById("rp-d2"),k=b.dataset.dq,td=today(),y=new Date(td+"T00:00:00");y.setDate(y.getDate()-1);const yd=y.getFullYear()+"-"+String(y.getMonth()+1).padStart(2,"0")+"-"+String(y.getDate()).padStart(2,"0");
+    if(k==="all"){f.value="";t.value=""}else{const v=k==="today"?td:yd;f.value=v;t.value=v}});
   document.querySelectorAll("#ov [data-pre]").forEach(b=>b.onclick=()=>{const p=C.pre[+b.dataset.pre][1];document.querySelectorAll("#ov .rpx").forEach(x=>{x.checked=p.includes(x.dataset.id)})});
 }
 {const lw=document.getElementById("st-low");lw.value=LOW()||"";lw.onchange=()=>{try{localStorage.setItem("repair_low",String(parseInt(lw.value)||0))}catch(e){}drawStock()}}
-(async()=>{if(await requireAuth("repair.html")){renderNav("repair.html");searchBox("tbl",q=>{Q=q;draw()},"بحث بالصنف أو اللون أو العامل…");dateChips("f-from","f-to",draw);skel("body",4);if(tab!=="log")setTab();load().finally(settle)}})();
+(async()=>{if(await requireAuth("repair.html")){renderNav("repair.html");searchBox("tbl",q=>{Q=q;draw()},"بحث بالصنف أو اللون أو العامل…");dateChips("f-from","f-to",draw);dateChips("sf-from","sf-to",drawStock);skel("body",4);if(tab!=="log")setTab();load().finally(settle)}})();
 </script>
 <script src="install.js" defer></script>
 <script src="desktop.js" defer></script>
