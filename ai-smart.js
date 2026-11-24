@@ -21,7 +21,8 @@
   const HIST_T = { casting: ["casting_log", "casting_date"], brush: ["brush_log", "brush_date"], repair: ["repair_log", "repair_date"] };
   const AKEY = "masai_alias_v1";
 
-  const S = { items: [], colors: [], workers: [], hist: {}, hcount: {}, alias: { item: {}, color: {}, worker: {} }, base: false, p: null, hp: {}, seeded: false };
+  const S = { items: [], colors: [], workers: [], hist: {}, hcount: {}, alias: { item: {}, color: {}, worker: {} }, base: false, p: null, hp: {}, seeded: false, orders: {}, op: {} };
+  const ORD_T = { casting: "casting_status", brush: "brush_status", spray: "spray_status" };
   try { const a = JSON.parse(localStorage.getItem(AKEY) || "null"); if (a && typeof a === "object") S.alias = Object.assign({ item: {}, color: {}, worker: {} }, a) } catch (e) { }
   const saveAlias = () => { try { localStorage.setItem(AKEY, JSON.stringify(S.alias)) } catch (e) { } };
   const list = k => k === "item" ? S.items : k === "color" ? S.colors : S.workers;
@@ -89,26 +90,33 @@
       if (!d.item && r.item && !SKIP_ITEM[sec] && S.items.length) {
         const x = resolve("item", r.item, sec);
         if (x.s === "ok" && x.val !== r.item) r.item = x.val;
-        else if (x.s === "auto") { r._auto.item = { from: r.item, to: x.val }; r.item = x.val }
+        else if (x.s === "auto") { r._auto.item = { from: r.item, to: x.val, why: x.why }; r.item = x.val }
         d.item = true;
       }
       if (!d.color && r.color && S.colors.length) {
         const x = resolve("color", r.color, sec);
         if (x.s === "ok" && x.val !== r.color) r.color = x.val;
-        else if (x.s === "auto") { r._auto.color = { from: r.color, to: x.val }; r.color = x.val }
+        else if (x.s === "auto") { r._auto.color = { from: r.color, to: x.val, why: x.why }; r.color = x.val }
         d.color = true;
       }
       if (!d.worker && r.worker && S.workers.length) {
         const x = resolve("worker", r.worker, sec);
         if (x.s === "ok" && x.val !== r.worker) r.worker = x.val;
-        else if (x.s === "auto") { r._auto.worker = { from: r.worker, to: x.val }; r.worker = x.val }
+        else if (x.s === "auto") { r._auto.worker = { from: r.worker, to: x.val, why: x.why }; r.worker = x.val }
         d.worker = true;
       }
     });
   }
   const touched = (r, k) => { r._sm = r._sm || { done: {} }; r._sm.done[k] = true; if (r._auto) delete r._auto[k] };
-  function undo(r, k) { const a = r._auto && r._auto[k]; if (!a) return; r[k] = a.from; delete r._auto[k]; r._sm.done[k] = true; if (k === "item" && a.note) { r._sm.done.color = true; r.color = null } }
-  function learn(kind, raw, canon) { const n = nz(raw); if (!n || !canon || nz(canon) === n) return; S.alias[kind] = S.alias[kind] || {}; S.alias[kind][n] = canon; saveAlias() }
+  function undo(r, k) { const a = r._auto && r._auto[k]; if (!a) return; if (a.why === "alias") forget(k, a.from); r[k] = a.from; delete r._auto[k]; r._sm.done[k] = true; if (k === "item" && a.note) { r._sm.done.color = true; r.color = null } }
+  function learn(kind, raw, canon) {
+    const n = nz(raw); if (!n || !canon || nz(canon) === n) return; S.alias[kind] = S.alias[kind] || {}; S.alias[kind][n] = canon; saveAlias();
+    try { const db = root.db; if (db) Promise.resolve(db.from("ai_item_aliases").upsert({ kind, raw_norm: n, canonical: canon, updated_at: new Date().toISOString() }, { onConflict: "kind,raw_norm" })).catch(() => { }) } catch (e) { }
+  }
+  function forget(kind, raw) {
+    const n = nz(raw); if (S.alias[kind]) delete S.alias[kind][n]; saveAlias();
+    try { const db = root.db; if (db) Promise.resolve(db.from("ai_item_aliases").delete().eq("kind", kind).eq("raw_norm", n)).catch(() => { }) } catch (e) { }
+  }
   function pick(v, r, k, j) {
     const x = resolve(k, r[k], v.section); const alts = x.alts || (x.val ? [x.val] : []); const to = alts[j]; if (!to) return;
     learn(k, r[k], to); r[k] = to; touched(r, k); delete r._dup;
@@ -127,6 +135,11 @@
       if (x.s === "near" || x.s === "auto") out.push('<span class="sm-c">' + LBL[k] + ' — أقرب: ' + (x.alts || [x.val]).map((a, j) => '<button type="button" data-sfix="' + i + "|" + k + "|" + j + '">' + esc(a) + "</button>").join("") + "</span>");
       else if (x.s === "ok" && k === "item") out.push('<span class="sm-c ok2">✓ صنف مسجّل</span>');
     });
+    const oi = (ordersInfo(v) || [])[i];
+    if (oi) {
+      if (oi.none && !oi.colorMiss) out.push('<span class="sm-c">بدون طلبية مفتوحة — هيتسجل حر</span>');
+      else if (oi.alloc.length) out.push('<span class="sm-c ok">' + oi.alloc.map(a => "طلبية #" + a.id + " (متبقي " + a.rem + (a.due ? " · تسليم " + esc(a.due) : "") + ")" + (a.full ? " ✓ تكتمل" : "")).join(" + ") + "</span>");
+    }
     return out.join("");
   }
   /* ملاحظات للتحقق (تُضاف للتحذيرات) */
@@ -142,7 +155,25 @@
         W.push("سطر " + n + ": العدد " + r.qty + " أكبر بكثير من المعتاد لهذا الصنف (المتوسط حوالي " + Math.round(md) + ")" + hint);
       } else if (h.length >= 8 && md >= 20 && r.qty < md / 10) W.push("سطر " + n + ": العدد " + r.qty + " أقل بكثير من المعتاد (المتوسط حوالي " + Math.round(md) + ").");
     }
+    const oi = (ordersInfo(v) || [])[n - 1];
+    if (oi) {
+      if (oi.colorMiss) W.push("سطر " + n + ": مفيش طلبية رش مفتوحة للصنف «" + r.item + "» بلون «" + r.color + "».");
+      else if (!oi.none && oi.over > 0) W.push("سطر " + n + ": العدد " + r.qty + " أكبر من المتبقي في الطلبيات المفتوحة لهذا الصنف (" + oi.total + ") بمقدار " + oi.over + ".");
+    }
     return W;
+  }
+  /* ربط الاستيراد بالطلبيات المفتوحة: يوزّع الكمية على أقدم طلبية تسليمًا ويكشف الزيادة عن المتبقي */
+  function ordersInfo(v) {
+    const sec = v.section, O = S.orders[sec]; if (!O) return null; const used = {};
+    return v.rows.map(r => {
+      if (!r.item || !(r.qty > 0)) return null;
+      const n = nz(r.item); let cand = O.filter(o => nz(o.item) === n), colorMiss = false;
+      if (sec === "spray" && r.color) { const c = cand.filter(o => !o.color || nz(o.color) === nz(r.color)); colorMiss = cand.length > 0 && !c.length; cand = c }
+      cand = cand.map(o => ({ o, rem: Math.max(o.req - o.done - (used[o.id] || 0), 0) })).filter(x => x.rem > 0).sort((a, b) => (a.o.due || "9999").localeCompare(b.o.due || "9999") || a.o.id - b.o.id);
+      let left = r.qty; const alloc = [];
+      cand.forEach(x => { if (left <= 0) return; const t = Math.min(left, x.rem); alloc.push({ id: x.o.id, take: t, rem: x.rem, due: x.o.due, full: t >= x.rem }); used[x.o.id] = (used[x.o.id] || 0) + t; left -= t });
+      return { alloc, over: left, total: cand.reduce((a, x) => a + x.rem, 0), none: !cand.length, colorMiss };
+    });
   }
   const dupKey = r => [nz(r.item), nz(r.color), nz(r.worker), nz(r.shift)].join("|");
   function dupCount(v) { const s = new Set(); let c = 0; v.rows.forEach(r => { if (!r.item) return; const k = dupKey(r); if (s.has(k)) c++; else s.add(k) }); return c }
@@ -187,6 +218,10 @@
         const k = await db.from("ai_knowledge").select("term,meaning").eq("active", true).eq("kind", "correction");
         if (!k.error && Array.isArray(k.data)) k.data.forEach(x => { const m = S.items.find(i => nz(i) === nz(x.meaning)); if (m && x.term && !S.alias.item[nz(x.term)]) S.alias.item[nz(x.term)] = m });
       } catch (e) { }
+      try { // ذاكرة التصحيحات المشتركة بين كل الأجهزة (setup_ai_aliases.sql)
+        const a = await db.from("ai_item_aliases").select("kind,raw_norm,canonical").limit(2000);
+        if (!a.error && Array.isArray(a.data)) a.data.forEach(x => { if (S.alias[x.kind]) S.alias[x.kind][x.raw_norm] = x.canonical });
+      } catch (e) { }
       S.base = S.items.length > 0 || S.colors.length > 0 || S.workers.length > 0;
       if (!S.base) S.p = null; // نعيد المحاولة لاحقًا لو فشل التحميل
     })();
@@ -197,7 +232,17 @@
         if (!r.error && Array.isArray(r.data)) { const h = {}, cnt = {}; r.data.forEach(x => { const k = nz(x.item); if (!k) return; cnt[k] = (cnt[k] || 0) + 1; if (x.qty > 0) (h[k] = h[k] || []).push(+x.qty) }); S.hist[sec] = h; S.hcount[sec] = cnt }
       } catch (e) { }
     })();
+    if (sec && ORD_T[sec] && !S.op[sec]) S.op[sec] = (async () => {
+      try {
+        const r = await db.from(ORD_T[sec]).select("id,item,status,due_date,qty_required,produced").eq("status", "open").limit(1000);
+        if (r.error || !Array.isArray(r.data)) return;
+        const cm = {};
+        if (sec === "spray") { try { const c = await db.from("spray_orders").select("id,spray_color").limit(2000); if (!c.error && c.data) c.data.forEach(x => { cm[x.id] = x.spray_color || "" }) } catch (e) { } }
+        S.orders[sec] = r.data.map(o => ({ id: o.id, item: o.item || "", color: cm[o.id] || "", req: +o.qty_required || 0, done: +o.produced || 0, due: o.due_date || "" }));
+      } catch (e) { }
+    })();
     if (sec && S.hp[sec]) await S.hp[sec];
+    if (sec && S.op[sec]) await S.op[sec];
   }
 
   const css = document.createElement("style");
@@ -205,7 +250,7 @@
   (document.head || document.documentElement).appendChild(css);
 
   root.MasSmart = {
-    ready: sec => load(sec).catch(() => { }), isReady: () => S.base, run, touched, undo, pick, learn, chipsHtml, check, merge, fixAll, stats, dupCount, matchItem, promptExtra,
+    ready: sec => load(sec).catch(() => { }), isReady: () => S.base, run, touched, undo, pick, learn, chipsHtml, check, merge, fixAll, stats, dupCount, matchItem, promptExtra, ordersInfo,
     _t: { resolve, splitColor, shiftOf, seed: o => { Object.assign(S, o); S.base = true }, S }
   };
 })(typeof window !== "undefined" ? window : globalThis);
