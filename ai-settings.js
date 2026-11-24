@@ -1,4 +1,4 @@
-/* إعدادات الذكاء الاصطناعي (للمدير فقط) — تُحقن داخل قسم «البيانات» في settings.html */
+/* إعدادات الذكاء الاصطناعي (للمدير فقط) — داخل تبويب «المحرك» المقفول بكلمة سر في settings.html */
 (function(){
   const $=id=>document.getElementById(id);
   const PN={gemini:"Google Gemini",groq:"Groq",openrouter:"OpenRouter"};
@@ -48,7 +48,6 @@
   }
   window.aiSettingsInit=function(){
     if(!ME||ME.role!=="admin"||!$("ai_card"))return;
-    $("ai_card").hidden=false;
     $("ai_save").onclick=save;
     $("ai_refresh").onclick=load;
     $("ai_eng").onclick=async e=>{
@@ -59,6 +58,6 @@
       out.textContent=!r.ok?"فشل: "+r.msg:r.data.ok?"يعمل · "+r.data.latency_ms+"ms":"فشل: "+r.data.error_class+(r.data.http_status?" "+r.data.http_status:"");
       logs();
     };
-    load();
+    window.aiSettingsLoad=load; /* بيتنادى بعد فتح التبويب بكلمة السر */
   };
 })();

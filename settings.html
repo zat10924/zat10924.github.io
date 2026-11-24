@@ -20,6 +20,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 <link rel="stylesheet" href="theme.css">
 <script>try{if(window.masWin)document.documentElement.classList.add("mas-frameless")}catch(e){}</script>
 <link rel="stylesheet" href="desktop.css">
+<style>.stabs button[hidden],#ai_relock_row[hidden],#ai_lock[hidden]{display:none!important}.stabs{grid-template-columns:repeat(auto-fit,minmax(64px,1fr))}</style>
 </head>
 <body>
 <div id="splash"><svg class="gears" viewBox="0 0 120 80" aria-hidden="true"><path class="g1" fill-rule="evenodd" fill="#D7B96F" d="M56.5,42.0 L63.4,44.7 L62.8,48.1 L55.4,48.3 L54.0,51.2 L58.6,57.0 L56.4,59.7 L49.9,56.1 L47.2,58.0 L48.4,65.3 L45.1,66.5 L41.3,60.2 L38.0,60.5 L35.3,67.4 L31.9,66.8 L31.7,59.4 L28.8,58.0 L23.0,62.6 L20.3,60.4 L23.9,53.9 L22.0,51.2 L14.7,52.4 L13.5,49.1 L19.8,45.3 L19.5,42.0 L12.6,39.3 L13.2,35.9 L20.6,35.7 L22.0,32.8 L17.4,27.0 L19.6,24.3 L26.1,27.9 L28.8,26.0 L27.6,18.7 L30.9,17.5 L34.7,23.8 L38.0,23.5 L40.7,16.6 L44.1,17.2 L44.3,24.6 L47.2,26.0 L53.0,21.4 L55.7,23.6 L52.1,30.1 L54.0,32.8 L61.3,31.6 L62.5,34.9 L56.2,38.7Z M45,42 a7,7 0 1,0 -14,0 a7,7 0 1,0 14,0Z"/><path class="g2" fill-rule="evenodd" fill="#E8D49B" d="M85.6,30.0 L90.2,32.7 L89.3,36.2 L83.9,36.2 L81.9,38.9 L83.2,44.1 L80.2,45.9 L76.3,42.2 L73.0,42.6 L70.3,47.2 L66.8,46.3 L66.8,40.9 L64.1,38.9 L58.9,40.2 L57.1,37.2 L60.8,33.3 L60.4,30.0 L55.8,27.3 L56.7,23.8 L62.1,23.8 L64.1,21.1 L62.8,15.9 L65.8,14.1 L69.7,17.8 L73.0,17.4 L75.7,12.8 L79.2,13.7 L79.2,19.1 L81.9,21.1 L87.1,19.8 L88.9,22.8 L85.2,26.7Z M78,30 a5,5 0 1,0 -10,0 a5,5 0 1,0 10,0Z"/><path class="g3" fill-rule="evenodd" fill="#B9984C" d="M95.2,52.5 L98.6,54.8 L97.7,57.6 L93.7,57.7 L91.8,59.7 L92.0,63.7 L89.3,64.8 L86.7,61.7 L83.9,61.5 L81.0,64.2 L78.4,62.8 L79.3,58.8 L77.7,56.5 L73.7,55.9 L73.2,53.0 L76.9,51.2 L77.7,48.5 L75.7,45.0 L77.7,42.8 L81.3,44.5 L83.9,43.5 L85.4,39.8 L88.4,40.0 L89.3,43.9 L91.8,45.3 L95.6,44.1 L97.3,46.6 L94.8,49.7Z M90,52.5 a4,4 0 1,0 -8,0 a4,4 0 1,0 8,0Z"/></svg><img src="icon.svg" alt=""><b>إدارة الأقسام</b><div class="ld"><i></i></div><small class="ldt">جاري التحميل…</small></div>
@@ -34,6 +35,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
     <button type="button" role="tab" id="t_rep" aria-controls="g_rep" data-g="g_rep"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg><span>التقارير</span></button>
     <button type="button" role="tab" id="t_kbd" aria-controls="g_kbd" data-g="g_kbd"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg><span>الكيبورد</span></button>
     <button type="button" role="tab" id="t_data" aria-controls="g_data" data-g="g_data"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg><span>البيانات</span></button>
+    <button type="button" role="tab" id="t_ai" aria-controls="g_ai" data-g="g_ai" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4M9 12h.01M15 12h.01M9 16h6"/></svg><span>المحرك</span></button>
     <button type="button" role="tab" id="t_about" aria-controls="g_about" data-g="g_about"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>البرنامج</span></button>
   </div>
 
@@ -169,6 +171,21 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
       <div class="alist"><button class="arow danger" id="s_rst" type="button"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></i><span class="at"><b>إعادة ضبط الإعدادات</b><small>الرجوع للإعدادات الافتراضية (مش بتمسح بيانات الإنتاج)</small></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button></div>
     </div>
 
+  </section>
+
+
+  <!-- ============ المحرك (مقفول بكلمة سر) ============ -->
+  <section class="sgrp" id="g_ai" role="tabpanel" aria-labelledby="t_ai">
+    <p class="gdesc">إعدادات محرك المساعد الذكي (MAS AI HUB). للمدير فقط ومحمية بكلمة سر.</p>
+    <div class="card" id="ai_lock">
+      <div class="sethead"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><h3>تبويب مقفول</h3></div>
+      <div class="hint">اكتب كلمة سر حسابك (حساب المدير) لفتح إعدادات المحرك. بتتقفل تاني تلقائيًا بعد 10 دقايق أو لما تطلع من التبويب.</div>
+      <label for="ai_pw">كلمة السر</label>
+      <input type="password" id="ai_pw" autocomplete="current-password" maxlength="128" style="max-width:320px">
+      <div class="line fe"><button class="btn" id="ai_unlock" type="button">فتح</button></div>
+      <small class="hint" id="ai_lmsg" role="alert"></small>
+    </div>
+
     <div class="card" id="ai_card" hidden>
       <div class="sethead"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4M9 12h.01M15 12h.01M9 16h6"/></svg><h3>المساعد الذكي (MAS AI HUB)</h3></div>
       <div class="hint">المفاتيح تُحفظ في Supabase Secrets على الخادم ولا تظهر هنا أبدًا. <a href="ai.html">فتح المساعد</a></div>
@@ -186,6 +203,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
       <h4>سجل الأخطاء</h4><div id="ai_el"></div>
       <h4>سجل التحويلات</h4><div id="ai_fl"></div>
     </div>
+    <div class="line fe" id="ai_relock_row" hidden><button class="btn ghost" id="ai_relock" type="button">قفل التبويب</button></div>
   </section>
 
   <!-- ============ 5) البرنامج ============ -->
@@ -269,7 +287,8 @@ const GRPS=[...s_jump.querySelectorAll("button")].map(b=>b.dataset.g);
 const GALIAS={g_snd:"g_alert",g_print:"g_rep",g_share:"g_about",g_app:"g_about"}; // أسماء التبويبات القديمة
 function showGroup(g){
   g=GALIAS[g]||g;
-  if(!GRPS.includes(g))g=GRPS[0];
+  if(!GRPS.includes(g)||(g==="g_ai"&&t_ai.hidden))g=GRPS[0];
+  if(g!=="g_ai"&&window.aiLock)aiLock();
   GRPS.forEach(k=>document.getElementById(k).classList.toggle("on",k===g));
   s_jump.querySelectorAll("button").forEach(b=>{const on=b.dataset.g===g;b.classList.toggle("on",on);b.setAttribute("aria-selected",on);b.tabIndex=on?0:-1});
   try{sessionStorage.setItem("set_tab",g)}catch(e){}
@@ -409,6 +428,39 @@ async function bkDownload(id,btn){
     const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,1)],{type:"application/json"}));a.download="نسخة-احتياطية-"+String(data.exported_at||today()).slice(0,10)+".json";a.click();toast("تم تنزيل النسخة");
   }finally{btn.disabled=false}
 }
+
+/* ===== قفل تبويب المحرك: التحقق من كلمة سر حساب المدير من السيرفر (Supabase Auth) ===== */
+(function(){
+  let timer=null,fails=0,until=0;
+  const show=(un)=>{ai_card.hidden=!un;ai_lock.hidden=un;ai_relock_row.hidden=!un};
+  window.aiLock=function(){clearTimeout(timer);timer=null;show(false);ai_pw.value="";ai_lmsg.textContent=""};
+  window.aiGateInit=function(){
+    if(!ME||ME.role!=="admin")return;
+    t_ai.hidden=false;aiLock();
+    ai_relock.onclick=aiLock;
+    ai_pw.onkeydown=e=>{if(e.key==="Enter")ai_unlock.click()};
+    ai_unlock.onclick=async()=>{
+      const now=Date.now();
+      if(now<until){ai_lmsg.textContent="محاولات كتير غلط. استنى "+Math.ceil((until-now)/1000)+" ثانية.";return}
+      const pw=ai_pw.value;if(!pw){ai_lmsg.textContent="اكتب كلمة السر.";return}
+      if(!ME.email){ai_lmsg.textContent="الحساب مفيهوش إيميل للتحقق.";return}
+      ai_unlock.disabled=true;ai_lmsg.textContent="جارٍ التحقق…";
+      try{
+        /* عميل مؤقت منفصل: ما بيغيّرش جلسة المستخدم الحالية ولا بيحفظ حاجة */
+        const c=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:"mas-gate"}});
+        const{data,error}=await c.auth.signInWithPassword({email:ME.email,password:pw});
+        try{await c.auth.signOut({scope:"local"})}catch(e){}
+        if(error||!data||!data.user||data.user.id!==ME.id){
+          fails++;if(fails>=5){until=Date.now()+60000;fails=0}
+          ai_lmsg.textContent=error&&/network|fetch/i.test(error.message||"")?"مفيش اتصال. حاول تاني.":"كلمة السر غلط.";ai_pw.value="";return}
+        fails=0;ai_pw.value="";ai_lmsg.textContent="";show(true);
+        if(window.aiSettingsLoad)aiSettingsLoad();
+        clearTimeout(timer);timer=setTimeout(aiLock,10*60*1000);
+      }catch(e){ai_lmsg.textContent="تعذّر التحقق. حاول تاني."}
+      finally{ai_unlock.disabled=false}
+    };
+  };
+})();
 function bkInit(){
   if(!ME||ME.role!=="admin")return;
   document.getElementById("bk_card").hidden=false;
@@ -425,7 +477,7 @@ function bkInit(){
 }
 (async()=>{
   if(await requireAuth("settings.html")){
-    renderNav("settings.html");bkInit();aiSettingsInit();drawFonts();drawHero();netNow();drawPush();s_dev.textContent=matchMedia("(display-mode: standalone)").matches||navigator.standalone?"تطبيق مثبّت":"متصفح";
+    renderNav("settings.html");bkInit();aiSettingsInit();aiGateInit();drawFonts();drawHero();netNow();drawPush();s_dev.textContent=matchMedia("(display-mode: standalone)").matches||navigator.standalone?"تطبيق مثبّت":"متصفح";
     s_ver.textContent="v"+APP_VERSION;
     try{const u=sessionStorage.getItem("upd_done");if(u){sessionStorage.removeItem("upd_done");const[l,o]=u.split("|");setTimeout(()=>toast(l===APP_VERSION?(l===o?"أنت على آخر إصدار":"تم التحديث إلى v"+l):"النسخة الجديدة v"+l+" لسه ما وصلتش، جرّب بعد دقيقة"),700)}}catch(e){}
     s_bld.textContent=new Date(APP_BUILD+"T00:00:00").toLocaleDateString("ar-EG",{day:"numeric",month:"long",year:"numeric"});
