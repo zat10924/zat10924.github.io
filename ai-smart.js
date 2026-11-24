@@ -134,6 +134,11 @@
       const x = resolve(k, r[k], sec);
       if (x.s === "near" || x.s === "auto") out.push('<span class="sm-c">' + LBL[k] + ' — أقرب: ' + (x.alts || [x.val]).map((a, j) => '<button type="button" data-sfix="' + i + "|" + k + "|" + j + '">' + esc(a) + "</button>").join("") + "</span>");
       else if (x.s === "ok" && k === "item") out.push('<span class="sm-c ok2">✓ صنف مسجّل</span>');
+      else if (x.s === "no" && k !== "worker") {
+        /* اسم جديد مفيش له شبيه: اقتراح صريح بدل تحذير ساكت */
+        const can = !(typeof itemsLocked === "function" && itemsLocked());
+        out.push('<span class="sm-c new">' + (k === "item" ? "صنف جديد" : "لون جديد") + ' «' + esc(r[k]) + '» مش موجود في الكتالوج' + (can ? ' <button type="button" data-newcat="' + i + "|" + k + '">إضافته للكتالوج</button>' : " — اطلب من المدير إضافته أو اختر صنفًا مسجّلًا") + "</span>");
+      } else if (x.s === "no" && k === "worker") out.push('<span class="sm-c new">العامل «' + esc(r[k]) + '» مش في قائمة العمال — راجع الاسم أو أضفه من صفحة العمال</span>');
     });
     const oi = (ordersInfo(v) || [])[i];
     if (oi) {
@@ -246,10 +251,21 @@
   }
 
   const css = document.createElement("style");
-  css.textContent = ".sm-c{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12.5px;padding:2px 8px;border-radius:999px;border:1px dashed var(--pri,#642631);color:var(--pri,#642631)}.sm-c.ok{border-style:solid;border-color:var(--ok,#2e7d4f);color:var(--ok,#2e7d4f);background:color-mix(in srgb,var(--ok,#2e7d4f) 9%,transparent)}.sm-c.ok2{border:0;color:var(--ok,#2e7d4f);padding:0}.sm-c button{border:1px solid currentColor;background:none;color:inherit;border-radius:8px;padding:0 7px;font:inherit;cursor:pointer}";
+  css.textContent = ".sm-c.new{border-style:solid;border-color:var(--warn,#c28a00);color:var(--warn,#c28a00)}.sm-c.new button{font:inherit;cursor:pointer;border:1px solid currentColor;background:transparent;color:inherit;border-radius:999px;padding:0 8px}" + ".sm-c{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12.5px;padding:2px 8px;border-radius:999px;border:1px dashed var(--pri,#642631);color:var(--pri,#642631)}.sm-c.ok{border-style:solid;border-color:var(--ok,#2e7d4f);color:var(--ok,#2e7d4f);background:color-mix(in srgb,var(--ok,#2e7d4f) 9%,transparent)}.sm-c.ok2{border:0;color:var(--ok,#2e7d4f);padding:0}.sm-c button{border:1px solid currentColor;background:none;color:inherit;border-radius:8px;padding:0 7px;font:inherit;cursor:pointer}";
   (document.head || document.documentElement).appendChild(css);
 
+  /* بعد إضافة اسم للكتالوج: يعتبره معروف فورًا */
+  function addKnown(kind, name) { const L = list(kind); if (name && !L.some(c => nz(c) === nz(name))) L.push(name); }
+  /* أسماء غير معروفة (مفيش لها شبيه) في الصفوف: [{kind,name,rows:[i..]}] */
+  function unknowns(v) {
+    const m = {}; (v.rows || []).forEach((r, i) => ["item", "color"].forEach(k => {
+      if (!r[k] || (k === "item" && SKIP_ITEM[v.section])) return;
+      if (resolve(k, r[k], v.section).s !== "no") return;
+      const key = k + "|" + nz(r[k]); (m[key] = m[key] || { kind: k, name: r[k], rows: [] }).rows.push(i);
+    })); return Object.keys(m).map(k => m[k]);
+  }
   root.MasSmart = {
+    addKnown, unknowns,
     ready: sec => load(sec).catch(() => { }), isReady: () => S.base, run, touched, undo, pick, learn, chipsHtml, check, merge, fixAll, stats, dupCount, matchItem, promptExtra, ordersInfo,
     _t: { resolve, splitColor, shiftOf, seed: o => { Object.assign(S, o); S.base = true }, S }
   };

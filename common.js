@@ -1013,6 +1013,49 @@ async function addCat(kind,name){
   if(CAT&&!CAT[kind].includes(name)){CAT[kind].push(name);CATM[kind].set(name,{id:null,code:""});fillLists()}
   return true;
 }
+/* ===== مراجعة الأسماء عند الاستيراد (إكسل/لصق): نفس النظام لكل الأقسام =====
+   rows: [{item,...}] → بيرجّع الصفوف بعد التصحيح، أو null لو المستخدم لغى.
+   كل اسم مش في الكتالوج: بيقترح أقرب أصناف، أو إضافته كجديد (للي معاه صلاحية)، أو تخطي سطوره. */
+const _mtoks=s=>norm(s).replace(/[ؤ]/g,"و").replace(/[ئ]/g,"ي").replace(/[^\u0600-\u06FFa-z0-9 ]/g," ").split(" ").filter(Boolean).map(w=>w.length>3?w.replace(/^ال/,""):w);
+function _mscore(a,b){
+  const A=_mtoks(a),B=_mtoks(b);if(!A.length||!B.length)return 0;
+  const used=new Set();let sum=0;
+  A.forEach(x=>{let bi=-1,bs=0;B.forEach((y,i)=>{if(used.has(i))return;const sc=x===y?1:Math.max(0,1-lev(x,y)/Math.max(x.length,y.length));if(sc>bs){bs=sc;bi=i}});if(bi>=0&&bs>=0.6){used.add(bi);sum+=bs}});
+  let sc=sum/Math.max(A.length,B.length);const x=norm(a),y=norm(b);if(x&&y&&(x.includes(y)||y.includes(x)))sc=Math.max(sc,0.7);return sc;
+}
+async function masReviewNames(rows,opt){
+  opt=opt||{};const kind=opt.kind||"item",key=opt.field||"item";
+  await catReady();if(!CAT||!CAT[kind])return rows; // مفيش اتصال بالكتالوج: مفيش مرجع نقارن بيه
+  const known=new Set(CAT[kind].map(norm)),extra=(opt.extraKnown||[]).map(norm),unk=new Map();
+  rows.forEach((r,i)=>{const v=String(r[key]||"").trim();if(!v)return;const n=norm(v);if(known.has(n)||extra.includes(n))return;
+    const e=unk.get(n)||{name:v,rows:[]};e.rows.push(i);unk.set(n,e)});
+  // الاسم المطابق في الكتالوج بس مختلف في الكتابة (همزات/تشكيل): صحّحه بصمت للصيغة الرسمية
+  rows.forEach(r=>{const v=String(r[key]||"").trim();if(!v)return;const h=CAT[kind].find(c=>norm(c)===norm(v));if(h)r[key]=h});
+  if(!unk.size)return rows;
+  const lock=itemsLocked();
+  const list=[...unk.values()].map(u=>({...u,sug:CAT[kind].map(c=>({c,sc:_mscore(u.name,c)})).filter(x=>x.sc>=0.5).sort((a,b)=>b.sc-a.sc).slice(0,3)}));
+  return new Promise(res=>{
+    const d=document.createElement("div");d.className="ov";d.style.zIndex=90;
+    const lbl=kind==="item"?"صنف":kind==="color"?"لون":"اسم";
+    d.innerHTML=`<div class="modal"><h3>${list.length} ${lbl} مش موجود في الكتالوج</h3><div class="hint" style="margin:0 0 8px">اختار لكل اسم: تصحيحه لأقرب مسجّل، أو إضافته كجديد، أو تخطي سطوره. مفيش حاجة هتتحفظ قبل ما تأكد.</div>
+    <div style="max-height:55vh;overflow:auto">${list.map((u,i)=>`<div class="itemblk" style="margin-bottom:8px"><b>«${esc(u.name)}»</b> <small>(${nf(u.rows.length)} سطر)</small>
+      <select data-u="${i}" style="width:100%;margin-top:6px">${u.sug.map((x,j)=>`<option value="s${j}">استخدم «${esc(x.c)}»${j===0&&x.sc>=0.6?" — مقترح":""}</option>`).join("")}${lock?"":`<option value="add"${u.sug.length&&u.sug[0].sc>=0.6?"":" selected"}>إضافة «${esc(u.name)}» كـ${lbl} جديد</option>`}<option value="skip"${lock&&!u.sug.length?" selected":""}>تخطي السطور دي</option></select></div>`).join("")}</div>
+    ${lock?'<div class="hint">الأصناف الجديدة بيضيفها المدير فقط.</div>':""}
+    <div class="row"><button class="btn" id="mrOk">تأكيد</button><button class="btn ghost" id="mrNo">إلغاء الاستيراد</button></div></div>`;
+    document.body.appendChild(d);
+    d.querySelector("#mrNo").onclick=()=>{d.remove();res(null)};
+    d.querySelector("#mrOk").onclick=async()=>{
+      const out=rows.map(r=>({...r})),drop=new Set(),add=[];
+      list.forEach((u,i)=>{const v=d.querySelector(`select[data-u="${i}"]`).value;
+        if(v==="skip")u.rows.forEach(k=>drop.add(k));
+        else if(v==="add"){add.push(u.name)}
+        else{const to=u.sug[+v.slice(1)].c;u.rows.forEach(k=>{out[k][key]=to})}});
+      d.querySelector("#mrOk").disabled=true;
+      for(const nm of add){if(!await addCat(kind,nm)){d.querySelector("#mrOk").disabled=false;return}}
+      d.remove();res(out.filter((_,k)=>!drop.has(k)));
+    };
+  });
+}
 // true = كمّل الحفظ | false = ارجع للتعديل
 async function checkNames(root){
   const els=[...root.querySelectorAll(NAME_SEL)].filter(el=>el.type!=="hidden"&&el.dataset.skipCatalog!=="true");if(!els.length)return true; // الخانات المخفية (زي «الكمية» في طلبية الصب) مش أسماء ولا ألوان

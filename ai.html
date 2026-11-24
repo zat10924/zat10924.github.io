@@ -162,11 +162,11 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
         <ol class="xc-steps"><li>انسخ التعليمات والقالب من اللوحة المجاورة والصقهما في ChatGPT مع صورة السجل.</li><li>اطلب منه الرد بـ JSON فقط، ثم انسخ الرد.</li><li>الصقه هنا أو ارفعه كملف JSON / CSV، وراجع النتيجة قبل أي حفظ.</li></ol>
         <div class="xc-note info">لا تشارك كلمة مرور ChatGPT أو رموز الجلسة مع أي جهة. هذه الصفحة لا تتصل بحساب ChatGPT؛ هي مسار نقل يدوي فقط.</div>
         <div><label for="xc_txt">الصق النتيجة (JSON أو CSV)</label><textarea id="xc_txt" class="xc-ta" rows="12" dir="auto" spellcheck="false" placeholder='{ "schema_version": "1.0", "section": "glaze", "report_date": "2026-11-20", "items": [ ... ] }'></textarea></div>
-        <div class="xc-row"><button type="button" class="xc-b" id="xc_paste" hidden>لصق من الحافظة</button><button type="button" class="xc-b" id="xc_pickfile">رفع ملف (JSON / CSV)</button><input type="file" id="xc_file" accept=".json,.csv,.txt,.xlsx,.xls" hidden><span class="xc-sm" id="xc_fn"></span></div>
+        <div class="xc-row"><button type="button" class="xc-b" id="xc_paste" hidden>لصق من الحافظة</button><button type="button" class="xc-b" id="xc_pickfile">رفع ملف (Excel / JSON / CSV)</button><input type="file" id="xc_file" accept=".json,.csv,.txt,.xlsx,.xls" hidden><span class="xc-sm" id="xc_fn"></span></div>
         <div class="xc-two2"><div><label for="xc_sec">القسم (إن لم يحدده الملف)</label><select id="xc_sec"></select></div><div><label for="xc_date">التاريخ (إن لم يحدده الملف)</label><input type="date" id="xc_date"></div></div>
         <div class="xc-row"><button type="button" class="xc-b p" id="xc_run">تحليل وتجهيز المراجعة</button><button type="button" class="xc-b" id="xc_clear">مسح</button></div>
         <div id="xc_msg" class="xc-note" role="status" aria-live="polite" hidden></div>
-        <p class="xc-sm">الحدود: ملف حتى 1 ميجابايت و500 صف. ملفات Excel (XLSX) غير مدعومة حاليًا؛ احفظ الشيت بصيغة CSV UTF-8 وارفعه.</p>
+        <p class="xc-sm">الحدود: ملف حتى 1 ميجابايت و500 صف. ملفات Excel (xlsx) مدعومة: بيتقرأ أول شيت، والصف الأول لازم يكون عناوين الأعمدة (الصنف، اللون، العدد، …). ملفات xls القديمة احفظها xlsx أو CSV.</p>
       </div>
       <div class="xc-box">
         <h2>القالب الموحد</h2>
@@ -745,6 +745,7 @@ button.xc-card{cursor:pointer;transition:transform .18s,border-color .2s}button.
 <script src="common.js"></script>
 <script src="ai.js"></script>
 <script src="ai-print.js"></script>
+<script src="mas-xlsx.js"></script>
 <script src="ai-center.js"></script>
 <script src="ai-dates.js"></script>
 <script src="ai-smart.js"></script>
@@ -973,8 +974,8 @@ function impDraw(d,m){
 function impCheck(d,m){
   const v=m.imp,{E,W}=validate(v);
   d.querySelectorAll(".x-ir").forEach(el=>{const r=v.rows[+el.dataset.r];el.className="x-ir "+(r._f||"");const rn=el.querySelector(".rn");
-    rn.innerHTML=window.MasSmart&&MasSmart.isReady()?MasSmart.chipsHtml(v,r,+el.dataset.r,esc):(r._m&&r._m.s==="near"?'أقرب صنف: '+(r._m.alts||[r._m.sug]).map((a,k)=>'<button type="button" data-fix="'+el.dataset.r+'" data-alt="'+k+'">'+esc(a)+"</button>").join(""):r._m&&r._m.s==="ok"?'<span style="color:var(--ok);display:inline-flex;gap:4px;align-items:center">'+ic("check")+'صنف مسجّل</span>':"")});
-  d.querySelector(".x-chk").innerHTML=E.map(x=>'<div class="e">'+ic("x")+esc(x)+"</div>").join("")+W.map(x=>'<div class="w">'+ic("alert")+esc(x)+"</div>").join("")+(window.MasSmart&&MasSmart.isReady()&&MasSmart.dupCount(v)?'<div class="w">'+ic("alert")+MasSmart.dupCount(v)+' سطر مكرر بنفس الصنف واللون والعامل <button type="button" data-ia="merge">دمجهم وجمع الأعداد</button></div>':"")+(!E.length&&!W.length?'<div class="o">'+ic("check")+"لا توجد ملاحظات على البيانات</div>":"");
+    rn.innerHTML=window.MasSmart&&MasSmart.isReady()?MasSmart.chipsHtml(v,r,+el.dataset.r,esc):(r._m&&r._m.s==="near"?'أقرب صنف: '+(r._m.alts||[r._m.sug]).map((a,k)=>'<button type="button" data-fix="'+el.dataset.r+'" data-alt="'+k+'">'+esc(a)+"</button>").join(""):r._m&&r._m.s==="no"?'<span class="sm-c new">صنف جديد «'+esc(r.item)+'» — اختر من القائمة أو أضفه من صفحة الأصناف</span>':r._m&&r._m.s==="ok"?'<span style="color:var(--ok);display:inline-flex;gap:4px;align-items:center">'+ic("check")+'صنف مسجّل</span>':"")});
+  d.querySelector(".x-chk").innerHTML=E.map(x=>'<div class="e">'+ic("x")+esc(x)+"</div>").join("")+W.map(x=>'<div class="w">'+ic("alert")+esc(x)+"</div>").join("")+(window.MasSmart&&MasSmart.isReady()&&MasSmart.dupCount(v)?'<div class="w">'+ic("alert")+MasSmart.dupCount(v)+' سطر مكرر بنفس الصنف واللون والعامل <button type="button" data-ia="merge">دمجهم وجمع الأعداد</button></div>':"")+(()=>{const u=window.MasSmart&&MasSmart.isReady()?MasSmart.unknowns(v):[];return u.length?'<div class="w">'+ic("alert")+u.length+' اسم جديد مش في الكتالوج: '+esc(u.slice(0,6).map(x=>x.name).join("، "))+(u.length>6?" …":"")+' <button type="button" data-ia="addnew">إضافتهم للكتالوج</button></div>':""})()+(!E.length&&!W.length?'<div class="o">'+ic("check")+"لا توجد ملاحظات على البيانات</div>":"");
   const nb=v.rows.filter(r=>r._f==="bad").length,nw=v.rows.filter(r=>r._f==="warn").length,sm=d.querySelector(".x-sum");
   if(sm)sm.innerHTML='<span class="ok">'+(v.rows.length-nb-nw)+' صف صحيح</span><span class="w">'+W.length+' تحذير</span><span class="e">'+E.length+' خطأ</span>'+(window.MasSmart&&MasSmart.isReady()&&MasSmart.stats(v).auto?'<span class="ok">ذكاء: صُحّح '+MasSmart.stats(v).auto+' تلقائيًا (راجعها)</span>':"")+(v._dupInfo?'<small>'+esc(v._dupInfo)+'</small>':"");
   d.querySelector('[data-ia=go]').disabled=E.length>0;const sv=d.querySelector('[data-ia=save]');if(sv)sv.disabled=E.length>0;
@@ -993,8 +994,19 @@ function impInput(e){
   clearTimeout(window._sv);window._sv=setTimeout(save,400);impCheck(w,m);
 }
 $("x_msgs").addEventListener("input",impInput);$("rv_host").addEventListener("input",impInput);
+/* إضافة أصناف/ألوان جديدة للكتالوج بعد موافقة المستخدم (addCat من common.js) */
+async function addNewCat(w,m,list){
+  const v=m.imp,names=esc(list.map(x=>"«"+x.name+"»").join("، "));
+  if(typeof itemsLocked==="function"&&itemsLocked()){toast("مفيش صلاحية لإضافة أصناف جديدة — اطلب من المدير","bad");return}
+  if(!await ask("تضيف "+list.length+" "+(list.every(x=>x.kind==="item")?"صنف":"اسم")+" جديد للكتالوج؟ "+names.slice(0,300),"نعم، أضف"))return;
+  let ok=0;
+  for(const x of list){if(await addCat(x.kind,x.name)){ok++;if(window.MasSmart)MasSmart.addKnown(x.kind,x.name);if(x.kind==="item"&&ITEMS&&!ITEMS.includes(x.name))ITEMS.push(x.name)}}
+  if(ok){try{fillLists()}catch(e){};save();impDraw(w,m);toast("تمت إضافة "+ok+" للكتالوج","ok")}
+}
 function impClick(e){
   const w=e.target.closest(".x-m"),m=msgOf(w);if(!m||!m.imp)return;const v=m.imp;
+  const nc=e.target.closest("[data-newcat]");
+  if(nc){const[i,k]=nc.dataset.newcat.split("|"),nm=(v.rows[+i]||{})[k];if(nm)addNewCat(w,m,[{kind:k,name:nm}]);return}
   const rm=e.target.closest("[data-rm]"),fx=e.target.closest("[data-fix]"),ia=e.target.closest("[data-ia]"),un=e.target.closest("[data-undo]"),sf=e.target.closest("[data-sfix]");
   if(un){const[i,k]=un.dataset.undo.split("|");MasSmart.undo(v.rows[+i],k);save();impDraw(w,m)}
   else if(sf){const[i,k,j]=sf.dataset.sfix.split("|");MasSmart.pick(v,v.rows[+i],k,+j);save();impDraw(w,m)}
@@ -1003,6 +1015,7 @@ function impClick(e){
   else if(ia){const a=ia.dataset.ia;
     if(a==="add"){v.rows.push({item:null,qty:null,scrap:null,worker:null,shift:null,note:null});save();impDraw(w,m)}
     else if(a==="copy"){const tx=(SECN[v.section]||"")+" — "+v.date+"\n"+v.rows.map(r=>[r.item,r.qty!=null?"العدد "+r.qty:"",r.scrap!=null?"هالك "+r.scrap:"",r.worker].filter(Boolean).join(" | ")).join("\n");navigator.clipboard.writeText(tx).then(()=>toast("تم النسخ","ok"),()=>toast("تعذّر النسخ","bad"))}
+    else if(a==="addnew"){const u=window.MasSmart&&MasSmart.isReady()?MasSmart.unknowns(v):[];if(u.length)addNewCat(w,m,u)}
     else if(a==="merge"){const c=MasSmart.merge(v);save();impDraw(w,m);toast("تم دمج "+c+" سطر مكرر","ok")}
     else if(a==="fixall"){if(window.MasSmart&&MasSmart.isReady()){const c=MasSmart.fixAll(v);save();impDraw(w,m);toast(c?"تم تصحيح "+c+" اسم لأقرب مسجّل — راجعهم":"لا توجد أسماء قريبة بدرجة كافية للتصحيح التلقائي",c?"ok":"bad");return}let c=0;v.rows.forEach(r=>{const x=match(r.item);if(x.s==="near"&&x.sc>=0.75){r.item=x.sug;delete r._dup;c++}});save();impDraw(w,m);toast(c?"تم تصحيح "+c+" صنف لأقرب اسم مسجّل — راجعهم":"لا توجد أسماء قريبة بدرجة كافية للتصحيح التلقائي",c?"ok":"bad")}
     else if(a==="cancel"){MAC.cancel(w,m)}

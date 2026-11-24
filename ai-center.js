@@ -487,7 +487,17 @@
   /* ---------- الاستيراد الخارجي ---------- */
   async function readFile(f) {
     const ext = (f.name.split(".").pop() || "").toLowerCase();
-    if (ext === "xlsx" || ext === "xls" || /spreadsheetml|ms-excel/.test(f.type)) { showMsg("xc_msg", "bad", normalizeExternalImport("", "xlsx").errors, "ملف Excel"); return; }
+    if (ext === "xlsx" && window.MasXlsx) {
+      if (f.size === 0) { showMsg("xc_msg", "bad", ["الملف فارغ."]); return; }
+      try {
+        const rows = await MasXlsx.readRows(await f.arrayBuffer());
+        if (!rows.length) { showMsg("xc_msg", "bad", ["ملف Excel فارغ (أول شيت لا يحتوي بيانات)."]); return; }
+        $("xc_txt").value = MasXlsx.toCSV(rows); FT = "csv"; $("xc_fn").textContent = f.name;
+        showMsg("xc_msg", "ok", ["تم قراءة أول شيت من «" + f.name.slice(0, 60) + "» (" + (rows.length - 1) + " صف تقريبًا). اضغط «تحليل وتجهيز المراجعة» — وهيقترح عليك الأصناف الجديدة أو القريبة من المسجّل."]);
+      } catch (e) { showMsg("xc_msg", "bad", ["تعذّرت قراءة ملف Excel: " + (e && e.message || "ملف غير صالح") + " — جرّب حفظه CSV UTF-8."]); }
+      return;
+    }
+    if (ext === "xls" || (ext === "xlsx") || /spreadsheetml|ms-excel/.test(f.type)) { showMsg("xc_msg", "bad", ["ملفات Excel القديمة (xls) غير مدعومة. احفظ الملف بصيغة xlsx أو CSV UTF-8 وارفعه."], "ملف Excel"); return; }
     if (!/^(json|csv|txt)$/.test(ext)) { showMsg("xc_msg", "bad", ["نوع الملف غير مدعوم. ارفع ملف JSON أو CSV."]); return; }
     if (f.size === 0) { showMsg("xc_msg", "bad", ["الملف فارغ."]); return; }
     if (f.size > MasAiImport.LIMITS.bytes) { showMsg("xc_msg", "bad", ["حجم الملف أكبر من الحد المسموح (1 ميجابايت)."]); return; }

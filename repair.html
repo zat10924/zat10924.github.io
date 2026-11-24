@@ -54,6 +54,7 @@ try{if(window.matchMedia&&window.matchMedia("(min-width: 1024px)").matches){docu
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
+<script src="mas-xlsx.js"></script>
 <script src="reports.js"></script>
 <script>
 let rows=[],stock=[],Q="",repCtl=null,tab=location.hash==="#reports"?"prod":location.hash==="#stock"?"stock":"log",stockOk=true;
@@ -173,8 +174,8 @@ function stCsv(){
 }
 /* استيراد: الصق من Excel أو اختر ملف CSV — كل سطر: الصنف ثم اللون (اختياري) ثم الكمية */
 function stImport(){if(roBlock())return;
-  openModal("استيراد جرد التصليح",`<div class="hint" style="margin:0 0 8px">الصق من Excel: كل سطر «الصنف ، اللون (اختياري) ، الكمية». أو اختر ملف CSV.</div>
-    <input type="file" id="i-file" accept=".csv,.txt,text/csv,text/plain" style="margin-bottom:8px">
+  openModal("استيراد جرد التصليح",`<div class="hint" style="margin:0 0 8px">الصق من Excel: كل سطر «الصنف ، اللون (اختياري) ، الكمية». أو اختر ملف Excel (xlsx) أو CSV — الأصناف الجديدة هتتراجع معاك قبل الحفظ.</div>
+    <input type="file" id="i-file" accept=".xlsx,.csv,.txt,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="margin-bottom:8px">
     <textarea id="i-txt" rows="8" style="width:100%"></textarea>
     <label>التاريخ</label><input type="date" id="i-d" value="${today()}">`,async()=>{
     const lines=document.getElementById("i-txt").value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean),out=[],badL=[];
@@ -185,6 +186,7 @@ function stImport(){if(roBlock())return;
       out.push({item:p[0],color:p.length>2?p[1]:"",qty:num});
     });
     if(!out.length){toast("مفيش سطور صالحة"+(badL.length?" (راجع السطر "+badL[0]+")":""));return false}
+    {const fixed=await masReviewNames(out,{kind:"item",field:"item",extraKnown:stItems()});if(!fixed)return false;out.length=0;out.push(...fixed);if(!out.length){toast("كل السطور اتخطّت — مفيش حاجة تتحفظ");return false}}
     if(badL.length&&!await ask("فيه "+badL.length+" سطر مش مفهوم (أولهم السطر "+badL[0]+") وهيتخطّوا. تكمّل؟","نعم، كمّل"))return false;
     const d=document.getElementById("i-d").value||today();
     if(!await reviewSave({title:"راجع الاستيراد قبل الحفظ",meta:[["التاريخ",fmtD(d)],["عدد الأصناف",nf(out.length)]],items:out.slice(0,30).map(r=>({title:r.item,rows:[...(r.color?[["اللون",r.color]]:[]),["الكمية",nf(r.qty)]]})),total:out.reduce((a,r)=>a+r.qty,0)}))return false;
@@ -193,7 +195,9 @@ function stImport(){if(roBlock())return;
     await loadStock();toast("تم استيراد "+out.length+" صنف");
   },"استيراد");
   const f=document.getElementById("i-file");
-  if(f)f.onchange=async()=>{const t=f.files[0];if(t)document.getElementById("i-txt").value=await t.text()};
+  if(f)f.onchange=async()=>{const t=f.files[0];if(!t)return;const tx=document.getElementById("i-txt");
+    if(window.MasXlsx&&MasXlsx.isXlsx(t)){try{tx.value=MasXlsx.toTSV(await MasXlsx.readRows(await t.arrayBuffer()))}catch(e){toast("تعذّرت قراءة ملف Excel: "+(e.message||""))}}
+    else tx.value=await t.text()};
 }
 function stItems(){return[...new Set([...stock.map(r=>r.item),...rows.map(r=>r.item)].filter(Boolean))]}
 /* إضافة/تسوية جرد: أكتر من صنف ولون في مرة واحدة (التعديل لحركة واحدة بيفضل في stForm) */
