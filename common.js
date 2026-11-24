@@ -160,7 +160,7 @@ const seesAll=()=>!!ME&&(ME.role==="admin"||ME.role==="owner");
 const isOwner=()=>!!ME&&ME.role==="owner";
 // مسؤول القسم اللي معاه «يشوف باقي الأقسام»: بيشوف كل الأقسام والتقارير، ويسجّل ويدير أقسامه بس
 const viewsAll=()=>seesAll()||(!!ME&&ME.role==="manager"&&!!ME.view_all);
-const SEC_OF_TBL=t=>/^glaze_/.test(t)?"glaze":/^deco_/.test(t)?"deco":/^spray_/.test(t)?"spray":(t==="repair_log"||t==="repair_stock")?"repair":/^casting_/.test(t)?"casting":/^brush_/.test(t)?"brush":/^finish_/.test(t)?"finish":/^firing_/.test(t)?"fire":"";
+const SEC_OF_TBL=t=>/^glaze_/.test(t)?"glaze":/^deco_/.test(t)?"deco":/^spray_/.test(t)?"spray":t==="repair_log"?"repair":/^casting_/.test(t)?"casting":/^brush_/.test(t)?"brush":/^finish_/.test(t)?"finish":/^firing_/.test(t)?"fire":"";
 const roTbl=t=>{const k=SEC_OF_TBL(t);return !!k&&!!ME&&ME.role==="manager"&&!!ME.view_all&&!secList(ME).includes(k)};
 // صفحة قسم مش من أقسام المستخدم (وهو بيشوفها بصلاحية «يشوف باقي الأقسام») = عرض فقط
 const roPage=()=>{const k=KEY[location.pathname.split("/").pop()];return !!k&&!!ME&&ME.role==="manager"&&!!ME.view_all&&!secList(ME).includes(k)};
@@ -291,7 +291,7 @@ const SUBS={
  "glaze.html":[["الطلبيات المفتوحة","open"],["الطلبيات المكتملة","done"],["الهالك","rep"],["تقارير القسم","prod"]],
  "decoration.html":[["الطلبيات المفتوحة","open"],["الطلبيات المكتملة","done"],["إنتاج العمال","wk"],["تقارير القسم","prod"]],
  "spray.html":[["الطلبيات المفتوحة","open"],["الطلبيات المكتملة","done"],["تقارير القسم","prod"]],
- "repair.html":[["سجل التصليح","log"],["الجرد","stock"],["تقارير القسم","prod"]],
+ "repair.html":[["سجل التصليح","log"],["تقارير القسم","prod"]],
  "casting.html":[["سجل الصب","log"],["تقارير القسم","prod"]],
  "brush.html":[["سجل البرشر","log"],["تقارير القسم","prod"]],
  "finish.html":[["سجل الفنش","log"],["تقارير القسم","prod"]],
@@ -1701,7 +1701,7 @@ function freeProduction(sec,done){
   if(roBlock())return;
   if(!SEC_AR[sec]||sec==="casting"||sec==="brush"||sec==="finish")return;
   const deco=sec==="deco",spr=sec==="spray",rep=sec==="repair",lab=deco?"كود الرسمة":"اللون",kind=deco?"code":"color";
-  const rowHtml=()=>`<div class="itemblk mrow"><div class="ih"><b class="mn"></b><button type="button" class="rmi" aria-label="حذف الصنف">${ib("trash","حذف")}</button></div>
+  const rowHtml=()=>`<div class="itemblk mrow"><div class="ih"><b class="mn"></b><span>${rep?'<button type="button" class="btn ghost sm rmc" style="margin-inline-end:6px">＋ لون آخر لنفس الصنف</button>':""}<button type="button" class="rmi" aria-label="حذف الصنف">${ib("trash","حذف")}</button></span></div>
     <label>الصنف</label><input class="it" placeholder="اسم الصنف" autocomplete="off">
     <div class="two"><div><label>${lab}${spr?" (لون الصنف — اختياري)":" (اختياري)"}</label><input class="sb" data-kind="${kind}" placeholder="${lab}" autocomplete="off"></div>
     <div><label>الكمية</label><input type="number" class="mq2" min="1" inputmode="numeric"></div></div>${spr?'<label>لون الرش</label><input class="msc" data-kind="color" placeholder="لون الرش" autocomplete="off" maxlength="60">':""}</div>`;
@@ -1734,7 +1734,7 @@ function freeProduction(sec,done){
       const id=uuid();
       if(rep){ // التصليح: جدول repair_log (تاريخ/صنف/كمية/عامل)
         let rs;try{rs=await db.from("repair_log").insert({repair_date:d,item:t.item,qty:t.q,worker:xf.worker||null,...(t.sub?{color:t.sub}:{})})}catch(e){rs={error:{message:String(e)}}}
-        if(rs.error){bad.push(/color/.test(rs.error.message||"")?"شغّل ملف setup_repair_color.sql في Supabase الأول":/worker/.test(rs.error.message||"")?"شغّل ملف setup_repair_worker.sql في Supabase الأول":t.item+": "+rs.error.message);continue}
+        if(rs.error){bad.push(/worker/.test(rs.error.message||"")?"شغّل ملف setup_repair_worker.sql في Supabase الأول":/color/.test(rs.error.message||"")?"شغّل ملف setup_repair_color.sql في Supabase الأول (عشان اللون)":t.item+": "+rs.error.message);continue}
         ok++;t.el.remove();continue;
       }
       if(t.link){ // مربوط تلقائيًا بطلبية زخرفة
@@ -1762,10 +1762,16 @@ function freeProduction(sec,done){
   },"تسجيل الكل");
   const box=document.getElementById("mrows");
   const renum=()=>{const r=[...box.querySelectorAll(".mrow")];r.forEach((e,i)=>{e.querySelector(".mn").textContent="صنف "+(i+1);e.querySelector(".rmi").hidden=r.length<2})};
-  const add=(focus)=>{
+  const add=(focus,preset)=>{
     box.insertAdjacentHTML("beforeend",rowHtml());
     const el=box.lastElementChild;enhanceAll(el);renum();
+    if(preset)el.querySelector(".it").value=preset;
     el.querySelector(".rmi").onclick=()=>{el.remove();renum()};
+    const rc=el.querySelector(".rmc");
+    if(rc)rc.onclick=()=>{ // لون آخر لنفس الصنف: صف جديد بنفس الاسم والتركيز على اللون
+      add(false,el.querySelector(".it").value.trim());
+      const n=box.lastElementChild;n.scrollIntoView({block:"nearest",behavior:"smooth"});n.querySelector(".sb").focus();saveDraft();
+    };
     // Enter: ينقل للحقل اللي بعده، ومن الكمية في آخر صنف يفتح صنف جديد (من غير ما يحفظ بالغلط)
     el.addEventListener("keydown",e=>{
       if(e.key!=="Enter"||e.target.tagName!=="INPUT"||e.defaultPrevented)return;
