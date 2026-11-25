@@ -68,6 +68,7 @@ document.addEventListener("pointerdown",e=>{
 
 /* ===== الأيقونات (SVG) ===== */
 const ICONS={
+  flask:'<path d="M9 3h6M10 3v6L5 18.2A2 2 0 0 0 6.8 21h10.4a2 2 0 0 0 1.8-2.8L14 9V3"/><path d="M7.5 14.5h9"/>',
   spark:'<path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8L12 3z"/><path d="M19 3v4M17 5h4"/>',
   checksq:'<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12.5l3 3 5.5-6.5"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
@@ -136,6 +137,7 @@ const ACTIVITY=["activity.html","سجل النشاط والنسخ","pulse","#5b6
 const PROFILE=["profile.html","ملفي الشخصي","user","#642631"];
 const SETTINGS=["settings.html","الإعدادات","cog","#5b6b8c"];
 const AI=["ai.html","المساعد الذكي","spark","#642631"];
+const LAB=["mas-sample-lab/","المختبر","flask","#B8862B"];
 const USERS=["users.html","المستخدمين والصلاحيات","shield","#7a5ea8"];
 const SEC_AR={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي",brush:"البرشر",finish:"الفنش",fire:"الحريق"};
 const ROLE_DESC={admin:"صلاحية كاملة: كل الأقسام والتقارير والمستخدمين",owner:"صاحب المصنع: يشوف كل الأقسام والطلبيات والتقارير (عرض فقط، من غير إدارة المستخدمين)",manager:"مسؤول عن قسم أو أكتر: يشوف ويدير أقسامه بس",worker:"يسجّل الإنتاج في قسمه بس"};
@@ -454,6 +456,7 @@ function renderNav(active){
   ${grp("الإنتاج",[sg(PROD)])}
   ${grp("الطلبيات",canReports()?[sg(ORDERS)]:[])}
   ${grp("الأقسام",[...visibleSections().map(sg),...soonSections().map(x=>`<div class="sg soon" style="--c:${x[2]}"><div class="sh soonitem" aria-disabled="true">${ico(x[1])}<span>${x[0]}<small class="soonn">سوف تُنشأ قريبًا</small></span></div></div>`)])}
+  ${grp("المختبر",[sg(LAB)])}
   ${grp("التقارير والبحث",canReports()?[sg(REPORTS).replace(">"+REPORTS[1]+"<",">التقارير العامة<"),sg(SEARCH),sg(WSEARCH)]:[])}
   ${grp("البيانات الأساسية",canReports()?[sg(CATALOG),sg(WORKERS)]:[])}
   ${grp("إدارة النظام",canReports()?[...(ME.role==="admin"?[sg(USERS)]:[]),sg(ACTIVITY)]:[])}</nav>
@@ -748,37 +751,16 @@ async function showWhatsNew(force){
   try{if(!force&&localStorage.getItem(seenK)===key)return;if(!force)localStorage.setItem(seenK,key)}catch(e){if(!force)return}
   openModal(title,`<ul style="margin:0;padding:0 18px 0 0;line-height:1.9">${items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`,closeModal,"تمام");
 }
-/* ===== تنبيه الكمية غير المعتادة في التسجيل اليدوي (للصب والبرشر والتصليح): بيقارن بآخر تسجيلات نفس الصنف ===== */
-const _QH={casting:["casting_log"],brush:["brush_log"],repair:["repair_log"]},_QHC={};
-function masQtyHint(d){
-  const pg=(location.pathname.split("/").pop()||"").replace(".html",""),tb=(_QH[pg]||[])[0];if(!tb)return;
-  const it=d.querySelector("#m-item"),q=d.querySelector("#m-q");if(!it||!q||q.dataset.qh)return;q.dataset.qh="1";
-  const box=document.createElement("div");box.className="hint";box.style.cssText="display:none;margin:4px 0;color:var(--warn,#b36b00)";q.insertAdjacentElement("afterend",box);
-  let tk=0;
-  const run=async()=>{
-    const my=++tk,item=it.value.trim(),n=parseInt(q.value);box.style.display="none";
-    if(!item||!(n>0))return;
-    let h=_QHC[tb+"|"+norm(item)];
-    if(!h){try{const r=await db.from(tb).select("qty").eq("item",item).gt("qty",0).order("id",{ascending:false}).limit(200);h=(!r.error&&r.data||[]).map(x=>+x.qty).filter(x=>x>0);_QHC[tb+"|"+norm(item)]=h}catch(e){return}}
-    if(my!==tk||!h||h.length<5)return;
-    const a=h.slice().sort((x,y)=>x-y),m=a.length>>1,md=a.length%2?a[m]:(a[m-1]+a[m])/2,mx=a[a.length-1];
-    let msg="";
-    if(n>Math.max(md*4,mx*1.5)){const t=Math.round(n/10);msg="الكمية "+nf(n)+" أكبر بكتير من المعتاد لـ«"+item+"» (المتوسط حوالي "+nf(Math.round(md))+")"+(n>=20&&Math.abs(t-md)<=md*0.4?" — تقصد "+nf(t)+"؟":"")}
-    else if(a.length>=8&&md>=20&&n<md/10)msg="الكمية "+nf(n)+" أقل بكتير من المعتاد لـ«"+item+"» (المتوسط حوالي "+nf(Math.round(md))+")";
-    if(msg){box.textContent="تنبيه: "+msg+". راجعها قبل الحفظ.";box.style.display="block"}
-  };
-  q.addEventListener("input",()=>{clearTimeout(q._qt);q._qt=setTimeout(run,400)});it.addEventListener("change",run);
-}
 function openModal(title,body,onSave,saveText="حفظ"){
   closeModal();Snd.play("open");
   const d=document.createElement("div");d.className="ov";d.id="ov";
   const _more=_masWide()&&saveText==="حفظ"&&!/تعديل|حذف|تغيير|كلمة|مرور/.test(String(title))&&/type=["']?number/.test(String(body));
-  d.innerHTML=`<div class="modal"><h3>${String(title).replace(/</g,"&lt;")}</h3><div>${body}</div><div class="row"><button class="btn" id="mSave">${saveText}</button>${_more?'<button class="btn ghost" id="mSaveMore" title="يحفظ ويفتح نموذج جديد بنفس الصنف والوردية (Ctrl+Shift+Enter)">حفظ وإضافة آخر</button>':""}<button class="btn ghost" onclick="closeModal()">إلغاء</button></div></div>`;
+  d.innerHTML=`<div class="modal"><h3>${title}</h3><div>${body}</div><div class="row"><button class="btn" id="mSave">${saveText}</button>${_more?'<button class="btn ghost" id="mSaveMore" title="يحفظ ويفتح نموذج جديد بنفس الصنف والوردية (Ctrl+Shift+Enter)">حفظ وإضافة آخر</button>':""}<button class="btn ghost" onclick="closeModal()">إلغاء</button></div></div>`;
   document.body.appendChild(d);
   d.addEventListener("mousedown",e=>{if(e.target===d)closeModal()});
   d.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();else if(e.key==="Enter"&&e.target.tagName==="INPUT"&&e.target.type!=="search"){e.preventDefault();_mNext(d,e.target)}});
   d.querySelector("input:not([type=date]):not([type=hidden]),select")?.focus({preventScroll:true});
-  enhanceAll(d);if(d.querySelector(NAME_SEL))catReady();try{masQtyHint(d)}catch(e){}
+  enhanceAll(d);if(d.querySelector(NAME_SEL))catReady();
   d.addEventListener("focusin",e=>{if(e.target.matches&&e.target.matches(NAME_SEL)){if(e.target.value)try{e.target.select()}catch(x){}}});
   const b=d.querySelector("#mSave"),b2=d.querySelector("#mSaveMore");
   const run=async(again)=>{const btn=again?b2:b;b.disabled=true;if(b2)b2.disabled=true;btn.classList.add("loading");try{if((await checkNames(d))&&await onSave()!==false){saveHist(d);if(again){const snap=_mSnap(d);closeModal();openModal(title,body,onSave,saveText);_mRestore(snap)}else closeModal()}}catch(e){toast("حصل خطأ: "+e.message)}finally{b.disabled=false;if(b2)b2.disabled=false;btn.classList.remove("loading")}};
@@ -805,7 +787,7 @@ function fmtD(d){return new Date(d+"T00:00:00").toLocaleDateString("ar-EG")}
 function fmtDW(d){if(!d)return"";const x=new Date(d+"T00:00:00");return isNaN(x)?String(d):x.toLocaleDateString("ar-EG",{weekday:"long"})+" "+fmtD(d)}
 function ask(msg,yes="نعم، احذف"){return new Promise(res=>{
   const d=document.createElement("div");d.className="ov";d.style.zIndex=85;
-  d.innerHTML=`<div class="modal"><h3>${String(msg).replace(/</g,"&lt;")}</h3><div class="row"><button class="btn" id="yes">${String(yes).replace(/</g,"&lt;")}</button><button class="btn ghost" id="no">إلغاء</button></div></div>`;
+  d.innerHTML=`<div class="modal"><h3>${msg}</h3><div class="row"><button class="btn" id="yes">${yes}</button><button class="btn ghost" id="no">إلغاء</button></div></div>`;
   document.body.appendChild(d);
   d.querySelector("#yes").onclick=()=>{d.remove();res(true)};
   d.querySelector("#no").onclick=()=>{d.remove();res(false)};
@@ -1034,49 +1016,6 @@ async function addCat(kind,name){
   if(CAT&&!CAT[kind].includes(name)){CAT[kind].push(name);CATM[kind].set(name,{id:null,code:""});fillLists()}
   return true;
 }
-/* ===== مراجعة الأسماء عند الاستيراد (إكسل/لصق): نفس النظام لكل الأقسام =====
-   rows: [{item,...}] → بيرجّع الصفوف بعد التصحيح، أو null لو المستخدم لغى.
-   كل اسم مش في الكتالوج: بيقترح أقرب أصناف، أو إضافته كجديد (للي معاه صلاحية)، أو تخطي سطوره. */
-const _mtoks=s=>norm(s).replace(/[ؤ]/g,"و").replace(/[ئ]/g,"ي").replace(/[^\u0600-\u06FFa-z0-9 ]/g," ").split(" ").filter(Boolean).map(w=>w.length>3?w.replace(/^ال/,""):w);
-function _mscore(a,b){
-  const A=_mtoks(a),B=_mtoks(b);if(!A.length||!B.length)return 0;
-  const used=new Set();let sum=0;
-  A.forEach(x=>{let bi=-1,bs=0;B.forEach((y,i)=>{if(used.has(i))return;const sc=x===y?1:Math.max(0,1-lev(x,y)/Math.max(x.length,y.length));if(sc>bs){bs=sc;bi=i}});if(bi>=0&&bs>=0.6){used.add(bi);sum+=bs}});
-  let sc=sum/Math.max(A.length,B.length);const x=norm(a),y=norm(b);if(x&&y&&(x.includes(y)||y.includes(x)))sc=Math.max(sc,0.7);return sc;
-}
-async function masReviewNames(rows,opt){
-  opt=opt||{};const kind=opt.kind||"item",key=opt.field||"item";
-  await catReady();if(!CAT||!CAT[kind])return rows; // مفيش اتصال بالكتالوج: مفيش مرجع نقارن بيه
-  const known=new Set(CAT[kind].map(norm)),extra=(opt.extraKnown||[]).map(norm),unk=new Map();
-  rows.forEach((r,i)=>{const v=String(r[key]||"").trim();if(!v)return;const n=norm(v);if(known.has(n)||extra.includes(n))return;
-    const e=unk.get(n)||{name:v,rows:[]};e.rows.push(i);unk.set(n,e)});
-  // الاسم المطابق في الكتالوج بس مختلف في الكتابة (همزات/تشكيل): صحّحه بصمت للصيغة الرسمية
-  rows.forEach(r=>{const v=String(r[key]||"").trim();if(!v)return;const h=CAT[kind].find(c=>norm(c)===norm(v));if(h)r[key]=h});
-  if(!unk.size)return rows;
-  const lock=itemsLocked();
-  const list=[...unk.values()].map(u=>({...u,sug:CAT[kind].map(c=>({c,sc:_mscore(u.name,c)})).filter(x=>x.sc>=0.5).sort((a,b)=>b.sc-a.sc).slice(0,3)}));
-  return new Promise(res=>{
-    const d=document.createElement("div");d.className="ov";d.style.zIndex=90;
-    const lbl=kind==="item"?"صنف":kind==="color"?"لون":"اسم";
-    d.innerHTML=`<div class="modal"><h3>${list.length} ${lbl} مش موجود في الكتالوج</h3><div class="hint" style="margin:0 0 8px">اختار لكل اسم: تصحيحه لأقرب مسجّل، أو إضافته كجديد، أو تخطي سطوره. مفيش حاجة هتتحفظ قبل ما تأكد.</div>
-    <div style="max-height:55vh;overflow:auto">${list.map((u,i)=>`<div class="itemblk" style="margin-bottom:8px"><b>«${esc(u.name)}»</b> <small>(${nf(u.rows.length)} سطر)</small>
-      <select data-u="${i}" style="width:100%;margin-top:6px">${u.sug.map((x,j)=>`<option value="s${j}">استخدم «${esc(x.c)}»${j===0&&x.sc>=0.6?" — مقترح":""}</option>`).join("")}${lock?"":`<option value="add"${u.sug.length&&u.sug[0].sc>=0.6?"":" selected"}>إضافة «${esc(u.name)}» كـ${lbl} جديد</option>`}<option value="skip"${lock&&!u.sug.length?" selected":""}>تخطي السطور دي</option></select></div>`).join("")}</div>
-    ${lock?'<div class="hint">الأصناف الجديدة بيضيفها المدير فقط.</div>':""}
-    <div class="row"><button class="btn" id="mrOk">تأكيد</button><button class="btn ghost" id="mrNo">إلغاء الاستيراد</button></div></div>`;
-    document.body.appendChild(d);
-    d.querySelector("#mrNo").onclick=()=>{d.remove();res(null)};
-    d.querySelector("#mrOk").onclick=async()=>{
-      const out=rows.map(r=>({...r})),drop=new Set(),add=[];let fixed=0;
-      list.forEach((u,i)=>{const v=d.querySelector(`select[data-u="${i}"]`).value;
-        if(v==="skip")u.rows.forEach(k=>drop.add(k));
-        else if(v==="add"){add.push(u.name)}
-        else{const to=u.sug[+v.slice(1)].c;u.rows.forEach(k=>{out[k][key]=to;fixed++})}});
-      d.querySelector("#mrOk").disabled=true;
-      for(const nm of add){if(!await addCat(kind,nm)){d.querySelector("#mrOk").disabled=false;return}}
-      d.remove();const fin=out.filter((_,k)=>!drop.has(k));fin._st={fixed,added:add.length,skipped:drop.size};res(fin);
-    };
-  });
-}
 // true = كمّل الحفظ | false = ارجع للتعديل
 async function checkNames(root){
   const els=[...root.querySelectorAll(NAME_SEL)].filter(el=>el.type!=="hidden"&&el.dataset.skipCatalog!=="true");if(!els.length)return true; // الخانات المخفية (زي «الكمية» في طلبية الصب) مش أسماء ولا ألوان
@@ -1087,8 +1026,7 @@ async function checkNames(root){
     try{cache=JSON.parse(localStorage.getItem(ITEM_CACHE)||"null")}catch(e){}
     if(!Array.isArray(cache))return true;
   }
-  // أقرب اسم: بيفهم اختلاف ترتيب الكلمات والهمزات والإملاء البسيط (بهار كبير مضلع = بهار مضلع كبير)، وبيرجع [الاسم,..]
-  const similar=(list,nv)=>{const a=list.map(n=>[n,_mscore(nv,n)]).filter(x=>x[1]>=0.6).sort((x,y)=>y[1]-x[1])[0];if(a)return a;const b=list.map(n=>[n,lev(norm(n),nv),Math.min(norm(n).length,nv.length)]).filter(x=>x[1]<=Math.max(1,Math.floor(x[2]/4))).sort((x,y)=>x[1]-y[1])[0];return b};
+  const similar=(list,nv)=>list.map(n=>[n,lev(norm(n),nv),Math.min(norm(n).length,nv.length)]).filter(x=>x[1]<=Math.max(1,Math.floor(x[2]/4))).sort((x,y)=>x[1]-y[1])[0];
   for(const el of els){
     const kind=kindOf(el),v=el.value.trim();if(!v)continue;
     const locked=lock&&kind==="item"&&!el.readOnly; // الصنف المقفول من الطلبية (readOnly) مش بيتراجع
