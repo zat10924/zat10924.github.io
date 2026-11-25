@@ -240,7 +240,7 @@ async function loadMe(){
       if(!bad)break;cols=cols.filter(c=>c!==bad);
     }
     return r};
-  const[p,t]=await Promise.all([getP(),db.rpc("server_today")]);
+  const[p,t,lm]=await Promise.all([getP(),db.rpc("server_today"),Promise.resolve(db.rpc("lab_me")).then(r=>r,()=>({data:null}))]);
   // آخر ظهور (مرة كل جلسة) — بيتجاهل الخطأ لو العمود لسه مش موجود
   try{if(!p.error&&navigator.onLine&&!sessionStorage.getItem("seen")){sessionStorage.setItem("seen","1");db.from("profiles").update({last_seen:new Date().toISOString()}).eq("id",session.user.id).then(()=>{},()=>{})}}catch(e){}
   if(!t.error&&t.data)_today=String(t.data).slice(0,10);
@@ -249,6 +249,8 @@ async function loadMe(){
   ME=p.error
     ?{id:session.user.id,name:"",email:session.user.email||"",role:null,section:null,sections:[],active:false,perms:{},avatar:"",phone:"",whatsapp:"",profile_error:true}
     :{id:session.user.id,name:p.data?.full_name||"",email:session.user.email||"",role:p.data?.role||null,section:p.data?.section||null,sections:secList(p.data),active:p.data?.active!==false,perms:p.data?.perms||{},avatar:safeAv(p.data?.avatar),phone:p.data?.phone||"",whatsapp:p.data?.whatsapp||"",fire_role:p.data?.fire_role||""};
+  // صلاحية المختبر (view/edit أو null): بتحدد ظهور رابط المختبر في القائمة
+  ME.lab=(lm&&lm.data&&lm.data.level)||null;
   if(!p.error)try{localStorage.setItem("me_"+session.user.id,JSON.stringify(ME))}catch(e){}
   return ME;
 }
@@ -456,7 +458,7 @@ function renderNav(active){
   ${grp("الإنتاج",[sg(PROD)])}
   ${grp("الطلبيات",canReports()?[sg(ORDERS)]:[])}
   ${grp("الأقسام",[...visibleSections().map(sg),...soonSections().map(x=>`<div class="sg soon" style="--c:${x[2]}"><div class="sh soonitem" aria-disabled="true">${ico(x[1])}<span>${x[0]}<small class="soonn">سوف تُنشأ قريبًا</small></span></div></div>`)])}
-  ${grp("المختبر",[sg(LAB)])}
+  ${ME.lab?grp("المختبر",[sg(LAB)]):""}
   ${grp("التقارير والبحث",canReports()?[sg(REPORTS).replace(">"+REPORTS[1]+"<",">التقارير العامة<"),sg(SEARCH),sg(WSEARCH)]:[])}
   ${grp("البيانات الأساسية",canReports()?[sg(CATALOG),sg(WORKERS)]:[])}
   ${grp("إدارة النظام",canReports()?[...(ME.role==="admin"?[sg(USERS)]:[]),sg(ACTIVITY)]:[])}</nav>
