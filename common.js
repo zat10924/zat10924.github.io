@@ -137,7 +137,7 @@ const ACTIVITY=["activity.html","سجل النشاط والنسخ","pulse","#5b6
 const PROFILE=["profile.html","ملفي الشخصي","user","#642631"];
 const SETTINGS=["settings.html","الإعدادات","cog","#5b6b8c"];
 const AI=["ai.html","المساعد الذكي","spark","#642631"];
-const LAB=["mas-sample-lab/","المختبر","flask","#B8862B"];
+const LAB=["Mas-Sample-Lab/","المختبر","flask","#B8862B"];
 const USERS=["users.html","المستخدمين والصلاحيات","shield","#7a5ea8"];
 const SEC_AR={glaze:"جليز",deco:"زخرفة",spray:"رش",repair:"تصليح",casting:"الصب اليدوي",brush:"البرشر",finish:"الفنش",fire:"الحريق"};
 const ROLE_DESC={admin:"صلاحية كاملة: كل الأقسام والتقارير والمستخدمين",owner:"صاحب المصنع: يشوف كل الأقسام والطلبيات والتقارير (عرض فقط، من غير إدارة المستخدمين)",manager:"مسؤول عن قسم أو أكتر: يشوف ويدير أقسامه بس",worker:"يسجّل الإنتاج في قسمه بس"};
@@ -446,7 +446,7 @@ function renderNav(active){
   const grp=(t,a)=>{
     if(!a.length)return"";
     const body=a.join(""),hasOn=/class="sh on"/.test(body);
-    const open=hasOn||(t in NAVG?NAVG[t]:(t==="الإنتاج"||t==="الأقسام"||t==="الطلبيات"));
+    const open=hasOn||(t in NAVG?NAVG[t]:(t==="الإنتاج"||t==="الأقسام"||t==="الطلبيات"||t==="المختبر"));
     return `<div class="sgrp${open?"":" shut"}" data-g="${t}"><button type="button" class="sgt" aria-expanded="${open}"><span>${t}</span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="sgb">${body}</div></div>`;
   };
   const side=document.createElement("aside");side.className="side";side.id="side";
