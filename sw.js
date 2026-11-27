@@ -1,6 +1,15 @@
 /* sw.js — تسريع التحميل: المكتبات والخطوط من الكاش، وملفات البرنامج من النت أولًا (عشان التحديثات تظهر) */
-const V="mas-v4.13.7",LIB="mas-lib";
-addEventListener("install",e=>{skipWaiting()});
+const V="mas-v4.14.0",LIB="mas-lib";
+/* ===== تحميل مسبق لكل ملفات البرنامج: أي صفحة تفتح أوفلاين حتى لو عمرك ما فتحتها قبل كده ===== */
+const PRE=["./","index.html","production.html","glaze.html","decoration.html","spray.html","repair.html","casting.html","brush.html","finish.html","fire.html","orders.html","catalog.html","reports.html","search.html","worker-search.html","workers.html","activity.html","users.html","profile.html","settings.html","ai.html",
+"config.js","common.js","dash.js","desktop.js","install.js","reports.js","mas-xlsx.js","mas-ux.js","ai.js","ai-center.js","ai-dates.js","ai-print.js","ai-settings.js","ai-smart.js","ai-import-tray.js",
+"style.css","theme.css","desktop.css","mas-ux.css","manifest.json","icon.svg","icon-192.png","icon-512.png","apple-touch-icon.png","logo-full.png"];
+const SB="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+addEventListener("install",e=>{skipWaiting();e.waitUntil((async()=>{
+  const c=await caches.open(V);
+  await Promise.all(PRE.map(async p=>{try{const r=await fetch(p,{cache:"reload"});if(r&&r.ok)await c.put(p,r)}catch(x){}}));
+  try{const l=await caches.open(LIB);if(!(await l.match(SB))){const r=await fetch(SB);if(r&&r.ok)await l.put(SB,r)}}catch(x){}
+})())});
 addEventListener("activate",e=>{e.waitUntil((async()=>{
   for(const k of await caches.keys())if(k!==V&&k!==LIB)await caches.delete(k);
   await clients.claim();
@@ -25,7 +34,7 @@ addEventListener("fetch",e=>{
     const hit=await c.match(r,{ignoreSearch:true});
     const net=fetch(r,{cache:"no-cache"}).then(x=>{if(x&&x.ok)c.put(r,x.clone());return x}).catch(()=>null);
     if(hit){e.waitUntil(net);return hit}
-    return (await net)||fetch(r);
+    return (await net)||(r.mode==="navigate"?await c.match("index.html"):null)||fetch(r);
   }));
 });
 

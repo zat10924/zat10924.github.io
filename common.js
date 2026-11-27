@@ -246,11 +246,17 @@ async function loadMe(){
   if(!t.error&&t.data)_today=String(t.data).slice(0,10);
   // Deny by default: a failed profiles lookup must never grant an admin role
   // or trust a cached role for protected operations.
-  ME=p.error
+  // أوفلاين: لو فشل جلب الصلاحيات بسبب انقطاع النت بس (مش رفض من السيرفر) نستخدم آخر نسخة محفوظة من صلاحيات نفس المستخدم.
+  // ده بيأثر على شكل الواجهة بس؛ أي تسجيل بيتبعت للسيرفر بعد رجوع النت والسيرفر (RLS + created_by) هو اللي بيقرر يقبله ولا لأ.
+  const cachedMe=(()=>{
+    if(!p.error||!(!navigator.onLine||/fetch|network|load failed/i.test(String(p.error.message||""))))return null;
+    try{const o=JSON.parse(localStorage.getItem("me_"+session.user.id)||"null");return o&&String(o.id)===String(session.user.id)&&o.role&&o.active!==false?o:null}catch(e){return null}
+  })();
+  ME=cachedMe?{...cachedMe,offline_cached:true}:p.error
     ?{id:session.user.id,name:"",email:session.user.email||"",role:null,section:null,sections:[],active:false,perms:{},avatar:"",phone:"",whatsapp:"",profile_error:true}
     :{id:session.user.id,name:p.data?.full_name||"",email:session.user.email||"",role:p.data?.role||null,section:p.data?.section||null,sections:secList(p.data),active:p.data?.active!==false,perms:p.data?.perms||{},avatar:safeAv(p.data?.avatar),phone:p.data?.phone||"",whatsapp:p.data?.whatsapp||"",fire_role:p.data?.fire_role||""};
   // صلاحية المختبر (view/edit أو null): بتحدد ظهور رابط المختبر في القائمة
-  ME.lab=(lm&&lm.data&&lm.data.level)||null;
+  ME.lab=(lm&&lm.data&&lm.data.level)||(cachedMe&&cachedMe.lab)||null;
   if(!p.error)try{localStorage.setItem("me_"+session.user.id,JSON.stringify(ME))}catch(e){}
   return ME;
 }
