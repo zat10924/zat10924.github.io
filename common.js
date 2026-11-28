@@ -1690,34 +1690,61 @@ async function freeTodayQty(sec){
   }catch(e){return 0}
 }
 const NEED_V2=m=>/free_production|relation|does not exist|schema cache|could not find/i.test(m||"");
-/* الزخرفة: لو الصنف + كود الرسمة في «إنتاج بدون طلبية» موجودين في طلبية مفتوحة، بيتسجّل عليها تلقائيًا (الأقدم الأول، والناقصة قبل المكتملة) */
+/* ربط تلقائي لـ«إنتاج بدون طلبية» بالطلبيات المفتوحة (زخرفة + جليز + رش):
+   لو الصنف + (الكود/اللون) موجودين في طلبية مفتوحة، الكمية بتتسجّل عليها وبتتخصم من المتبقي.
+   الترتيب: الناقصة قبل المكتملة، والأقدم الأول. الكمية الأكبر من المتبقي بتتوزّع على الطلبيات اللي بعدها لنفس الصنف. */
 const _dn=v=>String(v||"").replace(/^\s*كود\s*/,"").trim().toLowerCase();
-async function decoLoadOpen(){
+const _nk=v=>norm(_dn(v));
+const AUTO_SEC={
+  deco:{ord:"deco_orders",lv:"deco_lines_status",tbl:"deco_production",idem:true},
+  glaze:{ord:"glaze_orders",lv:"glaze_lines_status",tbl:"glaze_production",idem:false},
+  spray:{sv:"spray_status",ord:"spray_orders",tbl:"spray_production",idem:false}
+};
+// idem: الجدول فيه client_id (يتحفظ أوفلاين ويتبعت لوحده). الجليز والرش مفيهمش، فبيتسجلوا أونلاين بس.
+async function ordLoadOpen(sec){
   try{
     if(!navigator.onLine)return null;
-    const[o,l]=await Promise.all([db.from("deco_orders").select("id,item,order_date,status").eq("status","open"),db.from("deco_lines_status").select("id,order_id,code,total_required,produced")]);
+    const c=AUTO_SEC[sec];if(!c)return null;
+    if(sec==="spray"){
+      const[o,so]=await Promise.all([db.from("spray_status").select("*").eq("status","open"),(async()=>{let r=await db.from("spray_orders").select("id,spray_color");if(r.error)r={data:[]};return r})()]);
+      if(o.error)return null;
+      const sm=new Map((so.data||[]).map(x=>[x.id,x.spray_color||""]));
+      return (o.data||[]).map(x=>({id:x.id,oid:x.id,code:_nk(x.color),item:_nk(x.item),itemTxt:x.item,date:x.order_date||"",req:+x.qty_required||0,done:+x.produced||0,sc:_nk(sm.get(x.id))}));
+    }
+    const lc=sec==="deco"?"code":"color";
+    const[o,l]=await Promise.all([db.from(c.ord).select("id,item,order_date,status").eq("status","open"),db.from(c.lv).select("id,order_id,"+lc+",total_required,produced")]);
     if(o.error||l.error)return null;
     const om=new Map(o.data.map(x=>[x.id,x]));
-    return l.data.filter(x=>om.has(x.order_id)).map(x=>({id:x.id,oid:x.order_id,code:_dn(x.code),item:_dn(om.get(x.order_id).item),itemTxt:om.get(x.order_id).item,date:om.get(x.order_id).order_date||"",req:+x.total_required||0,done:+x.produced||0}));
+    return l.data.filter(x=>om.has(x.order_id)).map(x=>({id:x.id,oid:x.order_id,code:_nk(x[lc]),item:_nk(om.get(x.order_id).item),itemTxt:om.get(x.order_id).item,date:om.get(x.order_id).order_date||"",req:+x.total_required||0,done:+x.produced||0,sc:""}));
   }catch(e){return null}
 }
-function decoFind(lines,item,code){
-  if(!lines||!_dn(code))return null;
-  const m=lines.filter(x=>x.code===_dn(code)&&x.item===_dn(item));
+// بترجّع قايمة توزيع [{m,q}] — أو null لو مفيش طلبية مطابقة. بتعدّل m.done عشان الأصناف اللي بعدها في نفس الجلسة تشوف المتبقي الصح.
+function ordPlan(lines,item,code,qty,sc){
+  if(!lines||!_nk(code))return null;
+  const k=_nk(item),c=_nk(code),s=_nk(sc);
+  const m=lines.filter(x=>x.code===c&&x.item===k&&(!x.sc||!s||x.sc===s));
   if(!m.length)return null;
   m.sort((a,b)=>((a.done>=a.req)-(b.done>=b.req))||String(a.date).localeCompare(String(b.date)));
-  return m[0];
+  const out=[];let left=qty;
+  for(const x of m){const r=Math.max(x.req-x.done,0);if(r<=0||left<=0)continue;const t=Math.min(left,r);out.push({m:x,q:t});x.done+=t;left-=t}
+  let over=0;
+  if(left>0){ // الزيادة عن المتبقي كله بتتسجّل على آخر طلبية اتوزّع عليها (أو الأقدم لو كلهم مكتملين) وبتتنبّه
+    const last=out.length?out[out.length-1]:(out.push({m:m[0],q:0}),out[0]);
+    last.q+=left;last.m.done+=left;over=left;
+  }
+  out.over=over;
+  return out;
 }
 function freeProduction(sec,done){
   if(roBlock())return;
   if(!SEC_AR[sec]||sec==="casting"||sec==="brush"||sec==="finish")return;
-  const deco=sec==="deco",spr=sec==="spray",rep=sec==="repair",lab=deco?"كود الرسمة":"اللون",kind=deco?"code":"color";
+  const deco=sec==="deco",spr=sec==="spray",rep=sec==="repair",lab=deco?"كود الرسمة":"اللون",kind=deco?"code":"color",auto=!!AUTO_SEC[sec];
   const rowHtml=()=>`<div class="itemblk mrow"><div class="ih"><b class="mn"></b><span>${rep?'<button type="button" class="btn ghost sm rmc" style="margin-inline-end:6px">＋ لون آخر لنفس الصنف</button>':""}<button type="button" class="rmi" aria-label="حذف الصنف">${ib("trash","حذف")}</button></span></div>
     <label>الصنف</label><input class="it" placeholder="اسم الصنف" autocomplete="off">
     <div class="two"><div><label>${lab}${spr?" (لون الصنف — اختياري)":" (اختياري)"}</label><input class="sb" data-kind="${kind}" placeholder="${lab}" autocomplete="off"></div>
     <div><label>الكمية</label><input type="number" class="mq2" min="1" inputmode="numeric"></div></div>${spr?'<label>لون الرش</label><input class="msc" data-kind="color" placeholder="لون الرش" autocomplete="off" maxlength="60">':""}</div>`;
   openModal(rep?"تسجيل تصليح":"إنتاج بدون طلبية · "+SEC_AR[sec],
-    `${XT(deco||rep)}<div class="hint" style="margin:0 0 6px">${rep?"سجّل أكتر من صنف لنفس العامل مرة واحدة.":"سجّل أكتر من صنف مرة واحدة. بيتسجّل في إنتاج القسم وتقاريره من غير ما يتربط بطلبية."}</div>
+    `${XT(deco||rep)}<div class="hint" style="margin:0 0 6px">${rep?"سجّل أكتر من صنف لنفس العامل مرة واحدة.":(auto?"سجّل أكتر من صنف مرة واحدة. لو الصنف + "+(deco?"الكود":"اللون")+" موجودين في طلبية مفتوحة بيتسجّل عليها وبيتخصم من المتبقي تلقائيًا، وغير كده بيتسجّل بدون طلبية.":"سجّل أكتر من صنف مرة واحدة. بيتسجّل في إنتاج القسم وتقاريره من غير ما يتربط بطلبية.")}</div>
     <button type="button" class="btn ghost sm" id="mclr" hidden style="margin:0 0 6px">مسح المسودة</button>
     <div id="mrows"></div>
     <button type="button" class="btn ghost sm" id="madd" style="margin:6px 0 10px">＋ إضافة صنف آخر</button>
@@ -1735,10 +1762,10 @@ function freeProduction(sec,done){
     }
     if(!todo.length){toast("اكتب صنف واحد على الأقل");return false}
     const d=document.getElementById("m-d").value||today(),xf=xfRead();
-    const dl=deco?await decoLoadOpen():null;
-    todo.forEach(t=>{const m=deco?decoFind(dl,t.item,t.sub):null;if(m){t.link=m;t.over=Math.max(t.q-Math.max(m.req-m.done,0),0);m.done+=t.q}});
+    const dl=auto?await ordLoadOpen(sec):null;
+    todo.forEach(t=>{const pl=auto?ordPlan(dl,t.item,t.sub,t.q,t.sc):null;if(pl&&pl.length){t.plan=pl;t.over=pl.over||0}});
     if(!await reviewSave({title:rep?"راجع التصليح قبل الحفظ":"راجع الإنتاج قبل الحفظ",meta:[["القسم",SEC_AR[sec]],["التاريخ",fmtD(d)],...rvFields(xf)],
-      items:todo.map(t=>({title:t.item,rows:[...(t.sub?[[lab,t.sub]]:[]),["الكمية",nf(t.q)],...(t.link?[["هيتسجل على طلبية","مربوط تلقائيًا بطلبية "+t.item+" (كود "+_dn(t.sub)+")"]]:[...(deco&&t.sub?[["ملحوظة","مفيش طلبية مفتوحة بنفس الصنف والكود، هيتسجل بدون طلبية"]]:[])])],warn:t.over?"الكمية أكبر من المتبقي في الطلبية بـ "+nf(t.over)+" — هتتسجل زي ما هي":""})),
+      items:todo.map(t=>({title:t.item,rows:[...(t.sub?[[lab,t.sub]]:[]),["الكمية",nf(t.q)],...(t.plan?t.plan.map(p=>["هيتخصم من طلبية"+(p.m.date?" "+fmtD(p.m.date):""),nf(p.q)+" (المتبقي قبل: "+nf(Math.max(p.m.req-(p.m.done-p.q),0))+")"]):(auto&&t.sub?[["ملحوظة","مفيش طلبية مفتوحة بنفس الصنف و"+(deco?"الكود":"اللون")+(spr?" ولون الرش":"")+"، هيتسجل بدون طلبية"]]:[]))],warn:t.over?"الكمية أكبر من المتبقي في الطلبية بـ "+nf(t.over)+" — هتتسجل زي ما هي":""})),
       total:todo.reduce((a,t)=>a+t.q,0)}))return false;
     let ok=0,off=0,linked=0,over=0;const bad=[];
     for(const t of todo){
@@ -1748,12 +1775,24 @@ function freeProduction(sec,done){
         if(rs.error){bad.push(/worker/.test(rs.error.message||"")?"شغّل ملف setup_repair_worker.sql في Supabase الأول":/color/.test(rs.error.message||"")?"شغّل ملف setup_repair_color.sql في Supabase الأول (عشان اللون)":t.item+": "+rs.error.message);continue}
         ok++;t.el.remove();continue;
       }
-      if(t.link){ // مربوط تلقائيًا بطلبية زخرفة
-        const lrow={line_id:t.link.id,qty:t.q,prod_date:d,client_id:id,...xf},sync={lv:"deco_lines_status",o:"deco_orders",oid:t.link.oid};
-        let lr;try{lr=await insertRow("deco_production",lrow)}catch(e){lr={error:{message:String(e)}}}
-        if(lr.error&&isNet(lr.error)){Q_.add({id,table:"deco_production",row:lrow,sec:"deco",rid:t.link.id,qty:t.q,txt:t.item+" · كود "+t.sub,sync});updateBadge();off++;ok++;t.el.remove();continue}
-        if(lr.error){bad.push(t.item+": "+lr.error.message);continue}
-        try{await syncAfter({sync})}catch(e){}
+      if(t.plan){ // مربوط تلقائيًا بطلبية (زخرفة / جليز / رش): كل قطعة توزيع = سجل إنتاج على طلبية
+        const c=AUTO_SEC[sec];let saved=0,failMsg="";
+        for(const p of t.plan){
+          const pid=uuid();
+          const lrow=sec==="spray"?{order_id:p.m.id,qty:p.q,prod_date:d,...xf,...(t.sc?{spray_color:t.sc}:{})}:{line_id:p.m.id,qty:p.q,prod_date:d,...xf};
+          if(c.idem)lrow.client_id=pid;
+          const sync=c.lv?{lv:c.lv,o:c.ord,oid:p.m.oid}:{sv:c.sv,o:c.ord,oid:p.m.oid};
+          let lr;try{lr=await insertRow(c.tbl,lrow)}catch(e){lr={error:{message:String(e)}}}
+          if(lr.error&&isNet(lr.error)&&c.idem){Q_.add({id:pid,table:c.tbl,row:lrow,sec,rid:p.m.id,qty:p.q,txt:t.item+(t.sub?" · "+t.sub:"")+" (طلبية)",sync});updateBadge();off++;saved+=p.q;continue}
+          if(lr.error){failMsg=isNet(lr.error)?"النت ضعيف وممكن التسجيل يكون وصل: راجع سجل الطلبية قبل ما تعيد":lr.error.message;break}
+          try{await syncAfter({sync})}catch(e){}
+          saved+=p.q;
+        }
+        if(failMsg){ // نسيب اللي اتسجّل ونرجّع على الشاشة الباقي بس، عشان إعادة المحاولة متكرّرش اللي اتحفظ
+          bad.push(t.item+": "+failMsg+(saved?" (اتسجّل "+nf(saved)+" والباقي "+nf(t.q-saved)+" لسه)":""));
+          if(saved){const qi=t.el.querySelector(".mq2");if(qi)qi.value=t.q-saved}
+          continue;
+        }
         linked++;if(t.over)over++;ok++;t.el.remove();continue;
       }
       const row={section:sec,item:t.item,sub:t.sub||null,qty:t.q,prod_date:d,client_id:id,...xf,...(t.sc?{spray_color:t.sc}:{})};

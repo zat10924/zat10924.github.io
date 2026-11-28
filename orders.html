@@ -134,7 +134,7 @@ function card(o){
     <div class="bar"><i style="width:${o.pct}%"></i></div>
     ${dvHtml(o)}
     ${ks.length?ks.map(k=>`<div class="line"><div class="r"><span class="badge" style="--c:${SECK[k].c};display:inline-flex;align-items:center">${secIco(k)}${SECK[k].n}</span><a class="tag" href="${SECK[k].page}">فتح القسم</a></div>${o.secs[k].map(itemHtml).join("")}</div>`).join(""):'<div class="empty">لسه ما اتوزعتش على قسم</div>'}
-    <div class="row">${o.deliv?`${o.all.some(i=>i.status==="open")?`<button class="btn sm" onclick="closeSecs('${o.id}')">قفل في الأقسام</button>`:""}<button class="btn sm" onclick="undoDeliver('${o.id}')">${o.dvs.length?"إلغاء آخر تسليم":"إلغاء التسليم"}</button>`:`<button class="btn sm" onclick="openForm('${o.id}')">+ توزيع صنف</button>${ks.length?`<button class="btn sm" onclick="increaseG('${o.id}')">زيادة الطلبية</button><button class="btn ghost sm" onclick="editItems('${o.id}')">تعديل الأصناف</button>`:""}${dlv&&ks.length?`<button class="btn sm" onclick="deliverG('${o.id}')">${o.dvs.length?"تسليم جديد":"تسليم الطلبية"}</button>`:""}${o.dvs.length?`<button class="btn ghost sm" onclick="undoDeliver('${o.id}')">إلغاء آخر تسليم</button>`:""}`}<button class="btn ghost sm" onclick="editG('${o.id}')">تعديل البيانات</button><button class="btn ghost sm" onclick="delG('${o.id}')">حذف الطلبية كلها</button></div></div>`;
+    <div class="row">${o.deliv?`${o.all.some(i=>i.status==="open")?`<button class="btn sm" onclick="closeSecs('${o.id}')">قفل في الأقسام</button>`:""}<button class="btn sm" onclick="undoDeliver('${o.id}')">${o.dvs.length?"إلغاء آخر تسليم":"إلغاء التسليم"}</button>`:`<button class="btn sm" onclick="openForm('${o.id}')">+ توزيع صنف</button>${ks.length?`<button class="btn sm" onclick="increaseG('${o.id}')">زيادة الطلبية</button>`:""}${dlv&&ks.length?`<button class="btn sm" onclick="deliverG('${o.id}')">${o.dvs.length?"تسليم جديد":"تسليم الطلبية"}</button>`:""}${o.dvs.length?`<button class="btn ghost sm" onclick="undoDeliver('${o.id}')">إلغاء آخر تسليم</button>`:""}`}<button class="btn ghost sm" onclick="${o.deliv?`editG('${o.id}')`:`editItems('${o.id}',true)`}">تعديل الطلبية</button><button class="btn ghost sm" onclick="delG('${o.id}')">حذف الطلبية كلها</button></div></div>`;
 }
 function draw(){
   const box=document.getElementById("orders");
@@ -272,7 +272,7 @@ async function reSync(gid){
   }}catch(e){}
   if(ch)await load();
 }
-async function editItems(id){if(roBlock())return;
+async function editItems(id,whole){if(roBlock())return;
   const g=G.find(x=>x.id===id);if(!g)return;
   const base=new Map();
   for(const k of ["glaze","deco"]){
@@ -287,8 +287,11 @@ async function editItems(id){if(roBlock())return;
     const canDel=l.done===0&&it.lines.length>1;
     return `<div class="nr" data-id="${rid}" data-prod="${l.done}" data-inc="${inc}" style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed var(--line,#ddd)"><div class="two">${QS(k)?`<input class="c" type="hidden" value="الكمية">`:`<input class="c" data-kind="${k==="deco"?"code":"color"}" value="${esc(l.l)}" placeholder="${k==="deco"?"الكود":"لون الصنف"}">`}${k==="spray"?`<input class="msc" data-kind="color" maxlength="60" value="${esc(l.sc||"")}" placeholder="لون الرش المطلوب">`:""}</div><div class="two"><input class="q" type="number" min="1" inputmode="numeric" value="${b}"><span class="nums">تم ${nf(l.done)}${inc?` · زيادات +${nf(inc)}`:""}</span></div>${canDel?'<button type="button" class="btn ghost sm rml">حذف السطر</button>':""}</div>`;
   };
+  // تعديل الطلبية ككل: بيانات العميل + التواريخ + كل الأصناف في شاشة واحدة وحفظ واحد
+  const od0=g.all.length?(g.date||""):"",due0=g.all.length?(g.due||""):"";
+  const hd=whole?`<label>الاسم / العميل</label><input id="m-rn" maxlength="80" value="${esc(g.title)}">${ext?`<label>موبايل العميل (اختياري)</label><input id="m-ph" type="tel" inputmode="tel" maxlength="20" dir="ltr" value="${esc(g.phone)}"><label>ملاحظات (اختياري)</label><input id="m-nt" maxlength="300" value="${esc(g.notes)}">`:""}${g.all.length?`<div class="two"><div><label>تاريخ الطلبية</label><input type="date" id="m-od" value="${esc(od0)}"></div><div><label>تاريخ التسليم (اختياري)</label><input type="date" id="m-due" value="${esc(due0)}"></div></div>`:""}`:"";
   const blocks=Object.keys(SECK).flatMap(k=>g.secs[k].map((it,ix)=>`<div class="itemblk" data-k="${k}" data-ix="${ix}"><div class="ih"><b>${secIco(k)}${SECK[k].n}</b>${it.lines.every(l=>l.done===0)?'<button type="button" class="btn ghost sm rmi2">حذف الصنف</button>':""}</div><input class="it" maxlength="80" value="${esc(it.item)}"><div class="rows">${it.lines.map((l,n)=>rowH(k,it,n)).join("")}</div></div>`)).join("");
-  openModal("تعديل أصناف الطلبية",`<div id="m-eb">${blocks}</div><div class="hint">عدّل الاسم أو اللون أو الكمية مباشرة. الكمية لازم تكون أكبر من أو تساوي اللي اتنتج. الحذف متاح للي لسه ما اتنتجش منه، وبيتنفذ عند الحفظ.</div>`,async()=>{
+  openModal(whole?"تعديل الطلبية":"تعديل أصناف الطلبية",`${hd}${whole&&blocks?'<h3 style="margin:12px 0 4px">الأصناف</h3>':""}<div id="m-eb">${blocks}</div><div class="hint">${whole?"عدّل أي حاجة في الطلبية (العميل، التواريخ، الأصناف، الألوان، الكميات) واضغط حفظ مرة واحدة. تاريخ الطلبية والتسليم لو اتغيّروا بيتطبّقوا على كل أصناف الطلبية. ":""}الكمية لازم تكون أكبر من أو تساوي اللي اتنتج. الحذف متاح للي لسه ما اتنتجش منه، وبيتنفذ عند الحفظ.</div>`,async()=>{
     const ops=[];
     for(const b of document.querySelectorAll("#m-eb .itemblk")){
       const k=b.dataset.k,it=g.secs[k][+b.dataset.ix],name=b.querySelector(".it").value.trim();
@@ -306,7 +309,27 @@ async function editItems(id){if(roBlock())return;
       if(!live.length){toast("لازم يفضل سطر واحد على الأقل في الصنف: "+it.item);return false}
       ops.push({t:"item",k,it,name,live,gone});
     }
+    let hdr=null;
+    if(whole){
+      const ph=ext?document.getElementById("m-ph").value.trim():"";
+      if(ph&&!/^[\d+\s-]{6,20}$/.test(ph)){toast("رقم الموبايل غير صحيح");return false}
+      hdr={row:{title:document.getElementById("m-rn").value.trim()||null}};
+      if(ext){hdr.row.customer_phone=ph||null;hdr.row.notes=document.getElementById("m-nt").value.trim()||null}
+      const od=document.getElementById("m-od"),du=document.getElementById("m-due");
+      if(od&&od.value!==od0){if(!od.value){toast("اكتب تاريخ الطلبية");return false}hdr.od=od.value}
+      if(du&&du.value!==due0)hdr.due=du.value||null;
+    }
     try{
+      if(hdr){
+        const e=(await db.from("order_groups").update(hdr.row).eq("id",id)).error;if(e)throw e;
+        if(ext)await saveCus(hdr.row.title||"",hdr.row.customer_phone||"");
+        const dp={};if(hdr.od)dp.order_date=hdr.od;if("due" in hdr)dp.due_date=hdr.due;
+        if(Object.keys(dp).length)for(const t of["glaze_orders","deco_orders","spray_orders","casting_orders","brush_orders"]){
+          const r=await db.from(t).update(dp).eq("group_id",id);
+          if(r.error&&QS(t.split("_")[0]))continue; // جدول الصب/البرشر ممكن مش متاح
+          if(r.error)throw r.error;
+        }
+      }
       for(const o of ops){
         const k=o.k,it=o.it;
         if(o.t==="delItem"){
@@ -338,7 +361,7 @@ async function editItems(id){if(roBlock())return;
         }
       }
     }catch(e){toast("خطأ: "+(e.message||e));await load();return false}
-    await load();await reSync(id);toast("تم تعديل الأصناف");
+    await load();await reSync(id);toast(whole?"تم حفظ الطلبية":"تم تعديل الأصناف");
   });
   document.getElementById("m-eb").addEventListener("click",e=>{
     const t=e.target.closest("button");if(!t)return;

@@ -1,5 +1,5 @@
 /* sw.js — تسريع التحميل: المكتبات والخطوط من الكاش، وملفات البرنامج من النت أولًا (عشان التحديثات تظهر) */
-const V="mas-v4.14.0",LIB="mas-lib";
+const V="mas-v4.14.1",LIB="mas-lib";
 /* ===== تحميل مسبق لكل ملفات البرنامج: أي صفحة تفتح أوفلاين حتى لو عمرك ما فتحتها قبل كده ===== */
 const PRE=["./","index.html","production.html","glaze.html","decoration.html","spray.html","repair.html","casting.html","brush.html","finish.html","fire.html","orders.html","catalog.html","reports.html","search.html","worker-search.html","workers.html","activity.html","users.html","profile.html","settings.html","ai.html",
 "config.js","common.js","dash.js","desktop.js","install.js","reports.js","mas-xlsx.js","mas-ux.js","ai.js","ai-center.js","ai-dates.js","ai-print.js","ai-settings.js","ai-smart.js","ai-import-tray.js",
