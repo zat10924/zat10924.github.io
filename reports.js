@@ -682,7 +682,7 @@ function mergeGroups(rows,titles){
 }
 function ordersReport(rootId){
   const root=document.getElementById(rootId);
-  const st={sec:"",stt:"open",q:"",f:"",t:"",gt:new Map(),data:{},err:{},rows:[],more:false,printing:false,last:null};
+  const st={sec:"",stt:"open",q:"",f:"",t:"",gt:new Map(),data:{},err:{},rows:[],more:false,printing:false,last:null,sel:new Set()};
   root.innerHTML=`
   <div class="print-head"><h2>${APP} — تقرير الطلبيات</h2><div class="nums rpd"></div></div>
   <div class="card noprint">
@@ -741,8 +741,16 @@ function ordersReport(rootId){
   const stateTag=r=>{const b=stateTag0(r);return !r.delivered&&r.dvList&&r.dvList.length?b+`<div><span class="tag">تسليم جزئي · ${dvTimes(r.dvList.length)}</span></div>${dvDates(r)}`:b};
   const etaCell=r=>r.status!=="open"||!r.rem?"—":r.stalled?'<span class="tag late">راكدة</span>':r.eta!=null?"~ "+etaTxt(r.eta):'<span class="nums">لا إنتاج حديث</span>';
 
+  const skey=r=>r.k+"|"+r.id;
+  function updSel(){
+    const n=st.sel.size,vis=st.rows.filter(pass),m=vis.filter(r=>st.sel.has(skey(r))).length;
+    const b=$(".ok-p");if(b)b.innerHTML=ib("print",n?`طباعة المحدد (${nf(n)})`:"طباعة");
+    const c=$(".sel-n");if(c){c.textContent=n?`محدد ${nf(n)}`:"";c.style.display=n?"":"none"}
+    const a=$(".selall");if(a){a.checked=vis.length>0&&m===vis.length;a.indeterminate=m>0&&m<vis.length}
+  }
   function draw(){
-    const all=st.rows,list=all.filter(pass);
+    const all=st.rows;let list=all.filter(pass);const selOn=st.printing&&st.sel.size>0; // اختيار طلبيات معيّنة للطباعة
+    if(selOn)list=list.filter(r=>st.sel.has(skey(r)));
     const ord=a=>a.status!=="open"?3:a.late?0:a.due?1:2;
     list.sort((a,b)=>ord(a)-ord(b)||(a.due||"9999").localeCompare(b.due||"9999")||(a.date||"").localeCompare(b.date||""));
     const open=list.filter(r=>r.status==="open"),done=list.length-open.length;
@@ -758,12 +766,13 @@ function ordersReport(rootId){
     $(".ok-secs").innerHTML=sm.length?`<table><thead><tr><th>القسم</th><th>الكل</th><th>مفتوحة</th><th>متأخرة</th><th>مكتملة</th><th>المتبقي</th><th>الإنجاز</th></tr></thead><tbody>${sm.map(x=>{const p=x.req?Math.round(x.dn/x.req*100):0;return `<tr><td><span class="badge" style="--c:${SRC[x.k].color}">${SRC[x.k].name}</span>${st.err[x.k]?' <span class="tag late">تعذر التحميل</span>':""}</td><td>${nf(x.n)}</td><td>${nf(x.o)}</td><td>${x.l?`<b style="color:var(--bad,#b3261e)">${nf(x.l)}</b>`:"0"}</td><td>${nf(x.d)}</td><td><b>${nf(x.rem)}</b></td><td><div class="share"><div class="bar"><i style="width:${p}%;background:${SRC[x.k].color}"></i></div><span>${p}%</span></div></td></tr>`}).join("")}</tbody></table>`:'<div class="empty">مفيش طلبيات بالفلاتر دي</div>';
     // التفاصيل
     const CAP=400,lv=st.printing?list.slice(0,CAP):(st.more?list:list.slice(0,15));
-    $(".ok-list").innerHTML=list.length?`<div class="scroll"><table><thead><tr><th>الطلبية</th><th>القسم</th><th>تاريخ الطلبية</th><th>التسليم</th><th>الإنجاز</th><th>المتبقي</th><th>الحالة</th><th>التقدير</th></tr></thead><tbody>${lv.map(r=>`<tr><td><b>${esc(r.item)}</b>${r.items?` <span class="tag">${r.n} أصناف</span>`:""}${r.items?r.items.map(i=>`<div class="nums" style="font-size:.8rem">• ${esc(i.item)}${i.sub?" ("+esc(i.sub)+")":""} — ${nf(i.done)}/${nf(i.req)}${i.st!=="open"?" ✓":""}${r.delivered&&i.rem>0?` <b style="color:var(--bad,#b3261e)">— عجز ${nf(i.rem)}</b>`:""}</div>`).join(""):r.sub?`<div class="nums" style="font-size:.8rem">${esc(r.sub)}</div>`:""}</td><td><span class="badge" style="--c:${r.color}">${r.sec}</span></td><td>${r.date?fmtDW(r.date):"—"}</td><td>${dueCell(r)}</td><td><div class="share"><div class="bar"><i style="width:${r.pct}%;background:${r.pct>=100?"var(--ok)":r.color}"></i></div><span>${r.pct}%</span></div><div class="nums" style="font-size:.78rem">${nf(Math.min(r.done,r.req))} من ${nf(r.req)}</div>${r.over>0?`<span class="tag late">زيادة +${nf(r.over)}</span>`:""}</td><td><b>${nf(r.rem)}</b></td><td>${stateTag(r)}</td><td>${etaCell(r)}</td></tr>`).join("")}</tbody></table></div>${st.printing?(list.length>CAP?`<div class="hint">اتعرض أول ${CAP} طلبية من ${nf(list.length)} — الباقي في ملف Excel.</div>`:""):(list.length>15?`<button class="btn ghost sm more noprint">${st.more?"عرض أقل":`عرض الكل (${list.length})`}</button>`:"")}<div class="hint" style="margin-top:4px">التقدير = المتبقي ÷ معدل إنتاج الصنف في آخر 14 يوم (بأيام الشغل). الطلبية «متأخرة» لو عدّى تاريخ تسليمها، ولو ملهاش تاريخ تسليم فلو عدّى عليها أكتر من ${LATE_DAYS} يوم.</div>`:'<div class="empty">مفيش طلبيات بالفلاتر دي</div>';
+    $(".ok-list").innerHTML=list.length?`${st.printing?"":`<div class="noprint" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 8px"><span class="nums">علّم على الطلبيات اللي عايز تطبعها (من غير تحديد بتتطبع كلها)</span><span class="sel-n tag"></span><button type="button" class="btn ghost sm sel-clear">إلغاء التحديد</button></div>`}<div class="scroll"><table><thead><tr>${st.printing?"":`<th class="noprint"><input type="checkbox" class="selall" aria-label="تحديد الكل" style="width:20px;height:20px"></th>`}<th>الطلبية</th><th>القسم</th><th>تاريخ الطلبية</th><th>التسليم</th><th>الإنجاز</th><th>المتبقي</th><th>الحالة</th><th>التقدير</th></tr></thead><tbody>${lv.map(r=>`<tr>${st.printing?"":`<td class="noprint"><input type="checkbox" class="selr" data-k="${esc(skey(r))}" ${st.sel.has(skey(r))?"checked":""} aria-label="تحديد الطلبية" style="width:20px;height:20px"></td>`}<td><b>${esc(r.item)}</b>${r.items?` <span class="tag">${r.n} أصناف</span>`:""}${r.items?r.items.map(i=>`<div class="nums" style="font-size:.8rem">• ${esc(i.item)}${i.sub?" ("+esc(i.sub)+")":""} — ${nf(i.done)}/${nf(i.req)}${i.st!=="open"?" ✓":""}${r.delivered&&i.rem>0?` <b style="color:var(--bad,#b3261e)">— عجز ${nf(i.rem)}</b>`:""}</div>`).join(""):r.sub?`<div class="nums" style="font-size:.8rem">${esc(r.sub)}</div>`:""}</td><td><span class="badge" style="--c:${r.color}">${r.sec}</span></td><td>${r.date?fmtDW(r.date):"—"}</td><td>${dueCell(r)}</td><td><div class="share"><div class="bar"><i style="width:${r.pct}%;background:${r.pct>=100?"var(--ok)":r.color}"></i></div><span>${r.pct}%</span></div><div class="nums" style="font-size:.78rem">${nf(Math.min(r.done,r.req))} من ${nf(r.req)}</div>${r.over>0?`<span class="tag late">زيادة +${nf(r.over)}</span>`:""}</td><td><b>${nf(r.rem)}</b></td><td>${stateTag(r)}</td><td>${etaCell(r)}</td></tr>`).join("")}</tbody></table></div>${st.printing?(list.length>CAP?`<div class="hint">اتعرض أول ${CAP} طلبية من ${nf(list.length)} — الباقي في ملف Excel.</div>`:""):(list.length>15?`<button class="btn ghost sm more noprint">${st.more?"عرض أقل":`عرض الكل (${list.length})`}</button>`:"")}<div class="hint" style="margin-top:4px">التقدير = المتبقي ÷ معدل إنتاج الصنف في آخر 14 يوم (بأيام الشغل). الطلبية «متأخرة» لو عدّى تاريخ تسليمها، ولو ملهاش تاريخ تسليم فلو عدّى عليها أكتر من ${LATE_DAYS} يوم.</div>`:'<div class="empty">مفيش طلبيات بالفلاتر دي</div>';
     const lb=ORD_ST.find(x=>x[0]===st.stt)[1];
-    $(".rpd").textContent=(st.sec?SRC[st.sec].name:"كل الأقسام")+" · "+lb+(st.f||st.t?" · "+fmtP(st.f,st.t):"")+(st.q?" · بحث: "+st.q:"")+" · طُبع في "+fmtD(today());
+    $(".rpd").textContent=(st.sec?SRC[st.sec].name:"كل الأقسام")+" · "+lb+(st.f||st.t?" · "+fmtP(st.f,st.t):"")+(st.q?" · بحث: "+st.q:"")+(selOn?" · "+nf(list.length)+" طلبية محددة":"")+" · طُبع في "+fmtD(today());
     root.querySelector('[data-ps="secs"]').toggleAttribute("data-empty",!sm.length);
     root.querySelector('[data-ps="list"]').toggleAttribute("data-empty",!list.length);
     st.last={list,open,lateN,rem,pct,sm};
+    updSel();
   }
   async function refresh(force){
     $(".ok-k").innerHTML=skelKpis(4);
@@ -777,7 +786,13 @@ function ordersReport(rootId){
   $(".of-f").onchange=e=>{st.f=e.target.value;draw()};
   $(".of-e").onchange=e=>{st.t=e.target.value;draw()};
   let qt=null;$(".of-q").oninput=e=>{clearTimeout(qt);const v=e.target.value.trim();qt=setTimeout(()=>{st.q=v;st.more=false;draw()},200)};
-  root.addEventListener("click",e=>{if(e.target.closest(".more")){st.more=!st.more;draw()}});
+  root.addEventListener("click",e=>{if(e.target.closest(".more")){st.more=!st.more;draw()}else if(e.target.closest(".sel-clear")){st.sel.clear();draw()}});
+  root.addEventListener("change",e=>{
+    const c=e.target.closest(".selr");
+    if(c){if(c.checked)st.sel.add(c.dataset.k);else st.sel.delete(c.dataset.k);updSel();return}
+    const a=e.target.closest(".selall");
+    if(a){st.rows.filter(pass).forEach(r=>{if(a.checked)st.sel.add(skey(r));else st.sel.delete(skey(r))});draw()}
+  });
   $(".ok-x").onclick=()=>{
     if(!st.last)return;
     csvDownload(`تقرير-الطلبيات-${today()}.csv`,["القسم","الطلبية","الصنف","اللون/الكود","تاريخ الطلبية","تاريخ التسليم","المطلوب","المنتج","المتبقي","الإنجاز %","الحالة","مرات التأجيل"],
@@ -785,6 +800,7 @@ function ordersReport(rootId){
   };
   $(".ok-p").onclick=()=>{
     if(!st.last)return;const L=st.last;
+    if(st.sel.size&&!st.rows.filter(pass).some(r=>st.sel.has(skey(r)))){toast("الطلبيات المحددة مش ظاهرة بالفلاتر الحالية");return}
     printDialog(root,"orders",[["kpi","الأرقام الرئيسية",true],["secs","ملخص الأقسام",L.sm.length>0],["list","تفاصيل الطلبيات",L.list.length>0]],{before(){st.printing=true;draw()},after(){st.printing=false;draw()}});
   };
   $(".ok-sh").onclick=()=>{
@@ -939,5 +955,115 @@ function dashboard(rootId){
   return{refresh:(f=true)=>refresh(f)};
 }
 
-return{shareText,mount,dashboard,ordersReport,sources:SRC,getData,backlog,ordN,editEntry,deleteEntry,actBtns,entryTxt,insHtml,printDialog,workerStats,groupSum,etaTxt};
+/* ---------- تقرير العملاء والتسليم ---------- */
+const CUST_SECS=["glaze","deco","spray","casting","brush"];
+function customersReport(rootId){
+  const root=document.getElementById(rootId);
+  const st={k:"90",f:"",t:"",data:{},err:{},rows:[],more:false,moreL:false,printing:false,last:null};
+  const CK=[["30","30 يوم"],["90","3 شهور"],["365","سنة"],["all","الكل"]];
+  root.innerHTML=`
+  <div class="print-head"><h2>${APP} — تقرير العملاء والتسليم</h2><div class="nums rpd"></div></div>
+  <div class="card noprint">
+    <div class="chips rch">${CK.map(c=>`<button type="button" class="chip ${c[0]===st.k?"on":""}" data-k="${c[0]}">${c[1]}</button>`).join("")}</div>
+    <div class="two"><div><label>تاريخ الطلبية من</label><input type="date" class="rf"></div><div><label>إلى</label><input type="date" class="rt"></div></div>
+  </div>
+  <div class="kpis ck" data-ps="kpi">${skelKpis(4)}</div>
+  <div class="card" data-ps="insights"><div class="sec-head"><h3 class="hi">${ui("sparkles")}<span>ملاحظات ذكية</span></h3></div><div class="rins"></div></div>
+  <div class="card" data-ps="cust"><div class="sec-head"><h3>العملاء</h3></div><div class="scroll rcu"></div></div>
+  <div class="card" data-ps="late"><div class="sec-head"><h3>تسليمات اتأخرت عن الميعاد</h3></div><div class="scroll rlt"></div></div>
+  <div class="actbar noprint"><button class="btn ib cx">${ib("download","تصدير Excel")}</button><button class="btn ghost ib cp">${ib("print","طباعة")}</button><button class="btn ghost ib csh">${ib("share","إرسال واتساب")}</button></div>`;
+  const $=s=>root.querySelector(s),$$=s=>root.querySelectorAll(s);
+  const rng=()=>st.k==="custom"?[st.f,st.t]:st.k==="all"?["",""]:[addDays(today(),-(+st.k-1)),today()];
+  const syncDates=()=>{if(st.k!=="custom"){const[a,b]=rng();$(".rf").value=a;$(".rt").value=b}};
+
+  // كل طلبية (مجموعة) = سجل واحد بمجموع كل أقسامها
+  function build(){
+    const G=new Map();
+    CUST_SECS.forEach(k=>{const d=st.data[k];if(!d||!d.ord)return;
+      d.ord.forEach(o=>{if(!o.gid)return;
+        let g=G.get(o.gid);
+        if(!g){const X=GT.x.get(o.gid)||{};g={gid:o.gid,title:(GT.m.get(o.gid)||"").trim(),no:X.no||"",ph:X.ph||"",dv:X.dv||null,req:0,done:0,date:"",due:"",open:0,lateRaw:false};G.set(o.gid,g)}
+        g.req+=o.req;g.done+=Math.min(o.done,o.req);
+        if(o.date&&(!g.date||o.date<g.date))g.date=o.date;
+        if(o.due&&(!g.due||o.due<g.due))g.due=o.due;
+        if(o.status==="open"){g.open++;if(o.due?today()>o.due:isLate(o.status,o.date))g.lateRaw=true}
+      })});
+    return[...G.values()].map(g=>({...g,rem:Math.max(g.req-g.done,0),delivered:!!g.dv,late:!g.dv&&g.lateRaw}));
+  }
+  const key=g=>g.title?norm(g.title):"";
+  function draw(){
+    const[f,t]=rng(),all=st.rows.filter(g=>(!f&&!t)||(g.date&&inRange(g.date,f,t)));
+    const dl=all.filter(g=>g.delivered),withDue=dl.filter(g=>g.due),onTime=withDue.filter(g=>g.dv<=g.due);
+    const lateDl=withDue.filter(g=>g.dv>g.due).map(g=>({...g,days:daysBetween(g.due,g.dv)})).sort((a,b)=>b.days-a.days);
+    const withDate=dl.filter(g=>g.date),avgD=withDate.length?Math.round(withDate.reduce((a,g)=>a+Math.max(daysBetween(g.date,g.dv),0),0)/withDate.length):null;
+    const short=dl.reduce((a,g)=>a+g.rem,0),shortN=dl.filter(g=>g.rem>0).length,lateOpen=all.filter(g=>g.late).length;
+    // العملاء (بدمج الأسماء المتشابهة)
+    const C=new Map();
+    all.forEach(g=>{const k=key(g);let c=C.get(k);if(!c){c={name:g.title||"طلبيات بدون اسم",ph:"",n:0,req:0,done:0,open:0,late:0,dl:0,short:0,last:""};C.set(k,c)}
+      c.n++;c.req+=g.req;c.done+=g.done;if(g.ph)c.ph=g.ph;if(!g.delivered&&g.open>0)c.open++;if(g.late)c.late++;if(g.delivered){c.dl++;c.short+=g.rem}
+      if(g.date&&g.date>c.last)c.last=g.date});
+    const cl=[...C.values()].sort((a,b)=>b.req-a.req),named=cl.filter(c=>c.name!=="طلبيات بدون اسم");
+    const pct=(a,b)=>b?Math.round(a/b*100):null;
+    const otp=pct(onTime.length,withDue.length);
+    $(".ck").innerHTML=`<div class="kpi"><div class="kv">${nf(named.length)}</div><small>عملاء · ${ordN(all.length)}</small></div>
+      <div class="kpi"><div class="kv">${otp==null?"—":otp+"%"}</div><small>تسليم في الميعاد${withDue.length?` (${nf(onTime.length)} من ${nf(withDue.length)})`:""}</small></div>
+      <div class="kpi"><div class="kv">${avgD==null?"—":nf(avgD)}</div><small>متوسط أيام التنفيذ (من الطلب للتسليم)</small></div>
+      <div class="kpi"><div class="kv">${nf(short)}</div><small>عجز اتسلّم${shortN?` في ${nf(shortN)} طلبية`:""}</small></div>`;
+    // ملاحظات ذكية
+    const I=[],totReq=cl.reduce((a,c)=>a+c.req,0);
+    if(otp!=null&&withDue.length>=3){if(otp<70)I.push(["warn",`نسبة التسليم في الميعاد <b>${otp}%</b> بس (${nf(onTime.length)} من ${nf(withDue.length)}).`]);else if(otp>=90)I.push(["ok",`التسليم في الميعاد ممتاز: <b>${otp}%</b>.`])}
+    if(lateDl.length)I.push(["warn",`<b>${Reports.ordN(lateDl.length)}</b> اتسلّمت متأخرة — أطولهم ${nf(lateDl[0].days)} يوم (${esc(lateDl[0].title||"بدون اسم")}).`]);
+    if(shortN)I.push(["warn",`<b>${Reports.ordN(shortN)}</b> اتسلّمت بعجز إجمالي ${nf(short)} قطعة.`]);
+    if(lateOpen)I.push(["warn",`فيه <b>${Reports.ordN(lateOpen)}</b> مفتوحة ومتأخرة عن ميعادها دلوقتي.`]);
+    if(named.length>1&&totReq>0){const top=named[0];I.push(["info",`أكبر عميل: <b>${esc(top.name)}</b> (${nf(top.req)} قطعة · ${pct(top.req,totReq)}% من المطلوب).`])}
+    if(named.length>=2){const rep=named.filter(c=>c.n>=2).length;if(rep)I.push(["info",`<b>${nf(rep)}</b> عميل طلب أكتر من مرة في الفترة دي.`])}
+    I.sort((a,b)=>({warn:0,ok:1,info:2}[a[0]]-{warn:0,ok:1,info:2}[b[0]]));
+    $(".rins").innerHTML=I.length?insHtml(I.slice(0,7)):'<div class="empty">مفيش بيانات كفاية للملاحظات في الفترة دي</div>';
+    $('[data-ps="insights"]').toggleAttribute("data-empty",!I.length);
+    // جدول العملاء
+    const cv=st.printing?cl.slice(0,400):(st.more?cl:cl.slice(0,10));
+    $(".rcu").innerHTML=cl.length?`<table><thead><tr><th>العميل</th><th>طلبيات</th><th>المطلوب</th><th>الإنجاز</th><th>مفتوحة</th><th>اتسلّمت</th><th>عجز</th><th>آخر طلبية</th></tr></thead><tbody>${cv.map(c=>`<tr><td><b>${esc(c.name)}</b>${c.ph?`<div class="nums" style="font-size:.8rem"><a href="tel:${esc(c.ph.replace(/[^\d+]/g,""))}" dir="ltr">${esc(c.ph)}</a></div>`:""}</td><td>${nf(c.n)}</td><td><b>${nf(c.req)}</b></td><td>${pct(c.done,c.req)??0}%</td><td>${c.open?nf(c.open)+(c.late?` <span class="tag late">${nf(c.late)} متأخرة</span>`:""):"—"}</td><td>${nf(c.dl)}</td><td>${c.short?`<b style="color:var(--bad,#b3261e)">${nf(c.short)}</b>`:"—"}</td><td class="nums">${c.last?fmtD(c.last):"—"}</td></tr>`).join("")}</tbody></table>${!st.printing&&cl.length>10?`<button type="button" class="btn ghost sm more" data-m="c">${st.more?"عرض أقل":"عرض الكل ("+cl.length+")"}</button>`:""}`:'<div class="empty">مفيش طلبيات مربوطة بعملاء في الفترة دي</div>';
+    $('[data-ps="cust"]').toggleAttribute("data-empty",!cl.length);
+    // التسليمات المتأخرة
+    const lv=st.printing?lateDl.slice(0,400):(st.moreL?lateDl:lateDl.slice(0,10));
+    $(".rlt").innerHTML=lateDl.length?`<table><thead><tr><th>الطلبية</th><th>الميعاد</th><th>اتسلّمت</th><th>التأخير</th><th>عجز</th></tr></thead><tbody>${lv.map(g=>`<tr><td><b>${g.no?"#"+esc(g.no)+" · ":""}${esc(g.title||"بدون اسم")}</b></td><td class="nums">${fmtD(g.due)}</td><td class="nums">${fmtD(g.dv)}</td><td><span class="tag late">${nf(g.days)} يوم</span></td><td>${g.rem?nf(g.rem):"—"}</td></tr>`).join("")}</tbody></table>${!st.printing&&lateDl.length>10?`<button type="button" class="btn ghost sm more" data-m="l">${st.moreL?"عرض أقل":"عرض الكل ("+lateDl.length+")"}</button>`:""}`:'<div class="empty">مفيش تسليمات اتأخرت في الفترة دي</div>';
+    $('[data-ps="late"]').toggleAttribute("data-empty",!lateDl.length);
+    $(".rpd").textContent=fmtP(f,t)+" · طُبع في "+fmtD(today());
+    st.last={f,t,all,cl,named,I,otp,withDue,onTime,short,shortN,lateOpen,lateDl,avgD};
+  }
+  async function refresh(force){
+    $(".ck").innerHTML=skelKpis(4);
+    await groupTitles(force);
+    const res=await Promise.allSettled(CUST_SECS.map(k=>getData(k,force)));
+    res.forEach((r,i)=>{const k=CUST_SECS[i];if(r.status==="fulfilled"){st.data[k]=r.value;delete st.err[k]}else st.err[k]=true});
+    if(Object.keys(st.err).length===CUST_SECS.length){$(".ck").innerHTML='<div class="empty err-state" style="grid-column:1/-1">تعذر تحميل التقرير<br><button class="btn sm rr">إعادة المحاولة</button></div>';$(".rr").onclick=()=>refresh(true);return}
+    st.rows=build();syncDates();draw();
+  }
+  $(".rch").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;st.k=b.dataset.k;st.more=false;st.moreL=false;$$(".rch .chip").forEach(c=>c.classList.toggle("on",c===b));syncDates();draw()};
+  const custom=()=>{st.k="custom";st.f=$(".rf").value;st.t=$(".rt").value;$$(".rch .chip").forEach(c=>c.classList.remove("on"));draw()};
+  $(".rf").onchange=custom;$(".rt").onchange=custom;
+  root.addEventListener("click",e=>{const mo=e.target.closest(".more");if(!mo)return;if(mo.dataset.m==="c")st.more=!st.more;else st.moreL=!st.moreL;draw()});
+  $(".cx").onclick=()=>{
+    if(!st.last)return;
+    csvDownload(`تقرير-العملاء-${today()}.csv`,["العميل","الموبايل","عدد الطلبيات","المطلوب","المنتج","مفتوحة","متأخرة","اتسلّمت","عجز اتسلّم","آخر طلبية"],
+      st.last.cl.map(c=>[c.name,c.ph,c.n,c.req,c.done,c.open,c.late,c.dl,c.short,c.last]));
+  };
+  $(".cp").onclick=()=>{
+    if(!st.last)return;const L=st.last;
+    printDialog(root,"cust",[["kpi","الأرقام الرئيسية",true],["insights","الملاحظات الذكية",L.I.length>0],["cust","العملاء",L.cl.length>0],["late","التسليمات المتأخرة",L.lateDl.length>0]],{before(){st.printing=true;draw()},after(){st.printing=false;draw()}});
+  };
+  $(".csh").onclick=()=>{
+    if(!st.last)return;const L=st.last;
+    const T=["تقرير العملاء والتسليم","الفترة: "+fmtP(L.f,L.t),`العملاء: ${nf(L.named.length)} · الطلبيات: ${nf(L.all.length)}`,
+      L.otp==null?"":`التسليم في الميعاد: ${L.otp}% (${nf(L.onTime.length)} من ${nf(L.withDue.length)})`,
+      L.avgD==null?"":`متوسط أيام التنفيذ: ${nf(L.avgD)}`,L.shortN?`عجز اتسلّم: ${nf(L.short)} قطعة في ${nf(L.shortN)} طلبية`:"",L.lateOpen?`مفتوحة ومتأخرة: ${nf(L.lateOpen)}`:""].filter(Boolean);
+    if(L.cl.length)T.push("","أكبر العملاء:",...L.cl.slice(0,5).map(c=>`• ${c.name}: ${nf(c.req)} قطعة (${nf(c.n)} طلبية)`));
+    if(L.lateDl.length)T.push("","اتسلّمت متأخرة:",...L.lateDl.slice(0,5).map(g=>`• ${g.title||"بدون اسم"} — ${nf(g.days)} يوم`));
+    shareText(T.join("\n"));
+  };
+  refresh();
+  return{refresh:(f=true)=>refresh(f)};
+}
+
+return{shareText,mount,dashboard,ordersReport,customersReport,sources:SRC,getData,backlog,ordN,editEntry,deleteEntry,actBtns,entryTxt,insHtml,printDialog,workerStats,groupSum,etaTxt};
 })();
